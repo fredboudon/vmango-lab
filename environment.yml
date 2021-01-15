@@ -1,0 +1,16 @@
+name: vmango-lab
+channels:
+  - fredboudon
+  - conda-forge
+dependencies:
+  - alinea.caribu
+  - openalea.lpy
+  - xarray-simlab
+  - jupyterlab
+  - ipython=7
+  - tomlkit
+  - matplotlib
+  - pandas
+  - pip
+  - pip:
+    - pgljupyter

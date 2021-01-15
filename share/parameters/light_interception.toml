@@ -1,0 +1,7 @@
+sunlit_fractions_file_path = '../environment/sunlit_fractions.csv'
+
+k_1 = 0.5                       # fraction of global radiation photosynthetically active [dimensionless]
+k_2 = 4.6                       # conversion factor of global radiation (from W m-2 to µmol photon m-2 s-1) [µmol photon W-1 s-1]
+k_3 = 0.0529                    # fraction of radiation received by shaded leaves [dimensionless]
+
+sunlit_ws = 0.88                # whithin-shoots sunlit fractions of leaves (i.e not shaded by surrounding shoots) [dimensionless]

@@ -1,0 +1,24 @@
+r_DM_stem_ini = 0.1             # initial dry mass fraction of reserves in stem [dimensionless]
+r_DM_leaf_ini = 0.074           # initial dry mass fraction of reserves in leaf [dimensionless]
+
+DM_stem = 59.62                 # stem dry mass [g DM]
+DM_leaf_unit = 0.8              # leaf dry mass (for a single leaf) [g DM]
+
+r_mobile_stem = 0.0164          # mobile fraction of carbon reserves in stem [dimensionless]
+r_mobile_leaf = 0.0162          # mobile fraction of carbon reserves in leaf [dimensionless]
+
+MRR_stem = 0.000858             # maintenance respiration rate of stem [g C g-1 day-1]
+MRR_leaf = 0.000156             # maintenance respiration rate of leaf [g C g-1 h-1]
+MRR_fruit = 0.00115             # maintenance respiration rate of fruit [g C g-1 day-1]
+Q10_stem = 1.96                 # Q10 value for stem [dimensionless]
+Q10_leaf = 2.11                 # Q10 value for leaf [dimensionless]
+Q10_fruit = 1.9                 # Q10 value for fruit [dimensionless]
+Tref = 20                       # reference temperature for maintenance respiration calculation based on Q10 concept [°C]
+cc_stem = 0.4387                # carbon content of stem dry matter [g C g-1 DM]
+cc_leaf = 0.4051                # carbon content of leaf dry matter [g C g-1 DM]
+
+r_storage_leaf_max = 0.3        # specific parameter for leaf reserve storage calculation [dimensionless]
+
+RGR_fruit_ini = 0.0105          # initial relative growth rate of fruit [dd-1]
+cc_fruit = 0.4239               # carbon content of fruit dry matter [g C g-1 DM]
+GRC_fruit = 0.04                # growth respiration coefficient of fruit [g C g-1 DM]

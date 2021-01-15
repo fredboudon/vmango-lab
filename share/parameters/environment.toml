@@ -1,0 +1,8 @@
+weather_hourly_file_path = '../environment/weather_hourly_stpierre_2002.csv'
+weather_daily_file_path = '../environment/weather_daily_stpierre_2002.csv'
+
+Tbase_fruit = 16                # base temperature for degree-days calculation [°C]
+dd_cum_0 = 352.72               # cumulated degree-days at the end of cell division [dd]
+
+e_nleaf2LA_1 = 0.0051           # specific parameter for leaf area calculation [m2-0.937]
+e_nleaf2LA_2 = 0.937            # specific parameter for leaf area calculation [dimensionless]
