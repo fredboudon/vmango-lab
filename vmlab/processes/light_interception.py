@@ -63,7 +63,7 @@ class LightInterception():
             sep='\\s+',
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
-        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, random.randrange(0, 5)].to_numpy()
+        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, random.randrange(0, 5)].to_numpy(dtype=np.float32)
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):

@@ -150,14 +150,16 @@ class Environment():
             sep=';',
             parse_dates=['DATETIME'],
             dayfirst=True,
-            usecols=['HOUR', 'GR', 'T', 'RH', 'DATETIME']
+            usecols=['HOUR', 'GR', 'T', 'RH', 'DATETIME'],
+            dtype={'GR': np.float, 'T': np.float, 'RH': np.float}
         )
         weather_daily_df = pd.read_csv(
             pathlib.Path(self.params[0].parent).joinpath(self.params[1].weather_daily_file_path),
             sep=';',
             parse_dates=['DATE'],
             dayfirst=True,
-            usecols=['DATE', 'TM', 'TX', 'TN']
+            usecols=['DATE', 'TM', 'TX', 'TN'],
+            dtype={'TM': np.float, 'TX': np.float, 'TN': np.float}
         )
 
         weather_hourly_df.rename(columns={'DATETIME': 'DATE'}, inplace=True)

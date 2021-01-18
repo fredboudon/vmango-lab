@@ -42,10 +42,10 @@ class Architecture():
 
     def initialize(self):
 
-        self.GU = np.arange(0., len(self.nb_fruits), step=1.)
-        self.nb_fruits_ini = np.array(self.nb_fruits)
-        self.nb_fruits = np.zeros(self.nb_fruits_ini.shape)
-        self.nb_leaves = np.array(self.nb_leaves)
+        self.GU = np.arange(0, len(self.nb_fruits), step=1, dtype=np.int64)
+        self.nb_fruits_ini = np.array(self.nb_fruits, dtype=np.int64)
+        self.nb_fruits = np.zeros(self.nb_fruits_ini.shape, dtype=np.int64)
+        self.nb_leaves = np.array(self.nb_leaves, dtype=np.int64)
         # self.LFratio = self.nb_leaves / self.nb_fruits
 
     @xs.runtime(args=('step'))

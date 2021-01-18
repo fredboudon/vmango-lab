@@ -93,11 +93,11 @@ class Photosythesis():
 
         # light-saturated leaf photosynthesis (eq.1)
         self.Pmax = np.array([np.minimum((p_1 * (DM_fruit_max / LA) * p_2) / (p_1 * (DM_fruit_max / LA) + p_2), Pmax_max)
-                              if LA > 0 else 0 for LA, DM_fruit_max in zip(self.LA, self.DM_fruit_max)])
+                              if LA > 0 else 0. for LA, DM_fruit_max in zip(self.LA, self.DM_fruit_max)])
 
         # photosynthetic rate per unit leaf area (eq.2)
-        self.P_rate_sunlit = np.array([np.maximum(0, ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
-        self.P_rate_shaded = np.array([np.maximum(0, ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR_shaded / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
+        self.P_rate_sunlit = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
+        self.P_rate_shaded = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR_shaded / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
 
         # carbon assimilation by leaf photosynthesis (eq.3)
         self.photo_shaded = np.array([photo_shaded.sum() for photo_shaded in (self.P_rate_shaded * self.LA_shaded * k)])

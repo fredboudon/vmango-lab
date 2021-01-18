@@ -426,8 +426,8 @@ class FruitQuality():
         self.DM_flesh = self.DM_fleshpeel * e_fleshpeel2fleshDM
         self.W_flesh = self.W_fleshpeel * e_fleshpeel2fleshW
 
-        self.sucrose = np.array([b / a if a > 0 else 0.
-                                 for a, b in zip(FM_minus_stone, mass_suc)])
+        self.sucrose = np.array([mass_suc / FM_minus_stone if FM_minus_stone > 0 else 0.
+                                 for FM_minus_stone, mass_suc in zip(FM_minus_stone, mass_suc)])
         self.glucose = np.array([mass_glc / FM_minus_stone if FM_minus_stone > 0 else 0.
                                  for FM_minus_stone, mass_glc in zip(FM_minus_stone, mass_glc)])
         self.fructose = np.array([mass_frc / FM_minus_stone if FM_minus_stone > 0 else 0.

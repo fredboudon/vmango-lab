@@ -2,6 +2,8 @@ import io
 import toml
 import warnings
 import pathlib
+import numpy as np
+import random
 
 import xsimlab as xs
 
@@ -17,6 +19,7 @@ class DotDict(dict):
 class Parameters():
 
     path = xs.variable(intent='in', static=True)
+    seed = xs.variable(intent='in', static=True)
 
     architecture = xs.any_object()
     carbon_balance = xs.any_object()
@@ -29,6 +32,10 @@ class Parameters():
     photosynthesis = xs.any_object()
 
     def initialize(self):
+
+        random.seed(self.seed)
+        np.random.seed(self.seed)
+
         with io.open(self.path) as sim_file:
             settings = toml.loads(sim_file.read())
             for name, filename in settings['parameters'].items():
