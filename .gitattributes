@@ -1,0 +1,6 @@
+*.nc filter=lfs diff=lfs merge=lfs -text
+*.cdf filter=lfs diff=lfs merge=lfs -text
+*.mtg filter=lfs diff=lfs merge=lfs -text
+*.geom filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
