@@ -7,24 +7,7 @@ from . import parameters
 @xs.process
 class Architecture():
 
-    GU = xs.index(dims=('GU'))
-
     params = xs.foreign(parameters.Parameters, 'architecture')
-
-    nb_fruits_ini = xs.variable(
-        dims=('GU'),
-        intent='out'
-    )
-
-    nb_fruits = xs.variable(
-        dims=('GU'),
-        intent='inout'
-    )
-
-    nb_leaves = xs.variable(
-        dims=('GU'),
-        intent='inout'
-    )
 
     # LFratio = xs.variable(
     #     dims=('GU'),
@@ -45,7 +28,6 @@ class Architecture():
         self.GU = np.arange(0, len(self.nb_fruits), step=1, dtype=np.int64)
         self.nb_fruits_ini = np.array(self.nb_fruits, dtype=np.int64)
         self.nb_fruits = np.zeros(self.nb_fruits_ini.shape, dtype=np.int64)
-        self.nb_leaves = np.array(self.nb_leaves, dtype=np.int64)
         # self.LFratio = self.nb_leaves / self.nb_fruits
 
     @xs.runtime(args=('step'))

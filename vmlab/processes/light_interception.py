@@ -4,7 +4,8 @@ import numpy as np
 import pathlib
 import random
 
-from . import architecture
+from . import growth_unit_growth
+from . import fruit_growth
 from . import environment
 from . import parameters
 
@@ -12,14 +13,31 @@ from . import parameters
 @xs.process
 class LightInterception():
 
-    params = xs.foreign(parameters.Parameters, 'light_interception')
     sunlit_bs = None
 
-    LA = xs.foreign(environment.Environment, 'LA')
+    params = xs.foreign(parameters.Parameters, 'light_interception')
+
     GR = xs.foreign(environment.Environment, 'GR')
     hour = xs.foreign(environment.Environment, 'hour')
 
-    GU = xs.foreign(architecture.Architecture, 'GU')
+    nb_fruits = xs.foreign(fruit_growth.FruitGrowth, 'nb_fruits')
+
+    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
+    nb_leaves = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'nb_leaves')
+
+    LA = xs.variable(
+        dims=('GU'),
+        intent='out',
+        description='total leaf area per branch',
+        attrs={
+            'unit': 'm²'
+        }
+    )
+
+    LFratio = xs.variable(
+        dims=('GU'),
+        intent='out'
+    )
 
     PAR = xs.variable(
         dims=('hour'),
@@ -58,6 +76,8 @@ class LightInterception():
     )
 
     def initialize(self):
+        self.LFratio = np.array([nb_leaves / nb_fruits if nb_fruits > 0 else 0.
+                                 for nb_leaves, nb_fruits in zip(self.nb_leaves, self.nb_fruits)])
         self.sunlit_fractions_df = pd.read_csv(
             pathlib.Path(self.params[0].parent).joinpath(self.params[1].sunlit_fractions_file_path),
             sep='\\s+',
@@ -74,6 +94,7 @@ class LightInterception():
         k_2 = params.k_2
         k_3 = params.k_3
         sunlit_ws = params.sunlit_ws
+        e_nleaf2LA_2 = params.e_nleaf2LA_2
 
         # hour = pd.Timestamp(step_start).hour
 
@@ -83,6 +104,12 @@ class LightInterception():
         # photosynthetic active radiation (eq.10-19) :
         self.PAR = GR * k_1 * k_2
         self.PAR_shaded = k_3 * self.PAR
+
+        self.LFratio = np.array([nb_leaves / nb_fruits if nb_fruits > 0 else 0.
+                                 for nb_leaves, nb_fruits in zip(self.nb_leaves, self.nb_fruits)])
+
+        # leaf area (eq. 11) :
+        self.LA = self.params[1].e_nleaf2LA_1 * self.LFratio ** e_nleaf2LA_2
 
         self.LA_sunlit = np.array([self.sunlit_bs * sunlit_ws * LA for LA in self.LA])
         self.LA_shaded = np.array([LA - LA_sunlit for LA, LA_sunlit in zip(self.LA, self.LA_sunlit)])

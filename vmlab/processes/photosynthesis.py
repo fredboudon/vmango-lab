@@ -3,9 +3,8 @@ import numpy as np
 
 from . import parameters
 from . import fruit_growth
-from . import architecture
+from . import growth_unit_growth
 from . import light_interception
-from . import environment
 
 
 @xs.process
@@ -14,13 +13,14 @@ class Photosythesis():
     params = xs.foreign(parameters.Parameters, 'photosynthesis')
 
     DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
-    LA = xs.foreign(environment.Environment, 'LA')
+
+    LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
     PAR_shaded = xs.foreign(light_interception.LightInterception, 'PAR_shaded')
     LA_sunlit = xs.foreign(light_interception.LightInterception, 'LA_sunlit')
     LA_shaded = xs.foreign(light_interception.LightInterception, 'LA_shaded')
 
-    GU = xs.foreign(architecture.Architecture, 'GU')
+    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
 
     Pmax = xs.variable(
         dims=('GU'),

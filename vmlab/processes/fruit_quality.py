@@ -9,8 +9,8 @@ from ..constants import (
 from . import parameters
 from . import environment
 from . import fruit_growth
+from . import growth_unit_growth
 from . import carbon_balance
-from . import architecture
 
 
 @xs.process
@@ -21,13 +21,15 @@ class FruitQuality():
     T_air = xs.foreign(environment.Environment, 'T_air')
     GR = xs.foreign(environment.Environment, 'GR')
     RH = xs.foreign(environment.Environment, 'RH')
-    dd_cum = xs.foreign(environment.Environment, 'dd_cum')
     TM_air = xs.foreign(environment.Environment, 'TM_air')
+
+    dd_cum = xs.foreign(fruit_growth.FruitGrowth, 'dd_cum')
     DM_fruit_0 = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
+
+    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
+
     DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
-
-    GU = xs.foreign(architecture.Architecture, 'GU')
 
     FM_fruit = xs.variable(
         dims=('GU'),

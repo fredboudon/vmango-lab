@@ -1,3 +1,3 @@
-from ._models import basemodel
+from ._models import fruit_model
 
-__all__ = ['basemodel']
+__all__ = ['fruit_model']

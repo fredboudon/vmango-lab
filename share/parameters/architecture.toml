@@ -1,2 +1,0 @@
-e_nleaf2LA_1 = 0.0051           # specific parameter for leaf area calculation [m2-0.937]
-e_nleaf2LA_2 = 0.937            # specific parameter for leaf area calculation [dimensionless]

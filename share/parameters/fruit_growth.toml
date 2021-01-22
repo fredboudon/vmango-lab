@@ -11,3 +11,6 @@ e_fruitDM02max_2 = 0.624        # specific parameter for maximum fruit dry mass 
 RGR_fruit_ini = 0.0105          # initial relative growth rate of fruit [dd-1]
 cc_fruit = 0.4239               # carbon content of fruit dry matter [g C g-1 DM]
 GRC_fruit = 0.04                # growth respiration coefficient of fruit [g C g-1 DM]
+
+Tbase_fruit = 16                # base temperature for degree-days calculation [°C]
+dd_cum_0 = 352.72               # cumulated degree-days at the end of cell division [dd]

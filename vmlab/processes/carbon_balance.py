@@ -1,11 +1,13 @@
 import xsimlab as xs
 import numpy as np
+import warnings
 
 from . import parameters
-from . import architecture
 from . import environment
 from . import fruit_growth
+from . import growth_unit_growth
 from . import photosynthesis
+from . import light_interception
 
 
 @xs.process
@@ -13,16 +15,19 @@ class CarbonBalance():
 
     params = xs.foreign(parameters.Parameters, 'carbon_balance')
 
-    dd_delta = xs.foreign(environment.Environment, 'dd_delta')
     TM_air = xs.foreign(environment.Environment, 'TM_air')
     T_fruit = xs.foreign(environment.Environment, 'T_fruit')
     GR = xs.foreign(environment.Environment, 'GR')
+
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
+
     DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
     DM_fruit_0 = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
+    dd_delta = xs.foreign(fruit_growth.FruitGrowth, 'dd_delta')
 
-    GU = xs.foreign(architecture.Architecture, 'GU')
-    LFratio = xs.foreign(environment.Environment, 'LFratio')
+    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
+
+    LFratio = xs.foreign(light_interception.LightInterception, 'LFratio')
 
     DM_structural_stem = xs.variable(
         dims=('GU'),
@@ -342,8 +347,8 @@ class CarbonBalance():
         )
 
         if not np.all(assimilates_gt_mr_vegt + mobilize_from_leaf + mobilize_from_stem):
-            print('Vegetative part of the system dies ...')
-            # raise ValueError('Vegetative part of the system dies ...')
+            # TODO: What to do with variables?
+            warnings.warn('Vegetative part of the system dies ...')
 
         # use of remaining assimilates for maintenance respiration of reproductive components :
         remaining_assimilates_lt_mr_repro = self.remains_1 < self.MR_repro
@@ -362,9 +367,9 @@ class CarbonBalance():
         )
 
         if not np.all(~remaining_assimilates_lt_mr_repro + mobilize_from_fruit):
+            # TODO: What to do with variables?
             # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
-            print('Reproductive part of the system dies ...')
-            # raise ValueError('Reproductive part of the system dies ...')
+            warnings.warn('Reproductive part of the system dies ...')
 
         self.remains_2 = np.maximum(0, self.remains_1 - self.MR_repro)
 
