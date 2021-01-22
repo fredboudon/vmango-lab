@@ -35,15 +35,15 @@ class InfloGrowth():
     def initialize(self):
         self.bloom_date = np.array([np.datetime64(datetime.date.fromisoformat(bloom_date)).astype('datetime64[D]')
                                     for bloom_date in self.bloom_date])
-        self.DAB = np.ones(self.GU.shape) * -1.
+        self.DAB = np.ones(self.GU.shape) * -1
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
         self.DAB = np.where(
             step_start >= self.bloom_date,
-            (step_start - self.bloom_date).astype(np.int),
-            -1.
+            (step_start - self.bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
+            -1
         )
 
     def finalize_step(self):

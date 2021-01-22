@@ -107,11 +107,13 @@ class FruitGrowth():
             max(0, self.TM - Tbase_fruit),
             0.
         )
+
         self.dd_cum = np.where(
             step_start >= self.bloom_date,
             self.dd_cum + self.dd_delta,
             0.
         )
+
         self.nb_fruits = np.where(
             self.dd_cum >= dd_cum_0,
             self.nb_fruits_ini,
