@@ -21,7 +21,7 @@ class FruitGrowth():
     DM_fruit_0 = xs.variable(
         dims=('GU'),
         intent='out',
-        description='fruit dry mass at the end of cell division (at 352.72 dd)',
+        description='fruit dry mass per fruit at the end of cell division (at 352.72 dd)',
         attrs={
             'unit': 'g DM'
         },
@@ -31,7 +31,7 @@ class FruitGrowth():
     DM_fruit_max = xs.variable(
         dims=('GU'),
         intent='out',
-        description='potential maximal fruit dry mass (i.e. attained when fruit is grown under optimal conditions)',
+        description='potential maximal fruit dry mass per fruit (i.e. attained when fruit is grown under optimal conditions)',
         attrs={
             'unit': 'g DM'
         }
@@ -40,7 +40,7 @@ class FruitGrowth():
     dd_cum = xs.variable(
         dims=('GU'),
         intent='out',
-        description='cumulated degree-days of the current day',
+        description='cumulated degree-days of the current day after bloom date',
         attrs={
             'unit': 'dd'
         }
@@ -77,6 +77,7 @@ class FruitGrowth():
         mu_2 = params.fruitDM0_mu_2
         sigma_2 = params.fruitDM0_sigma_2
 
+        self.DM_fruit_max = np.zeros(self.GU.shape)
         self.DM_fruit_0 = np.ones(self.GU.shape) * weight_1 * np.random.normal(mu_1, sigma_1) + weight_2 * np.random.normal(mu_2, sigma_2)
         self.dd_delta = np.zeros(self.GU.shape)
         self.dd_cum = np.zeros(self.GU.shape)

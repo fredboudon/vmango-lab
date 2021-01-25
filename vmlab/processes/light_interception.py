@@ -4,10 +4,9 @@ import numpy as np
 import pathlib
 import random
 
-from . import growth_unit_growth
-from . import fruit_growth
 from . import environment
 from . import parameters
+from . import branching
 
 
 @xs.process
@@ -20,13 +19,11 @@ class LightInterception():
     GR = xs.foreign(environment.Environment, 'GR')
     hour = xs.foreign(environment.Environment, 'hour')
 
-    nb_fruits = xs.foreign(fruit_growth.FruitGrowth, 'nb_fruits')
-
-    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
-    nb_leaves = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'nb_leaves')
+    nb_fruits = xs.foreign(branching.Identity, 'nb_fruits')
+    nb_leaves = xs.foreign(branching.Identity, 'nb_leaves')
 
     LA = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='total leaf area per branch',
         attrs={
@@ -35,7 +32,7 @@ class LightInterception():
     )
 
     LFratio = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out'
     )
 
@@ -58,7 +55,7 @@ class LightInterception():
     )
 
     LA_sunlit = xs.variable(
-        dims=('GU', 'hour'),
+        dims=('branch', 'hour'),
         intent='out',
         description='hourly leaf area of sunlit leaves (for the hours of the day where PAR>0)',
         attrs={
@@ -67,7 +64,7 @@ class LightInterception():
     )
 
     LA_shaded = xs.variable(
-        dims=('GU', 'hour'),
+        dims=('branch', 'hour'),
         intent='out',
         description='hourly leaf area of shaded leaves (for the hours of the day where PAR>0)',
         attrs={

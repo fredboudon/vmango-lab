@@ -4,8 +4,7 @@ import warnings
 
 from . import parameters
 from . import environment
-from . import fruit_growth
-from . import growth_unit_growth
+from . import branching
 from . import photosynthesis
 from . import light_interception
 
@@ -21,16 +20,16 @@ class CarbonBalance():
 
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
 
-    DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
-    DM_fruit_0 = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
-    dd_delta = xs.foreign(fruit_growth.FruitGrowth, 'dd_delta')
+    DM_fruit_max = xs.foreign(branching.Identity, 'DM_fruit_max')
+    DM_fruit_0 = xs.foreign(branching.Identity, 'DM_fruit_0')
+    dd_delta = xs.foreign(branching.Identity, 'dd_delta')
 
-    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
+    branch = xs.foreign(branching.Identity, 'branch')
 
     LFratio = xs.foreign(light_interception.LightInterception, 'LFratio')
 
     DM_structural_stem = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='dry mass of the structural part of stem',
         attrs={
@@ -39,7 +38,7 @@ class CarbonBalance():
     )
 
     DM_structural_leaf = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='dry mass of the structural part of leaves',
         attrs={
@@ -48,7 +47,7 @@ class CarbonBalance():
     )
 
     reserve_stem = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon in stem reserves',
         attrs={
@@ -57,7 +56,7 @@ class CarbonBalance():
     )
 
     reserve_leaf = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon in leaf reserves',
         attrs={
@@ -66,7 +65,7 @@ class CarbonBalance():
     )
 
     reserve_mob = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon in leaf and stem mobile reserves',
         attrs={
@@ -75,7 +74,7 @@ class CarbonBalance():
     )
 
     reserve_nmob_stem = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon in stem non-mobile reserves',
         attrs={
@@ -84,7 +83,7 @@ class CarbonBalance():
     )
 
     reserve_nmob_leaf = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon in leaf non-mobile reserves',
         attrs={
@@ -93,7 +92,7 @@ class CarbonBalance():
     )
 
     MR_stem = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily maintenance respiration demand of stem',
         attrs={
@@ -102,7 +101,7 @@ class CarbonBalance():
     )
 
     MR_leaf = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily maintenance respiration demand of leaves',
         attrs={
@@ -111,7 +110,7 @@ class CarbonBalance():
     )
 
     MR_fruit = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily maintenance respiration demand of fruits',
         attrs={
@@ -120,7 +119,7 @@ class CarbonBalance():
     )
 
     MR_repro = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily maintenance respiration demand of reproductive components (fruits)',
         attrs={
@@ -129,7 +128,7 @@ class CarbonBalance():
     )
 
     MR_veget = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily maintenance respiration demand of vegetative components (leaves and stem)',
         attrs={
@@ -138,7 +137,7 @@ class CarbonBalance():
     )
 
     assimilates = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='carbon available as assimilates from leaf photosynthesis and mobile reserves',
         attrs={
@@ -147,7 +146,7 @@ class CarbonBalance():
     )
 
     required_DM_fruit = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='fruit dry mass required for fruit maintenance respiration not satisfied by remaining assimilates',
         attrs={
@@ -156,7 +155,7 @@ class CarbonBalance():
     )
 
     remains_1 = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='assimilates remaining after maintenance respiration of vegetative component',
         attrs={
@@ -165,7 +164,7 @@ class CarbonBalance():
     )
 
     remains_2 = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='assimilates remaining after maintenance respiration of vegetative and reproductive components',
         attrs={
@@ -174,7 +173,7 @@ class CarbonBalance():
     )
 
     remains_3 = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='assimilates remaining after maintenance respiration of vegetative and reproductive components and fruit growth',
         attrs={
@@ -183,7 +182,7 @@ class CarbonBalance():
     )
 
     reserve_leaf_max = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='maximal amount of carbon that can be stored in leaf reserves (threshold for reserve saturation)',
         attrs={
@@ -192,7 +191,7 @@ class CarbonBalance():
     )
 
     DM_fruit = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='fruit dry mass',
         attrs={
@@ -201,7 +200,7 @@ class CarbonBalance():
     )
 
     DM_fruit_delta = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='change in fruit dry mass',
         attrs={
@@ -210,7 +209,7 @@ class CarbonBalance():
     )
 
     D_fruit = xs.variable(
-        dims=('GU'),
+        dims=('branch'),
         intent='out',
         description='daily carbon demand for fruit growth',
         attrs={
@@ -229,15 +228,29 @@ class CarbonBalance():
         DM_stem = params.DM_stem
         DM_leaf_unit = params.DM_leaf_unit
 
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
-
         # initial amount of carbon in leaf and stem reserves :
-        self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
-        self.reserve_stem = np.ones(self.GU.shape) * DM_stem * r_DM_stem_ini * cc_stem
+        self.reserve_leaf = np.ones(self.branch.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
+        self.reserve_stem = np.ones(self.branch.shape) * DM_stem * r_DM_stem_ini * cc_stem
 
-        self.DM_fruit = np.zeros(self.GU.shape)
+        self.DM_structural_stem = np.zeros(self.branch.shape)
+        self.DM_structural_leaf = np.zeros(self.branch.shape)
+        self.reserve_mob = np.zeros(self.branch.shape)
+        self.reserve_nmob_stem = np.zeros(self.branch.shape)
+        self.reserve_nmob_leaf = np.zeros(self.branch.shape)
+        self.MR_stem = np.zeros(self.branch.shape)
+        self.MR_leaf = np.zeros(self.branch.shape)
+        self.MR_fruit = np.zeros(self.branch.shape)
+        self.MR_repro = np.zeros(self.branch.shape)
+        self.MR_veget = np.zeros(self.branch.shape)
+        self.assimilates = np.zeros(self.branch.shape)
+        self.required_DM_fruit = np.zeros(self.branch.shape)
+        self.remains_1 = np.zeros(self.branch.shape)
+        self.remains_2 = np.zeros(self.branch.shape)
+        self.remains_3 = np.zeros(self.branch.shape)
+        self.reserve_leaf_max = np.zeros(self.branch.shape)
+        self.DM_fruit = np.zeros(self.branch.shape)
+        self.DM_fruit_delta = np.zeros(self.branch.shape)
+        self.D_fruit = np.zeros(self.branch.shape)
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
@@ -268,12 +281,12 @@ class CarbonBalance():
         self.DM_fruit = np.array([DM_fruit_0 if LFratio > 0 and DM_fruit == 0 else 0. if LFratio == 0 else DM_fruit
                                   for DM_fruit_0, DM_fruit, LFratio in zip(self.DM_fruit_0, self.DM_fruit, self.LFratio)])
 
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
+        self.remains_1 = np.zeros(self.branch.shape)
+        self.remains_2 = np.zeros(self.branch.shape)
+        self.remains_3 = np.zeros(self.branch.shape)
 
         # dry mass of stem and leaf structure
-        self.DM_structural_stem = np.ones(self.GU.shape) * DM_stem * (1 - r_DM_stem_ini)
+        self.DM_structural_stem = np.ones(self.branch.shape) * DM_stem * (1 - r_DM_stem_ini)
         self.DM_structural_leaf = DM_leaf_unit * self.LFratio * (1 - r_DM_leaf_ini)
 
         # carbon demand for fruit growth (eq.5-6-7) :
