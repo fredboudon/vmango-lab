@@ -10,7 +10,7 @@ from ..processes import inflo_growth
 from ..processes import fruit_quality
 from ..processes import light_interception
 from ..processes import photosynthesis
-from ..processes import branching
+from ..processes import carbon_unit
 
 fruit_model = xs.Model({
     # 'params': parameters.Parameters,
@@ -30,7 +30,7 @@ fruit_model_w_branching = xs.Model({
     'fruit_growth': fruit_growth.FruitGrowth,
     'inflo_growth': inflo_growth.InfloGrowth,
     'gu_growth': growth_unit_growth.GrowthUnitGrowth,
-    'branching': branching.Identity,
+    'carbon_unit': carbon_unit.Identity,
     'light': light_interception.LightInterception,
     'photo': photosynthesis.Photosythesis,
     'carbon': carbon_balance.CarbonBalance,

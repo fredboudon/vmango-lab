@@ -7,8 +7,8 @@ from . import fruit_growth
 
 
 @xs.process
-class Branching(abc.ABC):
-    """Aggregate GUs into fruiting branches
+class CarbonUnit(abc.ABC):
+    """Aggregate GUs into CUs
     """
 
     GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
@@ -20,31 +20,31 @@ class Branching(abc.ABC):
     dd_delta_gu = xs.foreign(fruit_growth.FruitGrowth, 'dd_delta')
     dd_cum_gu = xs.foreign(fruit_growth.FruitGrowth, 'dd_cum')
 
-    branch = xs.index(('branch'))
+    CU = xs.index(('CU'))
 
     nb_leaves = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out'
     )
 
     nb_fruits = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out'
     )
 
     DM_fruit_max = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
-        description='potential total maximal fruit dry mass per branch',
+        description='potential total maximal fruit dry mass per CU',
         attrs={
             'unit': 'g DM'
         }
     )
 
     DM_fruit_0 = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
-        description='fruit dry mass per branch at the end of cell division (at 352.72 dd)',
+        description='fruit dry mass per CU at the end of cell division (at 352.72 dd)',
         attrs={
             'unit': 'g DM'
         },
@@ -52,29 +52,29 @@ class Branching(abc.ABC):
     )
 
     dd_delta = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
-        description='daily variation in degree days (avg per branch)',
+        description='daily variation in degree days (avg per CU)',
         attrs={
             'unit': 'dd day-1'
         }
     )
 
     dd_cum = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
-        description='cumulated degree-days of the current day after bloom date (avg per branch)',
+        description='cumulated degree-days of the current day after bloom date (avg per CU)',
         attrs={
             'unit': 'dd'
         }
     )
 
-    branches = xs.variable(
-        dims=('branch', 'GU'),
+    CUxGU = xs.variable(
+        dims=('CU', 'GU'),
         intent='out'
     )
 
-    @branches.validator
+    @CUxGU.validator
     def _validator(prc, var, val):
         if np.sum(val) != len(val):
             raise ValueError()
@@ -89,38 +89,38 @@ class Branching(abc.ABC):
 
 
 @xs.process
-class Identity(Branching):
-    """Map GU 1:1 to a branch
+class Identity(CarbonUnit):
+    """Map GU 1:1 to a CU
     """
 
     def initialize(self):
 
-        self.branch = np.arange(self.GU.shape[0])
+        self.CU = np.arange(self.GU.shape[0])
 
-        # branches in rows, GUs in columns, therefor all ops over columns dim=1
-        self.branches = np.identity(self.GU.shape[0])
-        self.nb_leaves = np.sum(self.branches * self.nb_leaves_gu, 1)
-        self.nb_fruits = np.sum(self.branches * self.nb_fruits_gu, 1)
-        self.DM_fruit_max = np.sum(self.branches * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
-        self.DM_fruit_0 = np.sum(self.branches * self.DM_fruit_0_fruit * self.nb_fruits_gu, 1)
-        self.dd_delta = np.mean(self.branches * self.dd_delta_gu, 1)
-        self.dd_cum = np.mean(self.branches * self.dd_cum_gu, 1)
+        # CUs in rows, GUs in columns, therefor all ops over columns dim=1
+        self.CUxGU = np.identity(self.GU.shape[0])
+        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
+        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
+        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
+        self.DM_fruit_0 = np.sum(self.CUxGU * self.DM_fruit_0_fruit * self.nb_fruits_gu, 1)
+        self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
+        self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
 
-        self.nb_leaves = np.sum(self.branches * self.nb_leaves_gu, 1)
-        self.nb_fruits = np.sum(self.branches * self.nb_fruits_gu, 1)
-        self.DM_fruit_max = np.sum(self.branches * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
+        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
+        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
+        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
 
-        DM_fruit_0 = self.branches * self.DM_fruit_0_fruit * self.nb_fruits_gu
+        DM_fruit_0 = self.CUxGU * self.DM_fruit_0_fruit * self.nb_fruits_gu
         DM_fruit_0[DM_fruit_0 == 0] = np.nan
         self.DM_fruit_0 = np.nan_to_num(np.nanmean(DM_fruit_0, 1), copy=False)
 
-        dd_delta = self.branches * self.dd_delta_gu
+        dd_delta = self.CUxGU * self.dd_delta_gu
         dd_delta[dd_delta == 0] = np.nan
         self.dd_delta = np.nan_to_num(np.nanmean(dd_delta, 1), copy=False)
 
-        dd_cum = self.branches * self.dd_cum_gu
+        dd_cum = self.CUxGU * self.dd_cum_gu
         dd_cum[dd_cum == 0] = np.nan
         self.dd_cum = np.nan_to_num(np.nanmean(dd_cum, 1), copy=False)

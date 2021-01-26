@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import parameters
-from . import branching
+from . import carbon_unit
 from . import light_interception
 
 
@@ -11,7 +11,7 @@ class Photosythesis():
 
     params = xs.foreign(parameters.Parameters, 'photosynthesis')
 
-    DM_fruit_max = xs.foreign(branching.Identity, 'DM_fruit_max')
+    DM_fruit_max = xs.foreign(carbon_unit.Identity, 'DM_fruit_max')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
@@ -19,10 +19,10 @@ class Photosythesis():
     LA_sunlit = xs.foreign(light_interception.LightInterception, 'LA_sunlit')
     LA_shaded = xs.foreign(light_interception.LightInterception, 'LA_shaded')
 
-    branch = xs.foreign(branching.Identity, 'branch')
+    CU = xs.foreign(carbon_unit.Identity, 'CU')
 
     Pmax = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
         description='light-saturated leaf photosynthesis',
         attrs={
@@ -31,7 +31,7 @@ class Photosythesis():
     )
 
     P_rate_sunlit = xs.variable(
-        dims=('branch', 'hour'),
+        dims=('CU', 'hour'),
         intent='out',
         description='hourly photosynthetic rate per unit leaf area (for the hours of the day where PAR>0) for sunlit leaves',
         attrs={
@@ -40,7 +40,7 @@ class Photosythesis():
     )
 
     P_rate_shaded = xs.variable(
-        dims=('branch', 'hour'),
+        dims=('CU', 'hour'),
         intent='out',
         description='hourly photosynthetic rate per unit leaf area (for the hours of the day where PAR>0) for shaded leaves',
         attrs={
@@ -49,7 +49,7 @@ class Photosythesis():
     )
 
     photo_sunlit = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of sunlit leaves',
         attrs={
@@ -58,7 +58,7 @@ class Photosythesis():
     )
 
     photo_shaded = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of shaded leaves',
         attrs={
@@ -67,7 +67,7 @@ class Photosythesis():
     )
 
     photo = xs.variable(
-        dims=('branch'),
+        dims=('CU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of sunlit and shaded leaves',
         attrs={
