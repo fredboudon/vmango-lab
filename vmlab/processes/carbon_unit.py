@@ -95,7 +95,7 @@ class Identity(CarbonUnit):
 
     def initialize(self):
 
-        self.CU = np.arange(self.GU.shape[0])
+        self.CU = np.array([f'CU{x}' for x in self.GU])
 
         # CUs in rows, GUs in columns, therefor all ops over columns dim=1
         self.CUxGU = np.identity(self.GU.shape[0])
