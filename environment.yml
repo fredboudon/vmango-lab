@@ -12,7 +12,7 @@ dependencies:
   - toml
   - matplotlib
   - pandas
-  - igraph
+  - python-igraph
   - sparse
   - scipy
   - flake8
