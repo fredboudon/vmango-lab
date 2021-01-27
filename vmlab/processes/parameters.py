@@ -30,6 +30,8 @@ class Parameters():
     fruit_quality = xs.any_object()
     light_interception = xs.any_object()
     photosynthesis = xs.any_object()
+    topology = xs.any_object()
+    phenology = xs.any_object()
 
     def initialize(self):
 

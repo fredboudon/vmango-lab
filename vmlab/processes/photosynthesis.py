@@ -2,7 +2,6 @@ import xsimlab as xs
 import numpy as np
 
 from . import parameters
-from . import carbon_unit
 from . import light_interception
 
 
@@ -11,15 +10,14 @@ class Photosythesis():
 
     params = xs.foreign(parameters.Parameters, 'photosynthesis')
 
-    DM_fruit_max = xs.foreign(carbon_unit.Identity, 'DM_fruit_max')
+    DM_fruit_max = xs.global_ref('DM_fruit_max')
+    CU = xs.global_ref('CU')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
     PAR_shaded = xs.foreign(light_interception.LightInterception, 'PAR_shaded')
     LA_sunlit = xs.foreign(light_interception.LightInterception, 'LA_sunlit')
     LA_shaded = xs.foreign(light_interception.LightInterception, 'LA_shaded')
-
-    CU = xs.foreign(carbon_unit.Identity, 'CU')
 
     Pmax = xs.variable(
         dims=('CU'),

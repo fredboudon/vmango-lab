@@ -2,8 +2,9 @@ import xsimlab as xs
 import abc
 import numpy as np
 
-from . import growth_unit_growth
 from . import fruit_growth
+from . import phenology
+from . import topology
 
 
 @xs.process
@@ -11,25 +12,28 @@ class CarbonUnit(abc.ABC):
     """Aggregate GUs into CUs
     """
 
-    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
-    nb_leaves_gu = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'nb_leaves')
+    GU = xs.foreign(topology.Topology, 'GU')
+    nb_leaves_gu = xs.foreign(topology.Topology, 'nb_leaves_gu')
 
-    nb_fruits_gu = xs.foreign(fruit_growth.FruitGrowth, 'nb_fruits')
-    DM_fruit_max_fruit = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
-    DM_fruit_0_fruit = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
-    dd_delta_gu = xs.foreign(fruit_growth.FruitGrowth, 'dd_delta')
-    dd_cum_gu = xs.foreign(fruit_growth.FruitGrowth, 'dd_cum')
+    nb_fruits_gu = xs.foreign(fruit_growth.FruitGrowth, 'nb_fruits_gu')
+    DM_fruit_max_fruit_gu = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max_gu')
+    DM_fruit_0_fruit_gu = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0_gu')
 
-    CU = xs.index(('CU'))
+    dd_delta_gu = xs.foreign(phenology.Phenology, 'dd_delta_gu')
+    dd_cum_gu = xs.foreign(phenology.Phenology, 'dd_cum_gu')
+
+    CU = xs.index(('CU'), global_name='CU')
 
     nb_leaves = xs.variable(
         dims=('CU'),
-        intent='out'
+        intent='out',
+        global_name='nb_leaves'
     )
 
     nb_fruits = xs.variable(
         dims=('CU'),
-        intent='out'
+        intent='out',
+        global_name='nb_fruits'
     )
 
     DM_fruit_max = xs.variable(
@@ -38,7 +42,8 @@ class CarbonUnit(abc.ABC):
         description='potential total maximal fruit dry mass per CU',
         attrs={
             'unit': 'g DM'
-        }
+        },
+        global_name='DM_fruit_max'
     )
 
     DM_fruit_0 = xs.variable(
@@ -48,7 +53,8 @@ class CarbonUnit(abc.ABC):
         attrs={
             'unit': 'g DM'
         },
-        static=True
+        static=True,
+        global_name='DM_fruit_0'
     )
 
     dd_delta = xs.variable(
@@ -57,7 +63,8 @@ class CarbonUnit(abc.ABC):
         description='daily variation in degree days (avg per CU)',
         attrs={
             'unit': 'dd day-1'
-        }
+        },
+        global_name='dd_delta'
     )
 
     dd_cum = xs.variable(
@@ -66,12 +73,14 @@ class CarbonUnit(abc.ABC):
         description='cumulated degree-days of the current day after bloom date (avg per CU)',
         attrs={
             'unit': 'dd'
-        }
+        },
+        global_name='dd_cum'
     )
 
     CUxGU = xs.variable(
         dims=('CU', 'GU'),
-        intent='out'
+        intent='out',
+        global_name='CUxGU'
     )
 
     @CUxGU.validator
@@ -80,12 +89,43 @@ class CarbonUnit(abc.ABC):
             raise ValueError()
 
     @abc.abstractmethod
-    def initialize(self):
+    def index(self, step):
         pass
 
     @abc.abstractmethod
-    def run_step(self):
+    def mapping(self, step):
         pass
+
+    def initialize(self):
+
+        self.index(-1)
+
+        # CUs in rows, GUs in columns, therefor all ops over columns dim=1
+        self.mapping(-1)
+        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
+        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
+        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
+        self.DM_fruit_0 = np.sum(self.CUxGU * self.DM_fruit_0_fruit_gu * self.nb_fruits_gu, 1)
+        self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
+        self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
+
+    @xs.runtime(args=('step'))
+    def run_step(self, step):
+        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
+        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
+        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
+
+        DM_fruit_0 = self.CUxGU * self.DM_fruit_0_fruit_gu * self.nb_fruits_gu
+        DM_fruit_0[DM_fruit_0 == 0] = np.nan
+        self.DM_fruit_0 = np.nan_to_num(np.nanmean(DM_fruit_0, 1), copy=False)
+
+        dd_delta = self.CUxGU * self.dd_delta_gu * (self.nb_fruits_gu > 0)
+        dd_delta[dd_delta == 0] = np.nan
+        self.dd_delta = np.nan_to_num(np.nanmean(dd_delta, 1), copy=False)
+
+        dd_cum = self.CUxGU * self.dd_cum_gu * (self.nb_fruits_gu > 0)
+        dd_cum[dd_cum == 0] = np.nan
+        self.dd_cum = np.nan_to_num(np.nanmean(dd_cum, 1), copy=False)
 
 
 @xs.process
@@ -93,34 +133,24 @@ class Identity(CarbonUnit):
     """Map GU 1:1 to a CU
     """
 
-    def initialize(self):
+    def index(self, step):
+        if step < 0:
+            self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
 
-        self.CU = np.array([f'CU{x}' for x in self.GU])
+    def mapping(self, step):
+        if step < 0:
+            self.CUxGU = np.identity(self.GU.shape[0])
 
-        # CUs in rows, GUs in columns, therefor all ops over columns dim=1
-        self.CUxGU = np.identity(self.GU.shape[0])
-        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
-        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
-        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
-        self.DM_fruit_0 = np.sum(self.CUxGU * self.DM_fruit_0_fruit * self.nb_fruits_gu, 1)
-        self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
-        self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+@xs.process
+class JustOne(CarbonUnit):
+    """Merge all GU into one CU
+    """
 
-        self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
-        self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
-        self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit * self.nb_fruits_gu, 1)
+    def index(self, step):
+        if step < 0:
+            self.CU = np.array(['CU_One_And_Only'], dtype=np.dtype('<U20'))
 
-        DM_fruit_0 = self.CUxGU * self.DM_fruit_0_fruit * self.nb_fruits_gu
-        DM_fruit_0[DM_fruit_0 == 0] = np.nan
-        self.DM_fruit_0 = np.nan_to_num(np.nanmean(DM_fruit_0, 1), copy=False)
-
-        dd_delta = self.CUxGU * self.dd_delta_gu
-        dd_delta[dd_delta == 0] = np.nan
-        self.dd_delta = np.nan_to_num(np.nanmean(dd_delta, 1), copy=False)
-
-        dd_cum = self.CUxGU * self.dd_cum_gu
-        dd_cum[dd_cum == 0] = np.nan
-        self.dd_cum = np.nan_to_num(np.nanmean(dd_cum, 1), copy=False)
+    def mapping(self, step):
+        if step < 0:
+            self.CUxGU = np.ones((1, self.GU.shape[0]))

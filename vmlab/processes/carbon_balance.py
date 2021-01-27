@@ -4,7 +4,6 @@ import warnings
 
 from . import parameters
 from . import environment
-from . import carbon_unit
 from . import photosynthesis
 from . import light_interception
 
@@ -20,11 +19,10 @@ class CarbonBalance():
 
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
 
-    DM_fruit_max = xs.foreign(carbon_unit.Identity, 'DM_fruit_max')
-    DM_fruit_0 = xs.foreign(carbon_unit.Identity, 'DM_fruit_0')
-    dd_delta = xs.foreign(carbon_unit.Identity, 'dd_delta')
-
-    CU = xs.foreign(carbon_unit.Identity, 'CU')
+    DM_fruit_max = xs.global_ref('DM_fruit_max')
+    DM_fruit_0 = xs.global_ref('DM_fruit_0')
+    dd_delta = xs.global_ref('dd_delta')
+    CU = xs.global_ref('CU')
 
     LFratio = xs.foreign(light_interception.LightInterception, 'LFratio')
 

@@ -6,7 +6,6 @@ import random
 
 from . import environment
 from . import parameters
-from . import carbon_unit
 
 
 @xs.process
@@ -19,9 +18,9 @@ class LightInterception():
     GR = xs.foreign(environment.Environment, 'GR')
     hour = xs.foreign(environment.Environment, 'hour')
 
-    nb_fruits = xs.foreign(carbon_unit.Identity, 'nb_fruits')
-    nb_leaves = xs.foreign(carbon_unit.Identity, 'nb_leaves')
-    CU = xs.foreign(carbon_unit.Identity, 'CU')
+    nb_fruits = xs.global_ref('nb_fruits')
+    nb_leaves = xs.global_ref('nb_leaves')
+    CU = xs.global_ref('CU')
 
     LA = xs.variable(
         dims=('CU'),

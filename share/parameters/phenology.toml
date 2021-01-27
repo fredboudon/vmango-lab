@@ -1,0 +1,3 @@
+Tbase_gu = 9.2
+Tbase_leaf = 10.73
+Tbase_fruit = 16                # base temperature for degree-days calculation [°C]

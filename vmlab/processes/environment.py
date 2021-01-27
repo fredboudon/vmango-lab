@@ -72,7 +72,7 @@ class Environment():
 
     def initialize(self):
 
-        self.hour = np.arange(0, 24, 1, dtype=np.int8)
+        self.hour = np.arange(24, dtype=np.int8)
 
         weather_hourly_df = pd.read_csv(
             pathlib.Path(self.params[0].parent).joinpath(self.params[1].weather_hourly_file_path),

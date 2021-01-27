@@ -8,7 +8,6 @@ from ..constants import (
 
 from . import parameters
 from . import environment
-from . import carbon_unit
 from . import carbon_balance
 
 
@@ -22,10 +21,9 @@ class FruitQuality():
     RH = xs.foreign(environment.Environment, 'RH')
     TM_air = xs.foreign(environment.Environment, 'TM_air')
 
-    dd_cum = xs.foreign(carbon_unit.Identity, 'dd_cum')
-    DM_fruit_0 = xs.foreign(carbon_unit.Identity, 'DM_fruit_0')
-
-    CU = xs.foreign(carbon_unit.Identity, 'CU')
+    dd_cum = xs.global_ref('dd_cum')
+    DM_fruit_0 = xs.global_ref('DM_fruit_0')
+    CU = xs.global_ref('CU')
 
     DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
