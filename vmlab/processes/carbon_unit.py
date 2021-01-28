@@ -80,28 +80,29 @@ class CarbonUnit(abc.ABC):
     CUxGU = xs.variable(
         dims=('CU', 'GU'),
         intent='out',
-        global_name='CUxGU'
+        global_name='CUxGU',
     )
 
-    @CUxGU.validator
-    def _validator(prc, var, val):
-        if np.sum(val) != len(val):
-            raise ValueError()
+    # @CUxGU.validator
+    # def _validator(prc, var, val):
+    #     print(np.sum(val), len(val))
+    #     if np.sum(val) != len(val):
+    #         raise ValueError()
 
     @abc.abstractmethod
-    def index(self, step):
+    def update_index(self, step):
         pass
 
     @abc.abstractmethod
-    def mapping(self, step):
+    def update_mapping(self, step):
         pass
 
     def initialize(self):
 
-        self.index(-1)
+        self.update_index(-1)
 
         # CUs in rows, GUs in columns, therefor all ops over columns dim=1
-        self.mapping(-1)
+        self.update_mapping(-1)
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
         self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
         self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
@@ -109,8 +110,8 @@ class CarbonUnit(abc.ABC):
         self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
         self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    @xs.runtime(args=('nsteps', 'step', 'step_start', 'step_end', 'step_delta'))
+    def run_step(self, nsteps, step, step_start, step_end, step_delta):
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
         self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
         self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
@@ -133,11 +134,11 @@ class Identity(CarbonUnit):
     """Map GU 1:1 to a CU
     """
 
-    def index(self, step):
+    def update_index(self, step):
         if step < 0:
             self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
 
-    def mapping(self, step):
+    def update_mapping(self, step):
         if step < 0:
             self.CUxGU = np.identity(self.GU.shape[0])
 
@@ -147,10 +148,10 @@ class JustOne(CarbonUnit):
     """Merge all GU into one CU
     """
 
-    def index(self, step):
+    def update_index(self, step):
         if step < 0:
             self.CU = np.array(['CU_One_And_Only'], dtype=np.dtype('<U20'))
 
-    def mapping(self, step):
+    def update_mapping(self, step):
         if step < 0:
             self.CUxGU = np.ones((1, self.GU.shape[0]))
