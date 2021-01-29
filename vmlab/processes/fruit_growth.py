@@ -5,10 +5,11 @@ from . import parameters
 from . import environment
 from . import growth_unit_growth
 from . import phenology
+from .base import BaseGrowthUnitProcess
 
 
 @xs.process
-class FruitGrowth():
+class FruitGrowth(BaseGrowthUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'fruit_growth')
 
@@ -66,8 +67,7 @@ class FruitGrowth():
         self.nb_fruits_ini = np.array(self.nb_fruits_ini, dtype=np.int64)
         self.nb_fruits_gu = np.zeros(self.nb_fruits_ini.shape, dtype=np.int64)
 
-    @xs.runtime(args=('step', 'step_start', 'step_end', 'step_delta'))
-    def run_step(self, step, step_start, step_end, step_delta):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
 

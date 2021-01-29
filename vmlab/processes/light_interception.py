@@ -6,10 +6,11 @@ import random
 
 from . import environment
 from . import parameters
+from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class LightInterception():
+class LightInterception(BaseCarbonUnitProcess):
 
     sunlit_bs = None
 
@@ -81,9 +82,11 @@ class LightInterception():
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
         self.sunlit_bs = self.sunlit_fractions_df.iloc[:, random.randrange(0, 5)].to_numpy(dtype=np.float32)
+        self.LA = np.zeros(self.CU.shape)
+        self.LA_sunlit = np.zeros(self.CU.shape)
+        self.LA_shaded = np.zeros(self.CU.shape)
 
-    @xs.runtime(args=('step', 'step_start'))
-    def run_step(self, step, step_start):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
 

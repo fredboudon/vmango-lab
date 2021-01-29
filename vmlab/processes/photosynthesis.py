@@ -3,10 +3,11 @@ import numpy as np
 
 from . import parameters
 from . import light_interception
+from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class Photosythesis():
+class Photosythesis(BaseCarbonUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'photosynthesis')
 
@@ -74,10 +75,16 @@ class Photosythesis():
     )
 
     def initialize(self):
-        pass
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+        self.Pmax = np.zeros(self.CU.shape)
+        self.P_rate_sunlit = np.zeros((self.CU.shape[0], 24))
+        self.P_rate_shaded = np.zeros((self.CU.shape[0], 24))
+
+        self.photo_shaded = np.zeros(self.CU.shape)
+        self.photo_sunlit = np.zeros(self.CU.shape)
+        self.photo = np.zeros(self.CU.shape)
+
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
 

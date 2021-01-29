@@ -4,10 +4,11 @@ import xsimlab as xs
 from . import parameters
 from . import topology
 from . import phenology
+from .base import BaseGrowthUnitProcess
 
 
 @xs.process
-class GrowthUnitGrowth():
+class GrowthUnitGrowth(BaseGrowthUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'growth_unit_growth')
 
@@ -20,8 +21,7 @@ class GrowthUnitGrowth():
     def initialize(self):
         pass
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
         pass
 
     def finalize_step(self):

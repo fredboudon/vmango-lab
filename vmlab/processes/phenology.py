@@ -5,16 +5,19 @@ import datetime
 from . import parameters
 from . import environment
 from . import topology
+from .base import BaseGrowthUnitProcess
 
 
 @xs.process
-class Phenology():
+class Phenology(BaseGrowthUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'phenology')
 
     GU = xs.foreign(topology.Topology, 'GU')
 
     TM = xs.foreign(environment.Environment, 'TM')
+
+    bursts = xs.group_dict('bursts')
 
     bloom_date = xs.variable(
         dims=('GU'),
@@ -76,16 +79,23 @@ class Phenology():
         self.bloom_date = np.array([np.datetime64(datetime.date.fromisoformat(bloom_date)).astype('datetime64[D]')
                                     for bloom_date in self.bloom_date])
 
+        self.DAB = np.zeros(self.GU.shape)
+
         self.dd_delta_gu = np.zeros(self.GU.shape)
         self.dd_cum_gu = np.zeros(self.GU.shape)
 
-    @xs.runtime(args=('step', 'step_start'))
-    def run_step(self, step, step_start):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
         Tbase_gu = params.Tbase_gu
         Tbase_leaf = params.Tbase_leaf
         Tbase_fruit = params.Tbase_fruit
+
+        # append previously bursted because burst process comes after phenology
+        nb_bursted = np.count_nonzero(self.bursts[('gu_burst', 'gu_bursted')])
+        if nb_bursted > 0:
+            gu_bursted = np.append(self.bursts[('gu_burst', 'gu_bursted')], [False for _ in range(nb_bursted)])
+            self.gu_growth_tts[gu_bursted] = 0.
 
         self.gu_growth_tts = self.gu_growth_tts + max(0, self.TM - Tbase_gu)
         self.leaf_growth_tts = self.leaf_growth_tts + max(0, self.TM - Tbase_leaf)

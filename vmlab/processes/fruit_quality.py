@@ -9,10 +9,11 @@ from ..constants import (
 from . import parameters
 from . import environment
 from . import carbon_balance
+from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class FruitQuality():
+class FruitQuality(BaseCarbonUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'fruit_quality')
 
@@ -201,8 +202,7 @@ class FruitQuality():
         self.organic_acids = np.zeros(self.CU.shape)
         self.ripe = np.zeros(self.CU.shape)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
 

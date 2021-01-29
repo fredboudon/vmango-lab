@@ -2,15 +2,25 @@ import xsimlab as xs
 import numpy as np
 
 from . import parameters
+from .base import BaseGrowthUnitProcess
 
 
 @xs.process
-class Topology():
+class Topology(BaseGrowthUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'topology')
 
+    bursts = xs.group_dict('bursts')
+
     GU = xs.index(
-        dims=('GU')
+        dims='GU',
+        global_name='GU'
+    )
+
+    is_apical = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        static=True
     )
 
     adjacency = xs.variable(
@@ -32,6 +42,15 @@ class Topology():
         self.adjacency = self.adjacency.todense()
         self.nb_leaves_gu = np.array(self.nb_leaves_gu, dtype=np.int64)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
-        pass
+    def step(self, nsteps, step, step_start, step_end, step_delta):
+
+        nb_bursted = np.count_nonzero(self.bursts[('gu_burst', 'gu_bursted')])
+        if nb_bursted > 0:
+            self.GU = np.append(self.GU, [f'NEW{x}' for x in range(nb_bursted)])
+            self._resize(step)
+            # update adj matrix for each new GU
+            parent_idxs = np.nonzero(self.bursts[('gu_burst', 'gu_bursted')])[0]
+            for i in range(nb_bursted):
+                parent_idx = parent_idxs[i]
+                child_idx = self.GU.shape[0] - nb_bursted + i
+                self.adjacency[parent_idx, child_idx] = True

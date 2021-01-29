@@ -12,7 +12,8 @@ from ..processes import (
     carbon_unit,
     carbon_balance,
     topology,
-    phenology
+    phenology,
+    growth_unit_burst
 )
 
 
@@ -24,6 +25,7 @@ fruit_model = xs.Model({
     'fruit_growth': fruit_growth.FruitGrowth,
     'inflo_growth': inflo_growth.InfloGrowth,
     'gu_growth': growth_unit_growth.GrowthUnitGrowth,
+    'gu_burst': growth_unit_burst.GrowthUnitBurst,
     'carbon_unit': carbon_unit.Identity,
     'light': light_interception.LightInterception,
     'photo': photosynthesis.Photosythesis,

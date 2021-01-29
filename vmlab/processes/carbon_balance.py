@@ -6,10 +6,11 @@ from . import parameters
 from . import environment
 from . import photosynthesis
 from . import light_interception
+from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class CarbonBalance():
+class CarbonBalance(BaseCarbonUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'carbon_balance')
 
@@ -250,8 +251,7 @@ class CarbonBalance():
         self.DM_fruit_delta = np.zeros(self.CU.shape)
         self.D_fruit = np.zeros(self.CU.shape)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
 
         _, params = self.params
 

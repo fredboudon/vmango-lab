@@ -5,10 +5,11 @@ import numpy as np
 from . import fruit_growth
 from . import phenology
 from . import topology
+from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class CarbonUnit(abc.ABC):
+class CarbonUnit(BaseCarbonUnitProcess):
     """Aggregate GUs into CUs
     """
 
@@ -100,9 +101,9 @@ class CarbonUnit(abc.ABC):
     def initialize(self):
 
         self.update_index(-1)
+        self.update_mapping(-1)
 
         # CUs in rows, GUs in columns, therefor all ops over columns dim=1
-        self.update_mapping(-1)
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
         self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
         self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
@@ -110,8 +111,11 @@ class CarbonUnit(abc.ABC):
         self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
         self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
 
-    @xs.runtime(args=('nsteps', 'step', 'step_start', 'step_end', 'step_delta'))
-    def run_step(self, nsteps, step, step_start, step_end, step_delta):
+    def step(self, nsteps, step, step_start, step_end, step_delta):
+
+        self.update_index(step)
+        self.update_mapping(step)
+
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
         self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
         self.DM_fruit_max = np.sum(self.CUxGU * self.DM_fruit_max_fruit_gu * self.nb_fruits_gu, 1)
@@ -135,12 +139,14 @@ class Identity(CarbonUnit):
     """
 
     def update_index(self, step):
-        if step < 0:
-            self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
+
+        self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
+        if step >= 0:
+            self._resize(step)
 
     def update_mapping(self, step):
-        if step < 0:
-            self.CUxGU = np.identity(self.GU.shape[0])
+
+        self.CUxGU = np.identity(self.GU.shape[0])
 
 
 @xs.process
@@ -153,5 +159,4 @@ class JustOne(CarbonUnit):
             self.CU = np.array(['CU_One_And_Only'], dtype=np.dtype('<U20'))
 
     def update_mapping(self, step):
-        if step < 0:
-            self.CUxGU = np.ones((1, self.GU.shape[0]))
+        self.CUxGU = np.ones((1, self.GU.shape[0]))
