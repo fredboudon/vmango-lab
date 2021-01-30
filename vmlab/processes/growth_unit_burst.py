@@ -35,16 +35,11 @@ class GrowthUnitBurst(BaseGrowthUnitProcess):
     def step(self, nsteps, step, step_start, step_end, step_delta):
 
         # burst happens at different temperature sums depending on is_apical
-        self.gu_bursted = ((self.gu_growth_tts >= 300) & self.is_apical) | ((self.gu_growth_tts >= 400) & ~self.is_apical)
+        # has children
+        has_children = np.bitwise_or.reduce(self.adjacency.transpose())
+        self.gu_bursted = np.random.choice((True, False), self.adjacency.shape[0]) & (((self.gu_growth_tts >= 100) & self.is_apical) | ((self.gu_growth_tts >= 300) & ~self.is_apical)) & ~has_children
         if np.any(self.gu_bursted):
-            # find all parents and set the GU index to True if the parent is apical
-            # sparse should in theory we faster. Remains to be tested.
-            # print(self.adjacency.shape, self.gu_bursted.shape, self.is_apical.shape)
-            parent_is_apical_sparse = sparse.COO.from_numpy(self.adjacency) * self.gu_bursted * self.is_apical
-            parent_is_apical = np.bitwise_or.reduce(parent_is_apical_sparse.todense())
-            probability_of_child_being_apical_if_parent_is_apical = 0.4
-            self.gu_bursted_is_apical = parent_is_apical & np.random.choice((1,0), len(self.gu_bursted), probability_of_child_being_apical_if_parent_is_apical) + \
-                ~parent_is_apical & np.random.choice((1,0), len(self.gu_bursted), 1 - probability_of_child_being_apical_if_parent_is_apical)
+            self.gu_bursted_is_apical = self.is_apical * self.gu_bursted
 
     def finalize_step(self):
         pass

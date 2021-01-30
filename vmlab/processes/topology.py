@@ -50,7 +50,9 @@ class Topology(BaseGrowthUnitProcess):
             self._resize(step)
             # update adj matrix for each new GU
             parent_idxs = np.nonzero(self.bursts[('gu_burst', 'gu_bursted')])[0]
+            child_is_apical = self.bursts[('gu_burst', 'gu_bursted_is_apical')]
             for i in range(nb_bursted):
                 parent_idx = parent_idxs[i]
                 child_idx = self.GU.shape[0] - nb_bursted + i
                 self.adjacency[parent_idx, child_idx] = True
+                self.is_apical[child_idx] = child_is_apical[parent_idx]
