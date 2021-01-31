@@ -75,11 +75,7 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
         _, params = self.params
         Tbase_gu = params.Tbase_gu
 
-        # append previously bursted because burst process comes after phenology
-        nb_bursted = np.count_nonzero(self.bursts[('gu_burst', 'gu_bursted')])
-        if nb_bursted > 0:
-            gu_bursted = np.append(self.bursts[('gu_burst', 'gu_bursted')], np.zeros(nb_bursted, dtype=np.bool))
-            self.gu_stage[self.gu_stage == ''] = self.stage_name[0]
+        self.gu_stage[self.gu_stage == ''] = self.stage_name[0]
 
         self.gu_growth_tts += max(0, self.TM - Tbase_gu)
 
@@ -89,10 +85,15 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
 
         for i, mask in enumerate(masks):
             self.gu_stage[mask] = self.stage_name[i+1] if i < len(self.stage_name) - 1 else self.stage_name[-1]
-            self.gu_growth_tts[mask] = 0
+            self.gu_growth_tts[mask] = 0.
 
+        # append previously bursted because burst process comes after phenology
+        nb_bursted = np.count_nonzero(self.bursts[('gu_burst', 'gu_bursted')])
         if nb_bursted > 0:
+            gu_bursted = np.append(self.bursts[('gu_burst', 'gu_bursted')], np.zeros(nb_bursted, dtype=np.bool))
             self.gu_growth_tts[gu_bursted] = 0.
+
+        self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
 
     def finalize_step(self):
         pass
