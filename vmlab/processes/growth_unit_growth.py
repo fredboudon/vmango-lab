@@ -14,9 +14,7 @@ class GrowthUnitGrowth(BaseGrowthUnitProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
 
-    gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
-    leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
-    gu_pheno_tts = xs.foreign(phenology.Phenology, 'gu_pheno_tts')
+    gu_growth_tts = xs.foreign(phenology.GrowthUnitPhenology, 'gu_growth_tts')
 
     def initialize(self):
         pass

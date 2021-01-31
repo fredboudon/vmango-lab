@@ -45,8 +45,9 @@ class Topology(BaseGrowthUnitProcess):
     def step(self, nsteps, step, step_start, step_end, step_delta):
 
         nb_bursted = np.count_nonzero(self.bursts[('gu_burst', 'gu_bursted')])
+        nb_gus = self.GU.shape[0]
         if nb_bursted > 0:
-            self.GU = np.append(self.GU, [f'NEW{x}' for x in range(nb_bursted)])
+            self.GU = np.append(self.GU, [f'GU{x + nb_gus}' for x in range(nb_bursted)])
             self._resize(step)
             # update adj matrix for each new GU
             parent_idxs = np.nonzero(self.bursts[('gu_burst', 'gu_bursted')])[0]

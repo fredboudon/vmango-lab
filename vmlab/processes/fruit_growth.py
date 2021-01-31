@@ -17,8 +17,8 @@ class FruitGrowth(BaseGrowthUnitProcess):
 
     GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
 
-    bloom_date = xs.foreign(phenology.Phenology, 'bloom_date')
-    dd_cum = xs.foreign(phenology.Phenology, 'dd_cum_gu')
+    bloom_date = xs.foreign(phenology.FlowerPhenology, 'bloom_date')
+    dd_cum = xs.foreign(phenology.FlowerPhenology, 'dd_cum_gu')
 
     DM_fruit_0_gu = xs.variable(
         dims=('GU'),

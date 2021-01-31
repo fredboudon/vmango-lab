@@ -20,8 +20,8 @@ class CarbonUnit(BaseCarbonUnitProcess):
     DM_fruit_max_fruit_gu = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max_gu')
     DM_fruit_0_fruit_gu = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0_gu')
 
-    dd_delta_gu = xs.foreign(phenology.Phenology, 'dd_delta_gu')
-    dd_cum_gu = xs.foreign(phenology.Phenology, 'dd_cum_gu')
+    dd_delta_gu = xs.foreign(phenology.FlowerPhenology, 'dd_delta_gu')
+    dd_cum_gu = xs.foreign(phenology.FlowerPhenology, 'dd_cum_gu')
 
     CU = xs.index(('CU'), global_name='CU')
 
