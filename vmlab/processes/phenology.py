@@ -93,8 +93,6 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
             gu_bursted = np.append(self.bursts[('gu_burst', 'gu_bursted')], np.zeros(nb_bursted, dtype=np.bool))
             self.gu_growth_tts[gu_bursted] = 0.
 
-        self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
-
     def finalize_step(self):
         pass
 
