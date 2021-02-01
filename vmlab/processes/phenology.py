@@ -45,7 +45,7 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
 
     params = xs.foreign(parameters.Parameters, 'phenology')
 
-    stage_tbase = np.array([50, 100, 150, np.inf])
+    stage_tbase = np.array([100, 200, 300, np.inf])
     stage_name = np.array(['A', 'B', 'C', 'D'])
 
     GU = xs.foreign(topology.Topology, 'GU')

@@ -156,7 +156,7 @@ class JustOne(CarbonUnit):
 
     def update_index(self, step):
         if step < 0:
-            self.CU = np.array(['CU_One_And_Only'], dtype=np.dtype('<U20'))
+            self.CU = np.array(['CUX'], dtype=np.dtype('<U20'))
 
     def update_mapping(self, step):
         self.CUxGU = np.ones((1, self.GU.shape[0]))
