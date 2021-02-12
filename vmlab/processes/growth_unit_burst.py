@@ -88,4 +88,6 @@ class GrowthUnitBurst(BaseGrowthUnitProcess):
         pass
 
     def finalize(self):
-        pass
+        print(self.gu_bursted.shape)
+        self._resize(np.nan)
+        print(self.gu_bursted.shape)
