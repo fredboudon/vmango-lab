@@ -1,19 +1,19 @@
 import xsimlab as xs
 import numpy as np
 
-from . import topology
+from . import topology, has_veg_children_between
 from ._base import BaseProbabilityTable
 
 
 @xs.process
-class HasVegChildrenWithin(BaseProbabilityTable):
+class HasApicalChildBetween(BaseProbabilityTable):
 
     rng = xs.global_ref('rng')
 
     path = xs.variable()
     probability_tables = xs.any_object()
 
-    has_veg_children_within = xs.variable(dims='GU', intent='out')
+    has_apical_child_between = xs.variable(dims='GU', intent='out')
 
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
@@ -24,21 +24,19 @@ class HasVegChildrenWithin(BaseProbabilityTable):
     bursted = xs.foreign(topology.Topology, 'bursted')
     appeared = xs.foreign(topology.Topology, 'appeared')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
-    ancestor_is_apical = xs.foreign(topology.Topology, 'ancestor_is_apical')
-    ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
+
+    nature = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'nature')
+    has_veg_children_between = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'has_veg_children_between')
 
     def initialize(self):
-        self.has_veg_children_within = np.zeros(1)
+        self.has_apical_child_between = np.array([])
         self.probability_tables = self.get_probability_tables(self.path)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    @xs.runtime(args=('step', 'step_start'))
+    def run_step(self, step, step_start):
         if np.any(self.appeared):
-            self.has_veg_children_within[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero(self.appeared):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_veg_children_within[gu] = self.rng.binomial(1, probability[0])
+                for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
+                    probability = tbl.probability.values[0]
+                    self.has_apical_child_between[gu] = self.rng.binomial(1, probability)

@@ -2,13 +2,15 @@ import pandas as pd
 from pathlib import Path
 
 
-class ProbabilityTableBase():
+class BaseProbabilityTable():
 
     _factors = {
         'Burst_Month': 'appearance_month',
         'Position_A': 'position',
         'Position_Ancestor_A': 'ancestor_is_apical',
-        'Nature_Ancestor_F': 'ancestor_nature'
+        'Nature_Ancestor_F': 'ancestor_nature',
+        'Flowering_Week': 'flowering_week',
+        'Nature_F': 'nature'
     }
 
     def get_factor_values(self, tbl, gu):
@@ -30,6 +32,12 @@ class ProbabilityTableBase():
                         for month in list(map(int, d.split('-'))):
                             row = df.loc[i].copy()
                             row['appearance_month'] = month
+                            tbl = tbl.append(row, ignore_index=True)
+                elif 'flowering_week' in df:  # split compound 'x-y-z' month into rows
+                    for i, d in df['flowering_week'].items():
+                        for week in list(map(int, d.split('-'))):
+                            row = df.loc[i].copy()
+                            row['flowering_week'] = week
                             tbl = tbl.append(row, ignore_index=True)
                 else:
                     tbl = df

@@ -1,19 +1,19 @@
 import xsimlab as xs
 import numpy as np
 
-from . import topology
+from . import topology, flowering
 from ._base import BaseProbabilityTable
 
 
 @xs.process
-class HasVegChildrenWithin(BaseProbabilityTable):
+class FloweringWeek(BaseProbabilityTable):
 
     rng = xs.global_ref('rng')
 
     path = xs.variable()
     probability_tables = xs.any_object()
 
-    has_veg_children_within = xs.variable(dims='GU', intent='out')
+    flowering_week = xs.variable(dims='GU', intent='out')
 
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
@@ -24,21 +24,22 @@ class HasVegChildrenWithin(BaseProbabilityTable):
     bursted = xs.foreign(topology.Topology, 'bursted')
     appeared = xs.foreign(topology.Topology, 'appeared')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
-    ancestor_is_apical = xs.foreign(topology.Topology, 'ancestor_is_apical')
-    ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
+
+    flowering = xs.foreign(flowering.Flowering, 'flowering')
 
     def initialize(self):
-        self.has_veg_children_within = np.zeros(1)
+        self.flowering_week = np.array([])
         self.probability_tables = self.get_probability_tables(self.path)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
+    @xs.runtime(args=('step', 'step_start'))
+    def run_step(self, step, step_start):
         if np.any(self.appeared):
-            self.has_veg_children_within[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero(self.appeared):
+                for gu in np.flatnonzero((self.flowering == 1.) & (self.appeared == 1.)):
                     index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_veg_children_within[gu] = self.rng.binomial(1, probability[0])
+                    probabilities = tbl[tbl.index == index].values.flatten()
+                    if len(probabilities):
+                        realization = np.flatnonzero(self.rng.multinomial(1, probabilities))[0]
+                        week = int(tbl.columns[realization])
+                        self.flowering_week[gu] = week

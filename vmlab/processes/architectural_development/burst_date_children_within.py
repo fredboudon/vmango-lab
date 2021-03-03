@@ -3,11 +3,11 @@ import numpy as np
 from datetime import datetime
 
 from . import topology, has_veg_children_within
-from ._base import ProbabilityTableBase
+from ._base import BaseProbabilityTable
 
 
 @xs.process
-class BurstDateChildrenWithin(ProbabilityTableBase):
+class BurstDateChildrenWithin(BaseProbabilityTable):
 
     rng = xs.global_ref('rng')
 
@@ -22,7 +22,6 @@ class BurstDateChildrenWithin(ProbabilityTableBase):
     adjacency = xs.foreign(topology.Topology, 'adjacency')
     ancestor = xs.foreign(topology.Topology, 'ancestor')
     position = xs.foreign(topology.Topology, 'position')
-    nb_fruits = xs.foreign(topology.Topology, 'nb_fruits')
     bursted = xs.foreign(topology.Topology, 'bursted')
     appeared = xs.foreign(topology.Topology, 'appeared')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
