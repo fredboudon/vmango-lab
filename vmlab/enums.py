@@ -1,4 +1,4 @@
-from . import DotDict
+from .vmlab import DotDict
 
 
 # Type of positions of units

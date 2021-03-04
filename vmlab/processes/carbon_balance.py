@@ -2,17 +2,14 @@ import xsimlab as xs
 import numpy as np
 import warnings
 
-from . import parameters
 from . import environment
 from . import photosynthesis
 from . import light_interception
-from .base import BaseCarbonUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class CarbonBalance(BaseCarbonUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'carbon_balance')
+class CarbonBalance(ParameterizedProcess):
 
     TM_air = xs.foreign(environment.Environment, 'TM_air')
     T_fruit = xs.foreign(environment.Environment, 'T_fruit')
@@ -218,7 +215,9 @@ class CarbonBalance(BaseCarbonUnitProcess):
 
     def initialize(self):
 
-        _, params = self.params
+        super(CarbonBalance, self).initialize()
+
+        params = self.parameters
 
         cc_stem = params.cc_stem
         cc_leaf = params.cc_leaf
@@ -251,9 +250,10 @@ class CarbonBalance(BaseCarbonUnitProcess):
         self.DM_fruit_delta = np.zeros(self.CU.shape)
         self.D_fruit = np.zeros(self.CU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
 
         r_DM_stem_ini = params.r_DM_stem_ini
         r_DM_leaf_ini = params.r_DM_leaf_ini

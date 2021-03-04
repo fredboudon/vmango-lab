@@ -3,19 +3,20 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-from . import parameters
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Environment():
+class Environment(ParameterizedProcess):
 
     hour = xs.index(dims=('hour'))
-
-    params = xs.foreign(parameters.Parameters, 'environment')
 
     weather_df = None
     weather_daily_df = None
     weather_hourly_df = None
+
+    # numpy random generator
+    rng = xs.any_object(global_name='rng')
 
     T_air = xs.variable(
         dims=('hour'),
@@ -72,18 +73,27 @@ class Environment():
 
     def initialize(self):
 
+        super(Environment, self).initialize()
+
         self.hour = np.arange(24, dtype=np.int8)
 
+        self.rng = np.random.default_rng(self.parameters.seed)
+
+        folder_path = pathlib.Path(self.parameter_file_path).parent
+        weather_hourly_file_path = folder_path.joinpath(self.parameters.weather_hourly_file_path)
+        weather_daily_file_path = folder_path.joinpath(self.parameters.weather_daily_file_path)
+
         weather_hourly_df = pd.read_csv(
-            pathlib.Path(self.params[0].parent).joinpath(self.params[1].weather_hourly_file_path),
+            weather_hourly_file_path,
             sep=';',
             parse_dates=['DATETIME'],
             dayfirst=True,
             usecols=['HOUR', 'GR', 'T', 'RH', 'DATETIME'],
             dtype={'GR': np.float, 'T': np.float, 'RH': np.float}
         )
+
         weather_daily_df = pd.read_csv(
-            pathlib.Path(self.params[0].parent).joinpath(self.params[1].weather_daily_file_path),
+            weather_daily_file_path,
             sep=';',
             parse_dates=['DATE'],
             dayfirst=True,
@@ -100,16 +110,12 @@ class Environment():
         weather_df.sort_values(['DATE', 'HOUR'], inplace=True)
         weather_df.set_index(['DATE', 'HOUR'], inplace=True)
 
-        # weather_hour_count = weather.groupby(['DATE']).count()
-        # if len(weather_hour_count[weather_hour_count['HOUR'] != 24].values) > 0:
-        #     print('Input data has days with less than 24 h')
-
         self.weather_df = weather_df
         self.weather_daily_df = weather_daily_df
         self.weather_hourly_df = weather_hourly_df
 
-    @xs.runtime(args=('step', 'step_start', 'step_end', 'step_delta'))
-    def run_step(self, step, step_start, step_end, step_delta):
+    @xs.runtime(args=('step', 'step_start', 'step_delta'))
+    def run_step(self, step, step_start, step_delta):
 
         self.T_air = self.weather_df['T'][step_start].to_numpy()
         self.TM_air = self.weather_df['TM'][step_start].to_numpy()

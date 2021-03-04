@@ -1,15 +1,13 @@
 import xsimlab as xs
-import abc
 import numpy as np
 
 from . import fruit_growth
 from . import phenology
 from . import topology
-from .base import BaseCarbonUnitProcess
 
 
 @xs.process
-class CarbonUnit(BaseCarbonUnitProcess):
+class CarbonAllocation:
     """Aggregate GUs into CUs
     """
 
@@ -84,24 +82,10 @@ class CarbonUnit(BaseCarbonUnitProcess):
         global_name='CUxGU',
     )
 
-    # @CUxGU.validator
-    # def _validator(prc, var, val):
-    #     print(np.sum(val), len(val))
-    #     if np.sum(val) != len(val):
-    #         raise ValueError()
-
-    @abc.abstractmethod
-    def update_index(self, step):
-        pass
-
-    @abc.abstractmethod
-    def update_mapping(self, step):
-        pass
-
     def initialize(self):
 
-        self.update_index(-1)
-        self.update_mapping(-1)
+        self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
+        self.CUxGU = np.identity(self.GU.shape[0])
 
         # CUs in rows, GUs in columns, therefor all ops over columns dim=1
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
@@ -111,10 +95,8 @@ class CarbonUnit(BaseCarbonUnitProcess):
         self.dd_delta = np.mean(self.CUxGU * self.dd_delta_gu, 1)
         self.dd_cum = np.mean(self.CUxGU * self.dd_cum_gu, 1)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
-
-        self.update_index(step)
-        self.update_mapping(step)
+    @xs.runtime(args=())
+    def run_step(self):
 
         self.nb_leaves = np.sum(self.CUxGU * self.nb_leaves_gu, 1)
         self.nb_fruits = np.sum(self.CUxGU * self.nb_fruits_gu, 1)
@@ -122,41 +104,15 @@ class CarbonUnit(BaseCarbonUnitProcess):
 
         DM_fruit_0 = self.CUxGU * self.DM_fruit_0_fruit_gu * self.nb_fruits_gu
         DM_fruit_0[DM_fruit_0 == 0] = np.nan
-        self.DM_fruit_0 = np.nan_to_num(np.nanmean(DM_fruit_0, 1), copy=False)
+        if not np.all(np.isnan(DM_fruit_0)):
+            self.DM_fruit_0 = np.nan_to_num(np.nanmean(DM_fruit_0, 1), copy=False)
 
         dd_delta = self.CUxGU * self.dd_delta_gu * (self.nb_fruits_gu > 0)
         dd_delta[dd_delta == 0] = np.nan
-        self.dd_delta = np.nan_to_num(np.nanmean(dd_delta, 1), copy=False)
+        if not np.all(np.isnan(dd_delta)):
+            self.dd_delta = np.nan_to_num(np.nanmean(dd_delta, 1), copy=False)
 
         dd_cum = self.CUxGU * self.dd_cum_gu * (self.nb_fruits_gu > 0)
         dd_cum[dd_cum == 0] = np.nan
-        self.dd_cum = np.nan_to_num(np.nanmean(dd_cum, 1), copy=False)
-
-
-@xs.process
-class Identity(CarbonUnit):
-    """Map GU 1:1 to a CU
-    """
-
-    def update_index(self, step):
-
-        self.CU = np.array([f'CU{x}' for x in range(len(self.GU))], dtype=np.dtype('<U10'))
-        if step >= 0:
-            self._resize(step)
-
-    def update_mapping(self, step):
-
-        self.CUxGU = np.identity(self.GU.shape[0])
-
-
-@xs.process
-class JustOne(CarbonUnit):
-    """Merge all GU into one CU
-    """
-
-    def update_index(self, step):
-        if step < 0:
-            self.CU = np.array(['CUX'], dtype=np.dtype('<U20'))
-
-    def update_mapping(self, step):
-        self.CUxGU = np.ones((1, self.GU.shape[0]))
+        if not np.all(np.isnan(dd_cum)):
+            self.dd_cum = np.nan_to_num(np.nanmean(dd_cum, 1), copy=False)

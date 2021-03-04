@@ -1,17 +1,13 @@
 import xsimlab as xs
 import numpy as np
-import datetime
 
-from . import parameters
 from . import environment
 from . import topology
-from .base import BaseGrowthUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class LeafPhenology(BaseGrowthUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'phenology')
+class LeafPhenology(ParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
 
@@ -24,11 +20,14 @@ class LeafPhenology(BaseGrowthUnitProcess):
 
     def initialize(self):
 
+        super(LeafPhenology, self).initialize()
+
         self.leaf_growth_tts = np.zeros(self.GU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
         Tbase_leaf = params.Tbase_leaf
 
         self.leaf_growth_tts += max(0, self.TM - Tbase_leaf)
@@ -41,9 +40,7 @@ class LeafPhenology(BaseGrowthUnitProcess):
 
 
 @xs.process
-class GrowthUnitPhenology(BaseGrowthUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'phenology')
+class GrowthUnitPhenology(ParameterizedProcess):
 
     stage_tbase = np.array([100, 200, 300, np.inf])
     stage_name = np.array(['A', 'B', 'C', 'D'])
@@ -67,12 +64,15 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
 
     def initialize(self):
 
+        super(GrowthUnitPhenology, self).initialize()
+
         self.gu_growth_tts = np.zeros(self.GU.shape)
         self.gu_stage = np.array(['A' for _ in range(self.GU.shape[0])])
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
         Tbase_gu = params.Tbase_gu
 
         self.gu_stage[self.gu_stage == ''] = self.stage_name[0]
@@ -101,9 +101,7 @@ class GrowthUnitPhenology(BaseGrowthUnitProcess):
 
 
 @xs.process
-class FlowerPhenology(BaseGrowthUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'phenology')
+class FlowerPhenology(ParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
 
@@ -115,7 +113,8 @@ class FlowerPhenology(BaseGrowthUnitProcess):
         description='bloom date',
         attrs={
             'unit': 'date'
-        }
+        },
+        static=True
     )
 
     DAB = xs.variable(
@@ -147,15 +146,17 @@ class FlowerPhenology(BaseGrowthUnitProcess):
 
     def initialize(self):
 
-        self.bloom_date = np.array([np.datetime64(datetime.date.fromisoformat(bloom_date)).astype('datetime64[D]')
-                                    for bloom_date in self.bloom_date])
+        super(FlowerPhenology, self).initialize()
+
+        self.bloom_date = np.array(self.bloom_date, dtype='datetime64[D]')
         self.DAB = np.zeros(self.GU.shape)
         self.dd_delta_gu = np.zeros(self.GU.shape)
         self.dd_cum_gu = np.zeros(self.GU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=('step_start'))
+    def run_step(self, step_start):
 
-        _, params = self.params
+        params = self.parameters
         Tbase_fruit = params.Tbase_fruit
 
         self.DAB = np.where(

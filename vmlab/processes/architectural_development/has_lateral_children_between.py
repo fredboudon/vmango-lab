@@ -1,7 +1,7 @@
 import xsimlab as xs
 import numpy as np
 
-from . import topology, has_veg_children_between
+from . import topology, has_veg_children_between, has_apical_child_between
 from ._base import BaseProbabilityTable
 
 
@@ -27,6 +27,7 @@ class HasLateralChildrenBetween(BaseProbabilityTable):
 
     nature = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'nature')
     has_veg_children_between = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'has_veg_children_between')
+    has_apical_child_between = xs.foreign(has_apical_child_between.HasApicalChildBetween, 'has_apical_child_between')
 
     def initialize(self):
         self.has_lateral_children_between = np.array([])
@@ -37,7 +38,10 @@ class HasLateralChildrenBetween(BaseProbabilityTable):
         if np.any(self.appeared):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
+                self.has_lateral_children_between[
+                    (self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 0.)
+                ] = 1.
+                for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 1.)):
                     index = self.get_factor_values(tbl, gu)
                     probability = tbl[tbl.index == index].probability.values
                     if len(probability):

@@ -3,10 +3,10 @@ import numpy as np
 
 from . import parameters
 from . import growth_unit_growth
-from .base import BaseGrowthUnitProcess
+
 
 @xs.process
-class InfloGrowth(BaseGrowthUnitProcess):
+class InfloGrowth:
 
     params = xs.foreign(parameters.Parameters, 'inflo_growth')
 
@@ -15,7 +15,8 @@ class InfloGrowth(BaseGrowthUnitProcess):
     def initialize(self):
         self.DAB = np.ones(self.GU.shape) * -1
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
         pass
 
     def finalize_step(self):

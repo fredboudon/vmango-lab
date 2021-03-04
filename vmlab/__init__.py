@@ -6,12 +6,6 @@ import numpy as np
 from .vmlab import create_setup
 
 
-class DotDict(dict):
-    def __init__(self, *args, **kwargs):
-        super(DotDict, self).__init__(*args, **kwargs)
-        self.__dict__ = self
-
-
 class State(dict):
 
     indices = {}

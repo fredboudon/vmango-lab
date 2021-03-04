@@ -1,7 +1,7 @@
 import xsimlab as xs
 import numpy as np
 
-from . import topology, has_veg_children_within
+from . import topology, has_veg_children_within, has_apical_child_within
 from ._base import BaseProbabilityTable
 
 
@@ -26,6 +26,7 @@ class HasLateralChildrenWithin(BaseProbabilityTable):
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
 
     has_veg_children_within = xs.foreign(has_veg_children_within.HasVegChildrenWithin, 'has_veg_children_within')
+    has_apical_child_within = xs.foreign(has_apical_child_within.HasApicalChildWithin, 'has_apical_child_within')
 
     def initialize(self):
         self.has_lateral_children_within = np.array([])
@@ -36,7 +37,10 @@ class HasLateralChildrenWithin(BaseProbabilityTable):
         if np.any(self.appeared):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.)):
+                self.has_lateral_children_within[
+                    (self.has_veg_children_within == 1.) & (self.appeared == 1.) & (self.has_apical_child_within == 0.)
+                ] = 1.
+                for gu in np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.) & (self.has_apical_child_within == 1.)):
                     index = self.get_factor_values(tbl, gu)
                     probability = tbl[tbl.index == index].probability.values
                     if len(probability):

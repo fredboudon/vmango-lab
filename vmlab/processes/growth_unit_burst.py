@@ -3,11 +3,10 @@ import numpy as np
 
 from . import topology
 from . import phenology
-from .base import BaseGrowthUnitProcess
 
 
 @xs.process
-class GrowthUnitNoBurst(BaseGrowthUnitProcess):
+class GrowthUnitNoBurst:
 
     GU = xs.foreign(topology.Topology, 'GU')
 
@@ -39,7 +38,7 @@ class GrowthUnitNoBurst(BaseGrowthUnitProcess):
 
 
 @xs.process
-class GrowthUnitBurst(BaseGrowthUnitProcess):
+class GrowthUnitBurst:
 
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     adjacency = xs.foreign(topology.Topology, 'adjacency')
@@ -74,7 +73,8 @@ class GrowthUnitBurst(BaseGrowthUnitProcess):
         self.gu_bursted = np.array(self.gu_bursted, dtype=np.bool)
         self.gu_bursted_is_apical = np.array(self.gu_bursted_is_apical, dtype=np.bool)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
         # burst happens at different temperature sums at stage=D depending on is_apical
         # has children
@@ -88,6 +88,4 @@ class GrowthUnitBurst(BaseGrowthUnitProcess):
         pass
 
     def finalize(self):
-        print(self.gu_bursted.shape)
-        self._resize(np.nan)
-        print(self.gu_bursted.shape)
+        pass

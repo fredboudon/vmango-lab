@@ -1,15 +1,12 @@
 import xsimlab as xs
 import numpy as np
 
-from . import parameters
 from . import light_interception
-from .base import BaseCarbonUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Photosythesis(BaseCarbonUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'photosynthesis')
+class Photosythesis(ParameterizedProcess):
 
     DM_fruit_max = xs.global_ref('DM_fruit_max')
     CU = xs.global_ref('CU')
@@ -76,6 +73,8 @@ class Photosythesis(BaseCarbonUnitProcess):
 
     def initialize(self):
 
+        super(Photosythesis, self).initialize()
+
         self.Pmax = np.zeros(self.CU.shape)
         self.P_rate_sunlit = np.zeros((self.CU.shape[0], 24))
         self.P_rate_shaded = np.zeros((self.CU.shape[0], 24))
@@ -84,9 +83,10 @@ class Photosythesis(BaseCarbonUnitProcess):
         self.photo_sunlit = np.zeros(self.CU.shape)
         self.photo = np.zeros(self.CU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
 
         p_1 = params.p_1
         p_2 = params.p_2

@@ -1,24 +1,23 @@
 import xsimlab as xs
 import numpy as np
 
-from . import parameters
 from . import environment
-from . import growth_unit_growth
+from . import topology
 from . import phenology
-from .base import BaseGrowthUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class FruitGrowth(BaseGrowthUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'fruit_growth')
+class FruitGrowth(ParameterizedProcess):
 
     TM = xs.foreign(environment.Environment, 'TM')
 
-    GU = xs.foreign(growth_unit_growth.GrowthUnitGrowth, 'GU')
+    GU = xs.foreign(topology.Topology, 'GU')
 
     bloom_date = xs.foreign(phenology.FlowerPhenology, 'bloom_date')
     dd_cum = xs.foreign(phenology.FlowerPhenology, 'dd_cum_gu')
+
+    rng = xs.global_ref('rng')
 
     DM_fruit_0_gu = xs.variable(
         dims=('GU'),
@@ -52,7 +51,9 @@ class FruitGrowth(BaseGrowthUnitProcess):
 
     def initialize(self):
 
-        _, params = self.params
+        super(FruitGrowth, self).initialize()
+
+        params = self.parameters
 
         weight_1 = params.fruitDM0_weight_1
         mu_1 = params.fruitDM0_mu_1
@@ -62,14 +63,15 @@ class FruitGrowth(BaseGrowthUnitProcess):
         sigma_2 = params.fruitDM0_sigma_2
 
         self.DM_fruit_max_gu = np.zeros(self.GU.shape)
-        self.DM_fruit_0_gu = np.ones(self.GU.shape) * weight_1 * np.random.normal(mu_1, sigma_1) + weight_2 * np.random.normal(mu_2, sigma_2)
+        self.DM_fruit_0_gu = np.ones(self.GU.shape) * weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
 
         self.nb_fruits_ini = np.array(self.nb_fruits_ini, dtype=np.int64)
         self.nb_fruits_gu = np.zeros(self.nb_fruits_ini.shape, dtype=np.int64)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
 
         e_fruitDM02max_1 = params.e_fruitDM02max_1
         e_fruitDM02max_2 = params.e_fruitDM02max_2

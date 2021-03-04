@@ -6,16 +6,13 @@ from ..constants import (
     MM_Mg, MM_Ca, MM_NH4, MM_Na, MM_glc, MM_frc, MM_suc
 )
 
-from . import parameters
 from . import environment
 from . import carbon_balance
-from .base import BaseCarbonUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class FruitQuality(BaseCarbonUnitProcess):
-
-    params = xs.foreign(parameters.Parameters, 'fruit_quality')
+class FruitQuality(ParameterizedProcess):
 
     T_air = xs.foreign(environment.Environment, 'T_air')
     GR = xs.foreign(environment.Environment, 'GR')
@@ -184,6 +181,8 @@ class FruitQuality(BaseCarbonUnitProcess):
 
     def initialize(self):
 
+        super(FruitQuality, self).initialize()
+
         self.FM_fruit = np.zeros(self.CU.shape)
         self.W_fleshpeel = np.zeros(self.CU.shape)
         self.DM_fleshpeel = np.zeros(self.CU.shape)
@@ -202,9 +201,10 @@ class FruitQuality(BaseCarbonUnitProcess):
         self.organic_acids = np.zeros(self.CU.shape)
         self.ripe = np.zeros(self.CU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
 
         h = params.h
         phi_max = params.phi_max

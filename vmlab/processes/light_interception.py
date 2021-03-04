@@ -2,22 +2,20 @@ import xsimlab as xs
 import pandas as pd
 import numpy as np
 import pathlib
-import random
 
 from . import environment
-from . import parameters
-from .base import BaseCarbonUnitProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class LightInterception(BaseCarbonUnitProcess):
+class LightInterception(ParameterizedProcess):
 
     sunlit_bs = None
 
-    params = xs.foreign(parameters.Parameters, 'light_interception')
-
     GR = xs.foreign(environment.Environment, 'GR')
     hour = xs.foreign(environment.Environment, 'hour')
+
+    rng = xs.global_ref('rng')
 
     nb_fruits = xs.global_ref('nb_fruits')
     nb_leaves = xs.global_ref('nb_leaves')
@@ -74,26 +72,31 @@ class LightInterception(BaseCarbonUnitProcess):
     )
 
     def initialize(self):
+
+        super(LightInterception, self).initialize()
+
         self.LFratio = np.array([nb_leaves / nb_fruits if nb_fruits > 0 else 0.
                                  for nb_leaves, nb_fruits in zip(self.nb_leaves, self.nb_fruits)])
         self.sunlit_fractions_df = pd.read_csv(
-            pathlib.Path(self.params[0].parent).joinpath(self.params[1].sunlit_fractions_file_path),
+            pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.sunlit_fractions_file_path),
             sep='\\s+',
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
-        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, random.randrange(0, 5)].to_numpy(dtype=np.float32)
+        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, self.rng.integers(0, 5)].to_numpy(dtype=np.float32)
         self.LA = np.zeros(self.CU.shape)
         self.LA_sunlit = np.zeros(self.CU.shape)
         self.LA_shaded = np.zeros(self.CU.shape)
 
-    def step(self, nsteps, step, step_start, step_end, step_delta):
+    @xs.runtime(args=())
+    def run_step(self):
 
-        _, params = self.params
+        params = self.parameters
 
         k_1 = params.k_1
         k_2 = params.k_2
         k_3 = params.k_3
         sunlit_ws = params.sunlit_ws
+        e_nleaf2LA_1 = params.e_nleaf2LA_1
         e_nleaf2LA_2 = params.e_nleaf2LA_2
 
         # hour = pd.Timestamp(step_start).hour
@@ -109,7 +112,7 @@ class LightInterception(BaseCarbonUnitProcess):
                                  for nb_leaves, nb_fruits in zip(self.nb_leaves, self.nb_fruits)])
 
         # leaf area (eq. 11) :
-        self.LA = self.params[1].e_nleaf2LA_1 * self.LFratio ** e_nleaf2LA_2
+        self.LA = e_nleaf2LA_1 * self.LFratio ** e_nleaf2LA_2
 
         self.LA_sunlit = np.array([self.sunlit_bs * sunlit_ws * LA for LA in self.LA])
         self.LA_shaded = np.array([LA - LA_sunlit for LA, LA_sunlit in zip(self.LA, self.LA_sunlit)])
