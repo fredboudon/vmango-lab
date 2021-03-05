@@ -4,22 +4,22 @@ import numpy as np
 from . import environment
 from . import topology
 from . import phenology
-from ._base.parameter import ParameterizedProcess
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class FruitGrowth(ParameterizedProcess):
+class FruitGrowth(BaseParameterizedProcess):
 
     TM = xs.foreign(environment.Environment, 'TM')
 
     GU = xs.foreign(topology.Topology, 'GU')
 
     bloom_date = xs.foreign(phenology.FlowerPhenology, 'bloom_date')
-    dd_cum = xs.foreign(phenology.FlowerPhenology, 'dd_cum_gu')
+    dd_cum = xs.foreign(phenology.FlowerPhenology, 'dd_cum')
 
     rng = xs.global_ref('rng')
 
-    DM_fruit_0_gu = xs.variable(
+    DM_fruit_0 = xs.variable(
         dims=('GU'),
         intent='out',
         description='fruit dry mass per fruit at the end of cell division (at 352.72 dd)',
@@ -29,7 +29,7 @@ class FruitGrowth(ParameterizedProcess):
         static=True
     )
 
-    DM_fruit_max_gu = xs.variable(
+    DM_fruit_max = xs.variable(
         dims=('GU'),
         intent='out',
         description='potential maximal fruit dry mass per fruit (i.e. attained when fruit is grown under optimal conditions)',
@@ -44,7 +44,7 @@ class FruitGrowth(ParameterizedProcess):
         static=True
     )
 
-    nb_fruits_gu = xs.variable(
+    nb_fruits = xs.variable(
         dims=('GU'),
         intent='out'
     )
@@ -62,11 +62,11 @@ class FruitGrowth(ParameterizedProcess):
         mu_2 = params.fruitDM0_mu_2
         sigma_2 = params.fruitDM0_sigma_2
 
-        self.DM_fruit_max_gu = np.zeros(self.GU.shape)
-        self.DM_fruit_0_gu = np.ones(self.GU.shape) * weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
+        self.DM_fruit_max = np.zeros(self.GU.shape)
+        self.DM_fruit_0 = np.ones(self.GU.shape) * weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
 
-        self.nb_fruits_ini = np.array(self.nb_fruits_ini, dtype=np.int64)
-        self.nb_fruits_gu = np.zeros(self.nb_fruits_ini.shape, dtype=np.int64)
+        self.nb_fruits_ini = np.array(self.nb_fruits_ini)
+        self.nb_fruits = np.zeros(self.nb_fruits_ini.shape)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -75,20 +75,20 @@ class FruitGrowth(ParameterizedProcess):
 
         e_fruitDM02max_1 = params.e_fruitDM02max_1
         e_fruitDM02max_2 = params.e_fruitDM02max_2
-
         dd_cum_0 = params.dd_cum_0
 
-        # carbon demand for fruit growth (eq.5-6-7)
-        self.DM_fruit_max_gu = np.where(
-            self.nb_fruits_gu > 0,
-            e_fruitDM02max_1 * self.DM_fruit_0_gu ** e_fruitDM02max_2,
-            0
-        )
-
-        self.nb_fruits_gu = np.where(
+        # set nb_fruits to nb_fruits_ini if dd_cum_0 is reached
+        self.nb_fruits = np.where(
             self.dd_cum >= dd_cum_0,
             self.nb_fruits_ini,
             0.
+        )
+
+        # carbon demand for fruit growth (eq.5-6-7)
+        self.DM_fruit_max = np.where(
+            self.nb_fruits > 0,
+            e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2,
+            0
         )
 
     def finalize_step(self):

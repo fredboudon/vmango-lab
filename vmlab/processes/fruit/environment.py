@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-from ._base.parameter import ParameterizedProcess
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class Environment(ParameterizedProcess):
+class Environment(BaseParameterizedProcess):
 
     hour = xs.index(dims=('hour'))
 

@@ -2,15 +2,14 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 
 
 @xs.process
-class HasVegChildrenWithin(BaseProbabilityTable):
+class HasVegChildrenWithin(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     has_veg_children_within = xs.variable(dims='GU', intent='out')
@@ -28,8 +27,8 @@ class HasVegChildrenWithin(BaseProbabilityTable):
     ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
 
     def initialize(self):
-        self.has_veg_children_within = np.zeros(1)
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.has_veg_children_within = np.array([])
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step'))
     def run_step(self, step):

@@ -1,7 +1,9 @@
-from ._models import (
-    fruit_model
+from . import (
+    fruit,
+    arch_dev
 )
 
 __all__ = [
-    'fruit_model'
+    'fruit',
+    'arch_dev'
 ]

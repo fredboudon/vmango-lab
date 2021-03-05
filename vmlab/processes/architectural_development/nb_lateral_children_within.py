@@ -2,15 +2,14 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_lateral_children_within
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 
 
 @xs.process
-class NbLateralChildrenWithin(BaseProbabilityTable):
+class NbLateralChildrenWithin(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     nb_lateral_children_within = xs.variable(dims='GU', intent='out')
@@ -30,11 +29,12 @@ class NbLateralChildrenWithin(BaseProbabilityTable):
 
     def initialize(self):
         self.nb_lateral_children_within = np.array([])
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+            self.nb_lateral_children_within[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 for gu in np.flatnonzero((self.has_lateral_children_within == 1.) & (self.appeared == 1.)):

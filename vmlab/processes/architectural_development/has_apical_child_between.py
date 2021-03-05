@@ -2,15 +2,14 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_between
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 
 
 @xs.process
-class HasApicalChildBetween(BaseProbabilityTable):
+class HasApicalChildBetween(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     has_apical_child_between = xs.variable(dims='GU', intent='out')
@@ -30,11 +29,12 @@ class HasApicalChildBetween(BaseProbabilityTable):
 
     def initialize(self):
         self.has_apical_child_between = np.array([])
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+            self.has_apical_child_between[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):

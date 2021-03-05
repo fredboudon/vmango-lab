@@ -1,23 +1,21 @@
 import xsimlab as xs
 
-from ..processes import (
+from vmlab.processes.fruit import (
     environment,
-    fruit_quality,
-    fruit_growth,
+    phenology,
+    topology,
     light_interception,
     photosynthesis,
-    carbon_allocation,
     carbon_balance,
-    topology,
-    phenology
+    fruit_growth,
+    fruit_quality,
 )
 
 
-fruit_model = xs.Model({
+fruit = xs.Model({
     'environment': environment.Environment,
     'flower_phenology': phenology.FlowerPhenology,
     'topology': topology.Topology,
-    'carbon_allocation': carbon_allocation.CarbonAllocation,
     'light_interception': light_interception.LightInterception,
     'photosynthesis': photosynthesis.Photosythesis,
     'carbon_balance': carbon_balance.CarbonBalance,

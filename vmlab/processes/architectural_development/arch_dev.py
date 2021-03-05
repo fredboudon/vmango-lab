@@ -41,6 +41,7 @@ class ArchDev:
 
     has_mixed_inflo_children_between = xs.foreign(has_mixed_inflo_children_between.HasMixedInfloChildrenBetween, 'has_mixed_inflo_children_between')
 
+    burst_date_children_between = xs.foreign(burst_date_children_between.BurstDateChildrenBetween, 'burst_date_children_between')
     nature_ = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'nature')
     has_veg_children_between = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'has_veg_children_between')
     has_apical_child_between = xs.foreign(has_apical_child_between.HasApicalChildBetween, 'has_apical_child_between')
@@ -61,7 +62,7 @@ class ArchDev:
     appeared = xs.foreign(topology.Topology, 'appeared')
 
     def initialize(self):
-        # self.probability_tables = self.get_probability_tables(self.path)
+        # self.probability_tables = self.get_probability_tables()
         self.burst_date = np.array(self.burst_date, dtype='datetime64[D]')
         # self.has_apical_child = np.array([1.])
         # self.nb_lateral_children = np.array([1.])
@@ -73,10 +74,18 @@ class ArchDev:
             self.has_apical_child[self.appeared == 1.] = 0.
             self.nb_lateral_children[self.appeared == 1.] = 0.
 
-            mask = (self.appeared == 1.) & (self.has_veg_children_within == 1.)
-            self.burst_date[mask] = self.burst_date_children_within[mask]
-            self.has_apical_child[mask & (self.has_apical_child_within == 1.)] = 1.
-            self.nb_lateral_children[mask & (self.has_lateral_children_within == 1.)] = self.nb_lateral_children_within[
-                mask & (self.has_lateral_children_within == 1.)
+            mask_within = (self.appeared == 1.) & (self.has_veg_children_within == 1.)
+            self.burst_date[mask_within] = self.burst_date_children_within[mask_within]
+            self.has_apical_child[mask_within & (self.has_apical_child_within == 1.)] = 1.
+            self.nb_lateral_children[mask_within & (self.has_lateral_children_within == 1.)] = self.nb_lateral_children_within[
+                mask_within & (self.has_lateral_children_within == 1.)
             ]
+
+            mask_between = (self.appeared == 1.) & (self.has_veg_children_between == 1.)
+            self.burst_date[mask_between] = self.burst_date_children_between[mask_between]
+            self.has_apical_child[mask_between & (self.has_apical_child_between == 1.)] = 1.
+            self.nb_lateral_children[mask_between & (self.has_lateral_children_between == 1.)] = self.nb_lateral_children_between[
+                mask_between & (self.has_lateral_children_between == 1.)
+            ]
+
             self.nature[self.appeared == 1.] = self.nature_[self.appeared == 1.]

@@ -1,15 +1,15 @@
 import xsimlab as xs
 import numpy as np
 
-from . import light_interception
-from ._base.parameter import ParameterizedProcess
+from . import light_interception, fruit_growth, topology
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class Photosythesis(ParameterizedProcess):
+class Photosythesis(BaseParameterizedProcess):
 
-    DM_fruit_max = xs.global_ref('DM_fruit_max')
-    CU = xs.global_ref('CU')
+    DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
+    GU = xs.foreign(topology.Topology, 'GU')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
@@ -18,7 +18,7 @@ class Photosythesis(ParameterizedProcess):
     LA_shaded = xs.foreign(light_interception.LightInterception, 'LA_shaded')
 
     Pmax = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='light-saturated leaf photosynthesis',
         attrs={
@@ -27,7 +27,7 @@ class Photosythesis(ParameterizedProcess):
     )
 
     P_rate_sunlit = xs.variable(
-        dims=('CU', 'hour'),
+        dims=('GU', 'hour'),
         intent='out',
         description='hourly photosynthetic rate per unit leaf area (for the hours of the day where PAR>0) for sunlit leaves',
         attrs={
@@ -36,7 +36,7 @@ class Photosythesis(ParameterizedProcess):
     )
 
     P_rate_shaded = xs.variable(
-        dims=('CU', 'hour'),
+        dims=('GU', 'hour'),
         intent='out',
         description='hourly photosynthetic rate per unit leaf area (for the hours of the day where PAR>0) for shaded leaves',
         attrs={
@@ -45,7 +45,7 @@ class Photosythesis(ParameterizedProcess):
     )
 
     photo_sunlit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of sunlit leaves',
         attrs={
@@ -54,7 +54,7 @@ class Photosythesis(ParameterizedProcess):
     )
 
     photo_shaded = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of shaded leaves',
         attrs={
@@ -63,7 +63,7 @@ class Photosythesis(ParameterizedProcess):
     )
 
     photo = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='carbon daily fixed by leaf photosynthesis of sunlit and shaded leaves',
         attrs={
@@ -75,13 +75,13 @@ class Photosythesis(ParameterizedProcess):
 
         super(Photosythesis, self).initialize()
 
-        self.Pmax = np.zeros(self.CU.shape)
-        self.P_rate_sunlit = np.zeros((self.CU.shape[0], 24))
-        self.P_rate_shaded = np.zeros((self.CU.shape[0], 24))
+        self.Pmax = np.zeros(self.GU.shape)
+        self.P_rate_sunlit = np.zeros((self.GU.shape[0], 24))
+        self.P_rate_shaded = np.zeros((self.GU.shape[0], 24))
 
-        self.photo_shaded = np.zeros(self.CU.shape)
-        self.photo_sunlit = np.zeros(self.CU.shape)
-        self.photo = np.zeros(self.CU.shape)
+        self.photo_shaded = np.zeros(self.GU.shape)
+        self.photo_sunlit = np.zeros(self.GU.shape)
+        self.photo = np.zeros(self.GU.shape)
 
     @xs.runtime(args=())
     def run_step(self):

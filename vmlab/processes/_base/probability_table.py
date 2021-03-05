@@ -1,8 +1,12 @@
 import pandas as pd
 from pathlib import Path
+import xsimlab as xs
 
 
-class BaseProbabilityTable():
+@xs.process
+class BaseProbabilityTableProcess():
+
+    table_dir_path = xs.variable(intent='in', static=True, default=None)
 
     _factors = {
         'Burst_Month': 'appearance_month',
@@ -18,9 +22,9 @@ class BaseProbabilityTable():
         factors = [factor for factor in index_lables if factor in self._factors.values()]
         return tuple([getattr(self, factor)[gu] for factor in factors])
 
-    def get_probability_tables(self, path):
+    def get_probability_tables(self):
         dfs = {}
-        path = Path(path)
+        path = Path(self.table_dir_path)
         for file in path.iterdir():
             if file.suffix == '.csv':
                 df = pd.read_csv(file).rename(self._factors, axis=1)

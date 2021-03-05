@@ -3,15 +3,14 @@ import numpy as np
 from datetime import datetime
 
 from . import topology, has_veg_children_within
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 
 
 @xs.process
-class BurstDateChildrenWithin(BaseProbabilityTable):
+class BurstDateChildrenWithin(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     burst_date_children_within = xs.variable(dims='GU', intent='out')
@@ -31,7 +30,7 @@ class BurstDateChildrenWithin(BaseProbabilityTable):
 
     def initialize(self):
         self.burst_date_children_within = np.array([], dtype='datetime64[D]')
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):

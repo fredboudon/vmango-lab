@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-from . import environment
-from ._base.parameter import ParameterizedProcess
+from . import environment, topology, fruit_growth
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class LightInterception(ParameterizedProcess):
+class LightInterception(BaseParameterizedProcess):
 
     sunlit_bs = None
 
@@ -17,12 +17,12 @@ class LightInterception(ParameterizedProcess):
 
     rng = xs.global_ref('rng')
 
-    nb_fruits = xs.global_ref('nb_fruits')
-    nb_leaves = xs.global_ref('nb_leaves')
-    CU = xs.global_ref('CU')
+    nb_fruits = xs.foreign(fruit_growth.FruitGrowth, 'nb_fruits')
+    nb_leaves = xs.foreign(topology.Topology, 'nb_leaves')
+    GU = xs.foreign(topology.Topology, 'GU')
 
     LA = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='total leaf area per CU',
         attrs={
@@ -31,7 +31,7 @@ class LightInterception(ParameterizedProcess):
     )
 
     LFratio = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out'
     )
 
@@ -54,7 +54,7 @@ class LightInterception(ParameterizedProcess):
     )
 
     LA_sunlit = xs.variable(
-        dims=('CU', 'hour'),
+        dims=('GU', 'hour'),
         intent='out',
         description='hourly leaf area of sunlit leaves (for the hours of the day where PAR>0)',
         attrs={
@@ -63,7 +63,7 @@ class LightInterception(ParameterizedProcess):
     )
 
     LA_shaded = xs.variable(
-        dims=('CU', 'hour'),
+        dims=('GU', 'hour'),
         intent='out',
         description='hourly leaf area of shaded leaves (for the hours of the day where PAR>0)',
         attrs={
@@ -83,9 +83,9 @@ class LightInterception(ParameterizedProcess):
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
         self.sunlit_bs = self.sunlit_fractions_df.iloc[:, self.rng.integers(0, 5)].to_numpy(dtype=np.float32)
-        self.LA = np.zeros(self.CU.shape)
-        self.LA_sunlit = np.zeros(self.CU.shape)
-        self.LA_shaded = np.zeros(self.CU.shape)
+        self.LA = np.zeros(self.GU.shape)
+        self.LA_sunlit = np.zeros(self.GU.shape)
+        self.LA_shaded = np.zeros(self.GU.shape)
 
     @xs.runtime(args=())
     def run_step(self):

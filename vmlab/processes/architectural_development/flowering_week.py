@@ -2,15 +2,14 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, flowering
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 
 
 @xs.process
-class FloweringWeek(BaseProbabilityTable):
+class FloweringWeek(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     flowering_week = xs.variable(dims='GU', intent='out')
@@ -29,7 +28,7 @@ class FloweringWeek(BaseProbabilityTable):
 
     def initialize(self):
         self.flowering_week = np.array([])
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):

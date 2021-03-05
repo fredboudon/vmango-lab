@@ -22,8 +22,8 @@ class Topology():
     cycle = xs.variable(dims='GU', intent='out')
 
     current_cycle = xs.variable(intent='inout')
-    is_start_of_cycle = xs.variable(dims='month', intent='in')
-    seed = xs.variable(intent='in')
+    month_begin_veg_cycle = xs.variable(intent='in', static=True)
+    seed = xs.variable(intent='in', static=True)
 
     archdev = xs.group_dict('arch_dev')
 
@@ -31,7 +31,7 @@ class Topology():
         self.GU = np.array(['GU0'])
         self.rng = np.random.default_rng(self.seed)
         self.adjacency = np.array([[0.]])
-        self.ancestor = np.array([0.])
+        self.ancestor = np.array([-1])
         self.ancestor_is_apical = np.array([1.])
         self.ancestor_nature = np.array([Nature.VEGETATIVE])
         self.position = np.array([Position.APICAL])
@@ -39,14 +39,16 @@ class Topology():
         self.appearance_month = np.array([0.])
         self.appearance_date = np.array(['2002-08-01'], dtype='datetime64[D]')
         self.appeared = np.array([0.])
-        self.cycle = np.array([4.])
+        self.cycle = np.array([self.current_cycle], dtype=np.float)
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
-        self.bursted = self.archdev[('arch_dev', 'burst_date')] == step_start
+        self.bursted[:] = 0.
         self.appeared[:] = 0.
-        self.current_cycle = self.current_cycle + 1 if self.is_start_of_cycle else self.current_cycle
+
+        self.bursted[self.archdev[('arch_dev', 'burst_date')] == step_start] = 1.
+        self.current_cycle = self.current_cycle + 1 if step_start.astype('datetime64[D]').item().month == self.month_begin_veg_cycle else self.current_cycle
 
         if np.any(self.bursted):
 
@@ -54,7 +56,7 @@ class Topology():
             has_apical_child = self.archdev[('arch_dev', 'has_apical_child')]
             nature = self.archdev[('arch_dev', 'nature')]
 
-            nb_appeared = np.sum((has_apical_child + nb_lateral_children) * self.bursted)
+            nb_appeared = np.sum((has_apical_child + nb_lateral_children) * (self.bursted == 1.))
             nb_gus = self.GU.shape[0]
 
             self.GU = np.append(self.GU, [f'GU{int(i + nb_gus)}' for i in np.arange(0, nb_appeared)])
@@ -68,11 +70,11 @@ class Topology():
             self.cycle[nb_gus:] = self.current_cycle
 
             gu_child = nb_gus
-            for gu_parent in np.flatnonzero(self.bursted):
+            for gu_parent in np.flatnonzero(self.bursted == 1.):
                 for child in np.arange(nb_lateral_children[gu_parent] + has_apical_child[gu_parent], dtype=np.int):
                     if child == 0 and has_apical_child[gu_parent]:
                         self.position[gu_child] = Position.APICAL
-                    if self.is_start_of_cycle:
+                    if self.current_cycle != self.cycle[gu_parent]:
                         self.ancestor[gu_child] = gu_parent
                         self.ancestor_is_apical[gu_child] = self.position[gu_parent]
                         self.ancestor_nature[gu_child] = nature[gu_parent]

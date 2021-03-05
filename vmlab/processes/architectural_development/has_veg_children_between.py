@@ -2,16 +2,15 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_within, fruiting, flowering
-from ._base import BaseProbabilityTable
+from vmlab.processes import BaseProbabilityTableProcess
 from ...enums import Nature
 
 
 @xs.process
-class HasVegChildrenBetween(BaseProbabilityTable):
+class HasVegChildrenBetween(BaseProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
 
-    path = xs.variable()
     probability_tables = xs.any_object()
 
     has_veg_children_between = xs.variable(dims='GU', intent='out')
@@ -34,9 +33,9 @@ class HasVegChildrenBetween(BaseProbabilityTable):
     flowering = xs.foreign(flowering.Flowering, 'flowering')
 
     def initialize(self):
-        self.has_veg_children_between = np.zeros(1)
-        self.nature = np.array([Nature.VEGETATIVE])
-        self.probability_tables = self.get_probability_tables(self.path)
+        self.has_veg_children_between = np.array([])
+        self.nature = np.array([])
+        self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step'))
     def run_step(self, step):

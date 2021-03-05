@@ -7,7 +7,7 @@ from ...vmlab import DotDict
 
 
 @xs.process
-class ParameterizedProcess:
+class BaseParameterizedProcess:
     """Base process class to handle input parameter files.
     """
 

@@ -3,11 +3,11 @@ import numpy as np
 
 from . import environment
 from . import topology
-from ._base.parameter import ParameterizedProcess
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class LeafPhenology(ParameterizedProcess):
+class LeafPhenology(BaseParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
 
@@ -40,7 +40,7 @@ class LeafPhenology(ParameterizedProcess):
 
 
 @xs.process
-class GrowthUnitPhenology(ParameterizedProcess):
+class GrowthUnitPhenology(BaseParameterizedProcess):
 
     stage_tbase = np.array([100, 200, 300, np.inf])
     stage_name = np.array(['A', 'B', 'C', 'D'])
@@ -101,7 +101,7 @@ class GrowthUnitPhenology(ParameterizedProcess):
 
 
 @xs.process
-class FlowerPhenology(ParameterizedProcess):
+class FlowerPhenology(BaseParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
 
@@ -126,7 +126,7 @@ class FlowerPhenology(ParameterizedProcess):
         }
     )
 
-    dd_cum_gu = xs.variable(
+    dd_cum = xs.variable(
         dims=('GU'),
         intent='out',
         description='cumulated degree-days of the current day after bloom date',
@@ -135,7 +135,7 @@ class FlowerPhenology(ParameterizedProcess):
         }
     )
 
-    dd_delta_gu = xs.variable(
+    dd_delta = xs.variable(
         dims=('GU'),
         intent='out',
         description='daily variation in degree days',
@@ -150,8 +150,8 @@ class FlowerPhenology(ParameterizedProcess):
 
         self.bloom_date = np.array(self.bloom_date, dtype='datetime64[D]')
         self.DAB = np.zeros(self.GU.shape)
-        self.dd_delta_gu = np.zeros(self.GU.shape)
-        self.dd_cum_gu = np.zeros(self.GU.shape)
+        self.dd_delta = np.zeros(self.GU.shape)
+        self.dd_cum = np.zeros(self.GU.shape)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
@@ -165,15 +165,15 @@ class FlowerPhenology(ParameterizedProcess):
             -1
         )
 
-        self.dd_delta_gu = np.where(
+        self.dd_delta = np.where(
             step_start >= self.bloom_date,
             max(0, self.TM - Tbase_fruit),
             0.
         )
 
-        self.dd_cum_gu = np.where(
+        self.dd_cum = np.where(
             step_start >= self.bloom_date,
-            self.dd_cum_gu + self.dd_delta_gu,
+            self.dd_cum + self.dd_delta,
             0.
         )
 

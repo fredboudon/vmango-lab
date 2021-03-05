@@ -1,33 +1,40 @@
 import xsimlab as xs
 import numpy as np
 
-from ..constants import (
+from vmlab.constants import (
     R, density_W, MM_water, MM_mal, MM_cit, MM_pyr, MM_oxa, MM_K,
     MM_Mg, MM_Ca, MM_NH4, MM_Na, MM_glc, MM_frc, MM_suc
 )
 
-from . import environment
-from . import carbon_balance
-from ._base.parameter import ParameterizedProcess
+from . import (
+    environment,
+    carbon_balance,
+    phenology,
+    topology,
+    fruit_growth
+)
+from vmlab.processes import BaseParameterizedProcess
 
 
 @xs.process
-class FruitQuality(ParameterizedProcess):
+class FruitQuality(BaseParameterizedProcess):
 
     T_air = xs.foreign(environment.Environment, 'T_air')
     GR = xs.foreign(environment.Environment, 'GR')
     RH = xs.foreign(environment.Environment, 'RH')
     TM_air = xs.foreign(environment.Environment, 'TM_air')
 
-    dd_cum = xs.global_ref('dd_cum')
-    DM_fruit_0 = xs.global_ref('DM_fruit_0')
-    CU = xs.global_ref('CU')
+    dd_cum = xs.foreign(phenology.FlowerPhenology, 'dd_cum')
+
+    DM_fruit_0 = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
+
+    GU = xs.foreign(topology.Topology, 'GU')
 
     DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
 
     FM_fruit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='flesh and peel water mass of the previous day',
         attrs={
@@ -36,7 +43,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     W_fleshpeel = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='fruit flesh and peel water mass',
         attrs={
@@ -45,7 +52,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     DM_fleshpeel = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='fruit flesh and peel dry mass',
         attrs={
@@ -54,7 +61,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     W_flesh = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='fruit flesh water mass',
         attrs={
@@ -63,7 +70,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     DM_flesh = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='fruit flesh dry mass',
         attrs={
@@ -72,7 +79,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     water_potential_fruit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='water potential of the the fruit',
         attrs={
@@ -81,7 +88,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     turgor_pressure_fruit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='turgor pressure in the fruit',
         attrs={
@@ -90,7 +97,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     osmotic_pressure_fruit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='osmotic pressure in the fruit',
         attrs={
@@ -99,7 +106,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     flux_xylem_phloem = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='daily rate of water inflow in fruit flesh from xylem and phloem',
         attrs={
@@ -108,7 +115,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     transpiration_fruit = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='daily rate of fruit transpiration',
         attrs={
@@ -117,7 +124,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     sucrose = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='sucrose content in the fruit flesh',
         attrs={
@@ -126,7 +133,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     glucose = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='glucose content in the fruit flesh',
         attrs={
@@ -135,7 +142,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     fructose = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='fructose content in the fruit flesh',
         attrs={
@@ -144,7 +151,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     soluble_sugars = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='soluble sugar (sucrose, fructuse, glucose) content in the fruit flesh',
         attrs={
@@ -153,7 +160,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     starch = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='starch content in the fruit flesh',
         attrs={
@@ -162,7 +169,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     organic_acids = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='organic acid (malic and citric acids) content in the fruit flesh',
         attrs={
@@ -171,7 +178,7 @@ class FruitQuality(ParameterizedProcess):
     )
 
     ripe = xs.variable(
-        dims=('CU'),
+        dims=('GU'),
         intent='out',
         description='ripening index',
         attrs={
@@ -183,23 +190,23 @@ class FruitQuality(ParameterizedProcess):
 
         super(FruitQuality, self).initialize()
 
-        self.FM_fruit = np.zeros(self.CU.shape)
-        self.W_fleshpeel = np.zeros(self.CU.shape)
-        self.DM_fleshpeel = np.zeros(self.CU.shape)
-        self.W_flesh = np.zeros(self.CU.shape)
-        self.DM_flesh = np.zeros(self.CU.shape)
-        self.water_potential_fruit = np.zeros(self.CU.shape)
-        self.turgor_pressure_fruit = np.zeros(self.CU.shape)
-        self.osmotic_pressure_fruit = np.zeros(self.CU.shape)
-        self.flux_xylem_phloem = np.zeros(self.CU.shape)
-        self.transpiration_fruit = np.zeros(self.CU.shape)
-        self.sucrose = np.zeros(self.CU.shape)
-        self.glucose = np.zeros(self.CU.shape)
-        self.fructose = np.zeros(self.CU.shape)
-        self.soluble_sugars = np.zeros(self.CU.shape)
-        self.starch = np.zeros(self.CU.shape)
-        self.organic_acids = np.zeros(self.CU.shape)
-        self.ripe = np.zeros(self.CU.shape)
+        self.FM_fruit = np.zeros(self.GU.shape)
+        self.W_fleshpeel = np.zeros(self.GU.shape)
+        self.DM_fleshpeel = np.zeros(self.GU.shape)
+        self.W_flesh = np.zeros(self.GU.shape)
+        self.DM_flesh = np.zeros(self.GU.shape)
+        self.water_potential_fruit = np.zeros(self.GU.shape)
+        self.turgor_pressure_fruit = np.zeros(self.GU.shape)
+        self.osmotic_pressure_fruit = np.zeros(self.GU.shape)
+        self.flux_xylem_phloem = np.zeros(self.GU.shape)
+        self.transpiration_fruit = np.zeros(self.GU.shape)
+        self.sucrose = np.zeros(self.GU.shape)
+        self.glucose = np.zeros(self.GU.shape)
+        self.fructose = np.zeros(self.GU.shape)
+        self.soluble_sugars = np.zeros(self.GU.shape)
+        self.starch = np.zeros(self.GU.shape)
+        self.organic_acids = np.zeros(self.GU.shape)
+        self.ripe = np.zeros(self.GU.shape)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -275,7 +282,7 @@ class FruitQuality(ParameterizedProcess):
                                  if W_fleshpeel > 0 and W_flesh == 0 else 0. if W_fleshpeel == 0 else W_flesh
                                  for W_fleshpeel, W_flesh in zip(self.W_fleshpeel, self.W_flesh)])
 
-        self.DM_flesh = np.ones(self.CU.shape) * e_fleshpeel2fleshDM * self.DM_fleshpeel
+        self.DM_flesh = np.ones(self.GU.shape) * e_fleshpeel2fleshDM * self.DM_fleshpeel
 
         TM_air = np.mean(self.TM_air)
         RH = np.mean(self.RH)
