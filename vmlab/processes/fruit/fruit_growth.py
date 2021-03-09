@@ -4,7 +4,7 @@ import numpy as np
 from . import environment
 from . import topology
 from . import phenology
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

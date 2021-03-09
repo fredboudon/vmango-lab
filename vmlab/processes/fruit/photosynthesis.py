@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import light_interception, fruit_growth, topology
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

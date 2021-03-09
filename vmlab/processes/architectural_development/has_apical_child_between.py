@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_between
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class HasApicalChildBetween(BaseProbabilityTableProcess):
 
     has_apical_child_between = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -28,15 +29,19 @@ class HasApicalChildBetween(BaseProbabilityTableProcess):
     has_veg_children_between = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'has_veg_children_between')
 
     def initialize(self):
-        self.has_apical_child_between = np.array([])
+        self.has_apical_child_between = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+
             self.has_apical_child_between[self.appeared == 1.] = 0.
+
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
-                    probability = tbl.probability.values[0]
-                    self.has_apical_child_between[gu] = self.rng.binomial(1, probability)
+                if np.any((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
+                    gu_indices = np.nonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.))
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.has_apical_child_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

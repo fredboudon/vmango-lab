@@ -13,7 +13,7 @@ from . import (
     topology,
     fruit_growth
 )
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

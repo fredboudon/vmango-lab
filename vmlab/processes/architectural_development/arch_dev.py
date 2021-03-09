@@ -62,10 +62,10 @@ class ArchDev:
     appeared = xs.foreign(topology.Topology, 'appeared')
 
     def initialize(self):
-        # self.probability_tables = self.get_probability_tables()
         self.burst_date = np.array(self.burst_date, dtype='datetime64[D]')
-        # self.has_apical_child = np.array([1.])
-        # self.nb_lateral_children = np.array([1.])
+        self.has_apical_child = np.array(self.has_apical_child)
+        self.nb_lateral_children = np.array(self.nb_lateral_children)
+        self.nature = np.array(self.nature)
 
     @xs.runtime(args=('step',  'step_start', 'step_end', 'step_delta'))
     def run_step(self, step, step_start, step_end, step_delta):

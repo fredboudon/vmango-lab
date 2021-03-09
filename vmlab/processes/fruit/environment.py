@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

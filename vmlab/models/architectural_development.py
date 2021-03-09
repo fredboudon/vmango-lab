@@ -22,7 +22,7 @@ from vmlab.processes.architectural_development import (
 )
 
 
-arch_dev = xs.Model({
+architectural_development = xs.Model({
     'topology': topology.Topology,
     'has_veg_children_within': has_veg_children_within.HasVegChildrenWithin,
     'has_apical_child_within': has_apical_child_within.HasApicalChildWithin,

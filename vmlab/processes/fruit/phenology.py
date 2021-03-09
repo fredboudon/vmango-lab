@@ -3,7 +3,7 @@ import numpy as np
 
 from . import environment
 from . import topology
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

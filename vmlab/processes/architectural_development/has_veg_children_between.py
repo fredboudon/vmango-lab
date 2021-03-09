@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_within, fruiting, flowering
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 from ...enums import Nature
 
 
@@ -16,6 +16,7 @@ class HasVegChildrenBetween(BaseProbabilityTableProcess):
     has_veg_children_between = xs.variable(dims='GU', intent='out')
     nature = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -33,25 +34,29 @@ class HasVegChildrenBetween(BaseProbabilityTableProcess):
     flowering = xs.foreign(flowering.Flowering, 'flowering')
 
     def initialize(self):
-        self.has_veg_children_between = np.array([])
-        self.nature = np.array([])
+        self.has_veg_children_between = np.zeros(self.GU.shape)
+        self.nature = np.full(self.GU.shape, Nature.VEGETATIVE)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
         if np.any(self.appeared):
-            self.has_veg_children_between[self.appeared == 1.] = 0.
-            self.nature[self.appeared == 1.] = Nature.VEGETATIVE
+
+            appeared = self.appeared == 1.
+            fruiting = self.fruiting == 1.
+            flowering = self.flowering == 1.
+            not_has_veg_children_within = self.has_veg_children_within == 0.
+
+            self.has_veg_children_between[appeared] = 0.
+
+            self.nature[appeared] = Nature.VEGETATIVE
+            self.nature[appeared & fruiting] = Nature.FRUITING
+            self.nature[appeared & ~fruiting & flowering] = Nature.PURE_FLOWER
+
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.appeared == 1.) & (self.has_veg_children_within == 0.)):
-                    if self.fruiting[gu] == 1.:
-                        self.nature[gu] = Nature.FRUITING
-                    elif self.flowering[gu] == 1.:
-                        self.nature[gu] = Nature.PURE_FLOWER
-                    else:
-                        self.nature[gu] = Nature.VEGETATIVE
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_veg_children_between[gu] = self.rng.binomial(1, probability[0])
+                if np.any(not_has_veg_children_within):
+                    gu_indices = np.nonzero(appeared & not_has_veg_children_within)
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.has_veg_children_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

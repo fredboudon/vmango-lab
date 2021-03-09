@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_between, has_apical_child_between
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class HasLateralChildrenBetween(BaseProbabilityTableProcess):
 
     has_lateral_children_between = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -29,20 +30,22 @@ class HasLateralChildrenBetween(BaseProbabilityTableProcess):
     has_apical_child_between = xs.foreign(has_apical_child_between.HasApicalChildBetween, 'has_apical_child_between')
 
     def initialize(self):
-        self.has_lateral_children_between = np.array([])
+        self.has_lateral_children_between = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+
             self.has_lateral_children_between[self.appeared == 1.] = 0.
+            self.has_lateral_children_between[
+                (self.appeared == 1.) & (self.has_veg_children_between == 1.) & (self.has_apical_child_between == 0.)
+            ] = 1.
+
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                self.has_lateral_children_between[
-                    (self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 0.)
-                ] = 1.
-                for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 1.)):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_lateral_children_between[gu] = self.rng.binomial(1, probability[0])
+                if np.any((self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 1.)):
+                    gu_indices = np.nonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.) & (self.has_apical_child_between == 1.))
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.has_lateral_children_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

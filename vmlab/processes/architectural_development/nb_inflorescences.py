@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, flowering
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class NbInflorescences(BaseProbabilityTableProcess):
 
     nb_inflorescences = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -28,7 +29,7 @@ class NbInflorescences(BaseProbabilityTableProcess):
     flowering = xs.foreign(flowering.Flowering, 'flowering')
 
     def initialize(self):
-        self.nb_inflorescences = np.array([])
+        self.nb_inflorescences = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
@@ -37,11 +38,8 @@ class NbInflorescences(BaseProbabilityTableProcess):
             self.nb_inflorescences[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.flowering == 1.) & (self.appeared == 1.)):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values[0]
-                    probability = 1. if probability > 1. else probability
-                    nb_inflorescences = 0
-                    while not (1 <= nb_inflorescences <= 5):
-                        nb_inflorescences = int(self.rng.binomial(1, probability)) + 1
-                    self.nb_inflorescences[gu] = nb_inflorescences
+                if np.any((self.appeared == 1.) & (self.flowering == 1.)):
+                    gu_indices = np.nonzero((self.appeared == 1.) & (self.flowering == 1.))
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.nb_inflorescences[gu_indices] = self.rng.binomial(1, probability, probability.shape) + 1

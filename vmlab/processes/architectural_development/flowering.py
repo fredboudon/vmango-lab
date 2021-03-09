@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_within, has_mixed_inflo_children_between
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class Flowering(BaseProbabilityTableProcess):
 
     flowering = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -29,17 +30,19 @@ class Flowering(BaseProbabilityTableProcess):
     has_mixed_inflo_children_between = xs.foreign(has_mixed_inflo_children_between.HasMixedInfloChildrenBetween, 'has_mixed_inflo_children_between')
 
     def initialize(self):
-        self.flowering = np.array([])
+        self.flowering = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+
             self.flowering[self.appeared == 1.] = 0.
+
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero((self.appeared == 1.) & (self.has_veg_children_within == 0.) & (self.has_mixed_inflo_children_between == 0.)):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.flowering[gu] = self.rng.binomial(1, probability[0])
+                if np.any((self.appeared == 1.) & (self.has_veg_children_within == 0.) & (self.has_mixed_inflo_children_between == 0.)):
+                    gu_indices = np.nonzero((self.appeared == 1.) & (self.has_veg_children_within == 0.) & (self.has_mixed_inflo_children_between == 0.))
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.flowering[gu_indices] = self.rng.binomial(1, probability, probability.shape)

@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime
 
 from . import topology, has_veg_children_between
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -15,6 +15,7 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
 
     burst_date_children_between = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -31,7 +32,7 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
     has_veg_children_between = xs.foreign(has_veg_children_between.HasVegChildrenBetween, 'has_veg_children_between')
 
     def initialize(self):
-        self.burst_date_children_between = np.array([], dtype='datetime64[D]')
+        self.burst_date_children_between = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
@@ -42,8 +43,8 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
-                    index = self.get_factor_values(tbl, gu)
-                    probabilities = tbl[tbl.index == index].values.flatten()
+                    index = self.get_indices(tbl, np.array(gu))
+                    probabilities = tbl.loc[index.tolist()].values.flatten()
                     if len(probabilities):
                         realization = np.flatnonzero(self.rng.multinomial(1, probabilities))[0]
                         # in case of several results ('101-102-..') we choose the first

@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology, has_veg_children_within, has_apical_child_within
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class HasLateralChildrenWithin(BaseProbabilityTableProcess):
 
     has_lateral_children_within = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -28,20 +29,22 @@ class HasLateralChildrenWithin(BaseProbabilityTableProcess):
     has_apical_child_within = xs.foreign(has_apical_child_within.HasApicalChildWithin, 'has_apical_child_within')
 
     def initialize(self):
-        self.has_lateral_children_within = np.array([])
+        self.has_lateral_children_within = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
+
             self.has_lateral_children_within[self.appeared == 1.] = 0.
+            self.has_lateral_children_within[
+                (self.appeared == 1.) & (self.has_veg_children_within == 1.) & (self.has_apical_child_within == 0.)
+            ] = 1.
+
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                self.has_lateral_children_within[
-                    (self.has_veg_children_within == 1.) & (self.appeared == 1.) & (self.has_apical_child_within == 0.)
-                ] = 1.
-                for gu in np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.) & (self.has_apical_child_within == 1.)):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_lateral_children_within[gu] = self.rng.binomial(1, probability[0])
+                if np.any((self.appeared == 1.) & (self.has_veg_children_within == 1.) & (self.has_apical_child_within == 1.)):
+                    gu_indices = np.nonzero((self.appeared == 1.) & (self.has_veg_children_within == 1.) & (self.has_apical_child_within == 1.))
+                    indices = self.get_indices(tbl, gu_indices)
+                    probability = tbl.loc[indices.tolist()].values.flatten()
+                    self.has_lateral_children_within[gu_indices] = self.rng.binomial(1, probability, probability.shape)

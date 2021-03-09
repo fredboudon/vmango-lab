@@ -2,7 +2,7 @@ import xsimlab as xs
 import numpy as np
 
 from . import topology
-from vmlab.processes import BaseProbabilityTableProcess
+from ._base.probability_table import BaseProbabilityTableProcess
 
 
 @xs.process
@@ -14,6 +14,7 @@ class HasVegChildrenWithin(BaseProbabilityTableProcess):
 
     has_veg_children_within = xs.variable(dims='GU', intent='out')
 
+    GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     cycle = xs.foreign(topology.Topology, 'cycle')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -27,7 +28,7 @@ class HasVegChildrenWithin(BaseProbabilityTableProcess):
     ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
 
     def initialize(self):
-        self.has_veg_children_within = np.array([])
+        self.has_veg_children_within = np.zeros(self.GU.shape)
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step'))
@@ -36,8 +37,7 @@ class HasVegChildrenWithin(BaseProbabilityTableProcess):
             self.has_veg_children_within[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                for gu in np.flatnonzero(self.appeared):
-                    index = self.get_factor_values(tbl, gu)
-                    probability = tbl[tbl.index == index].probability.values
-                    if len(probability):
-                        self.has_veg_children_within[gu] = self.rng.binomial(1, probability[0])
+                gu_indices = np.nonzero(self.appeared)
+                indices = self.get_indices(tbl, gu_indices)
+                probability = tbl.loc[indices.tolist()].values.flatten()
+                self.has_veg_children_within[gu_indices] = self.rng.binomial(1, probability, probability.shape)

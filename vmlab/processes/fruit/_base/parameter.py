@@ -3,7 +3,7 @@ import toml
 import warnings
 import xsimlab as xs
 
-from ...vmlab import DotDict
+from vmlab import DotDict
 
 
 @xs.process

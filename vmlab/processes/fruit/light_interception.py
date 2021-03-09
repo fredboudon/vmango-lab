@@ -4,7 +4,7 @@ import numpy as np
 import pathlib
 
 from . import environment, topology, fruit_growth
-from vmlab.processes import BaseParameterizedProcess
+from ._base.parameter import BaseParameterizedProcess
 
 
 @xs.process

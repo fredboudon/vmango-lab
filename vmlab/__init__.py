@@ -5,6 +5,7 @@ import numpy as np
 
 from .vmlab import create_setup
 from . import constants, enums
+from .vmlab import DotDict
 
 
 class State(dict):
@@ -73,5 +74,6 @@ _ModelBuilder.set_state = set_state
 __all__ = [
     'create_setup',
     'constants',
-    'enums'
+    'enums',
+    'DotDict'
 ]
