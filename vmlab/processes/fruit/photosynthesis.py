@@ -8,7 +8,8 @@ from ._base.parameter import BaseParameterizedProcess
 @xs.process
 class Photosythesis(BaseParameterizedProcess):
 
-    DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
+    D_fruit = xs.foreign(fruit_growth.FruitGrowth, 'D_fruit')
+
     GU = xs.foreign(topology.Topology, 'GU')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
@@ -96,8 +97,8 @@ class Photosythesis(BaseParameterizedProcess):
         k = params.k
 
         # light-saturated leaf photosynthesis (eq.1)
-        self.Pmax = np.array([np.minimum((p_1 * (DM_fruit_max / LA) * p_2) / (p_1 * (DM_fruit_max / LA) + p_2), Pmax_max)
-                              if LA > 0 else 0. for LA, DM_fruit_max in zip(self.LA, self.DM_fruit_max)])
+        self.Pmax = np.array([np.minimum((p_1 * (D_fruit / LA) * p_2) / (p_1 * (D_fruit / LA) + p_2), Pmax_max)
+                              if LA > 0 else 0. for LA, D_fruit in zip(self.LA, self.D_fruit)])
 
         # photosynthetic rate per unit leaf area (eq.2)
         self.P_rate_sunlit = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])

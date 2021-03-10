@@ -24,6 +24,7 @@ class CarbonBalance(BaseParameterizedProcess):
 
     DM_fruit_max = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_max')
     DM_fruit_0 = xs.foreign(fruit_growth.FruitGrowth, 'DM_fruit_0')
+    D_fruit = xs.foreign(fruit_growth.FruitGrowth, 'D_fruit')
 
     dd_delta = xs.foreign(phenology.FlowerPhenology, 'dd_delta')
 
@@ -195,11 +196,12 @@ class CarbonBalance(BaseParameterizedProcess):
 
     DM_fruit = xs.variable(
         dims=('GU'),
-        intent='out',
+        intent='inout',
         description='fruit dry mass',
         attrs={
             'unit': 'g DM'
-        }
+        },
+        global_name='DM_fruit'
     )
 
     DM_fruit_delta = xs.variable(
@@ -208,15 +210,6 @@ class CarbonBalance(BaseParameterizedProcess):
         description='change in fruit dry mass',
         attrs={
             'unit': 'g DM'
-        }
-    )
-
-    D_fruit = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily carbon demand for fruit growth',
-        attrs={
-            'unit': 'g C day-1'
         }
     )
 
@@ -255,7 +248,7 @@ class CarbonBalance(BaseParameterizedProcess):
         self.reserve_leaf_max = np.zeros(self.GU.shape)
         self.DM_fruit = np.zeros(self.GU.shape)
         self.DM_fruit_delta = np.zeros(self.GU.shape)
-        self.D_fruit = np.zeros(self.GU.shape)
+        # self.D_fruit = np.zeros(self.GU.shape)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -280,7 +273,7 @@ class CarbonBalance(BaseParameterizedProcess):
         r_storage_leaf_max = params.r_storage_leaf_max
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
-        RGR_fruit_ini = params.RGR_fruit_ini
+        # RGR_fruit_ini = params.RGR_fruit_ini
 
         # intitialize Fruit DM only if DM_fruit is still 0 and LFratio > 0
         self.DM_fruit = np.array([DM_fruit_0 if LFratio > 0 and DM_fruit == 0 else 0. if LFratio == 0 else DM_fruit
@@ -295,8 +288,8 @@ class CarbonBalance(BaseParameterizedProcess):
         self.DM_structural_leaf = DM_leaf_unit * self.LFratio * (1 - r_DM_leaf_ini)
 
         # carbon demand for fruit growth (eq.5-6-7) :
-        self.D_fruit = np.array([dd_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / DM_fruit_max))
-                                 if DM_fruit_max > 0 else 0. for dd_delta, DM_fruit, DM_fruit_max in zip(self.dd_delta, self.DM_fruit, self.DM_fruit_max)])
+        # self.D_fruit = np.array([dd_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / DM_fruit_max))
+        #                          if DM_fruit_max > 0 else 0. for dd_delta, DM_fruit, DM_fruit_max in zip(self.dd_delta, self.DM_fruit, self.DM_fruit_max)])
 
         # CARBON AVAILABLE FROM RESERVE MOBILIZATION
 
