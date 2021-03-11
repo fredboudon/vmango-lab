@@ -6,9 +6,6 @@ t_ip_leaf = 91.02
 # Tbase_leaf = 10.73
 final_diameter = 0.2
 
-pheno_base_temp = [13.37766, 13.37766, 13.37766, 9.784431]
-pheno_stade_temp = [38.50, 47.61, 47.39, 316.376]
-pheno_stade = ['ABCD', 'E', 'F', 'G', 'H']
 pheno_angle_values = [0, 90, 165, 60, 60]
 
 # GUs length
