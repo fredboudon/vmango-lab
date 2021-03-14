@@ -131,21 +131,20 @@ def create_setup(
                     else:
                         warnings.warn(f'Process "{prc_name}" does not exist')
 
-    if output_vars is None:
-        output_vars = {}
-        for prc_name in model:
-            output_vars[prc_name] = {}
-            prc = model[prc_name]
-            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
-                output_vars[prc_name][var_name] = None
-            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
-                output_vars[prc_name][var_name] = main_clock
+    output_vars_ = {}
+    for prc_name in model:
+        output_vars_[prc_name] = {}
+        prc = model[prc_name]
+        for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
+            output_vars_[prc_name][var_name] = None
+        for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
+            output_vars_[prc_name][var_name] = output_vars if type(output_vars) is str else None  # str must be clock name
 
     return xs.create_setup(
         model,
         clocks,
         main_clock,
         input_vars,
-        output_vars,
+        output_vars_,
         fill_default
     )

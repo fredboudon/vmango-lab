@@ -1,0 +1,3 @@
+seed = 333
+
+weather_file_path = '../environment/lingne_paradis_01.2002_01.2005.csv'

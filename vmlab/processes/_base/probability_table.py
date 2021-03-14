@@ -24,11 +24,11 @@ class BaseProbabilityTableProcess():
     }
     # factor values
     _factor_values = {
-        'appearance_month': range(1, 13),
+        'appearance_month': np.arange(1., 13.),
         'position': list(Position.values()),
         'ancestor_is_apical': [0., 1.],
         'ancestor_nature': list(Nature.values()),
-        'flowering_week': range(1, 13),
+        'flowering_week': np.arange(1., 13.),
         'nature': list(Nature.values()),
         'nb_inflorescences': [0., 1., 2., 3.],
         'has_apical_child_between': [0., 1.]

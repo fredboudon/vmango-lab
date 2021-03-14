@@ -11,7 +11,6 @@ class Environment(BaseParameterizedProcess):
 
     hour = xs.index(dims=('hour'))
 
-    weather_df = None
     weather_daily_df = None
     weather_hourly_df = None
 
@@ -79,47 +78,35 @@ class Environment(BaseParameterizedProcess):
 
         self.rng = np.random.default_rng(self.parameters.seed)
 
-        folder_path = pathlib.Path(self.parameter_file_path).parent
-        weather_hourly_file_path = folder_path.joinpath(self.parameters.weather_hourly_file_path)
-        weather_daily_file_path = folder_path.joinpath(self.parameters.weather_daily_file_path)
+        weather_file_path = pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.weather_file_path)
 
-        weather_hourly_df = pd.read_csv(
-            weather_hourly_file_path,
+        smartis = pd.read_csv(
+            weather_file_path,
             sep=';',
-            parse_dates=['DATETIME'],
+            parse_dates=['Jour'],
             dayfirst=True,
-            usecols=['HOUR', 'GR', 'T', 'RH', 'DATETIME'],
-            dtype={'GR': np.float, 'T': np.float, 'RH': np.float}
+            usecols=['Jour', 'tm', 'glot', 'um']
         )
 
-        weather_daily_df = pd.read_csv(
-            weather_daily_file_path,
-            sep=';',
-            parse_dates=['DATE'],
-            dayfirst=True,
-            usecols=['DATE', 'TM', 'TX', 'TN'],
-            dtype={'TM': np.float, 'TX': np.float, 'TN': np.float}
-        )
+        self.weather_hourly_df = smartis.rename(
+            columns={'Jour': 'DATETIME', 'tm': 'TM', 'glot': 'GR', 'um': 'RH'},
+            inplace=False
+        ).set_index('DATETIME',inplace=False)
 
-        weather_hourly_df.rename(columns={'DATETIME': 'DATE'}, inplace=True)
-        weather_hourly_df['DATE'] = weather_hourly_df['DATE'].astype('datetime64[D]')
-        weather_daily_df['DATE'] = weather_daily_df['DATE'].astype('datetime64[D]')
-        weather_daily_df.set_index(['DATE'], inplace=True)
+        self.weather_daily_df = pd.DataFrame({
+            'TM': self.weather_hourly_df['TM'].groupby(pd.Grouper(freq="1D")).mean()
+        })
 
-        weather_df = weather_daily_df.merge(weather_hourly_df, on='DATE')
-        weather_df.sort_values(['DATE', 'HOUR'], inplace=True)
-        weather_df.set_index(['DATE', 'HOUR'], inplace=True)
+    @xs.runtime(args=('step', 'step_start', 'step_end', 'step_delta'))
+    def run_step(self, step, step_start, step_end, step_delta):
 
-        self.weather_df = weather_df
-        self.weather_daily_df = weather_daily_df
-        self.weather_hourly_df = weather_hourly_df
+        step_data = (self.weather_hourly_df.index >= step_end) & (self.weather_hourly_df.index < step_start)
 
-    @xs.runtime(args=('step', 'step_start', 'step_delta'))
-    def run_step(self, step, step_start, step_delta):
+        hourly = self.weather_hourly_df[step_data]
 
-        self.T_air = self.weather_df['T'][step_start].to_numpy()
-        self.TM_air = self.weather_df['TM'][step_start].to_numpy()
-        self.GR = self.weather_df['GR'][step_start].to_numpy()
-        self.RH = self.weather_df['RH'][step_start].to_numpy()
+        self.T_air = hourly['TM'].to_numpy()
+        self.TM_air = hourly['TM'].to_numpy()
+        self.GR = hourly['GR'].to_numpy()
+        self.RH = hourly['RH'].to_numpy()
         self.T_fruit = self.T_air
-        self.TM = (self.weather_daily_df['TX'][step_start] + self.weather_daily_df['TN'][step_start]) / 2
+        self.TM = self.weather_daily_df['TM'][step_start]

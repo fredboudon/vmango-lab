@@ -157,7 +157,7 @@ class FlowerPhenology(BaseParameterizedProcess):
     def run_step(self, step_start):
 
         params = self.parameters
-        Tbase_fruit = params.Tbase_fruit
+        Tbase_fruit_growth = params.Tbase_fruit_growth
 
         self.DAB = np.where(
             step_start >= self.bloom_date,
@@ -167,7 +167,7 @@ class FlowerPhenology(BaseParameterizedProcess):
 
         self.dd_delta = np.where(
             step_start >= self.bloom_date,
-            max(0, self.TM - Tbase_fruit),
+            max(0, self.TM - Tbase_fruit_growth),
             0.
         )
 

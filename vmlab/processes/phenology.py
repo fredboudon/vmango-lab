@@ -18,42 +18,42 @@ class Phenology(BaseParameterizedProcess):
     inflo_stages = []
 
     leaf_growth_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
     leaf_pheno_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
 
     gu_growth_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
     gu_pheno_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
     gu_stage = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
 
     inflo_growth_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
     inflo_pheno_tts = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
     inflo_stage = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out'
     )
 
     bloom_date = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='inout',
         description='bloom date',
         attrs={
@@ -62,7 +62,7 @@ class Phenology(BaseParameterizedProcess):
         static=True
     )
     DAB = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out',
         description='days after bloom',
         attrs={
@@ -70,7 +70,7 @@ class Phenology(BaseParameterizedProcess):
         }
     )
     dd_cum = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out',
         description='cumulated degree-days of the current day after bloom date',
         attrs={
@@ -78,7 +78,7 @@ class Phenology(BaseParameterizedProcess):
         }
     )
     dd_delta = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out',
         description='daily variation in degree days',
         attrs={
@@ -119,6 +119,10 @@ class Phenology(BaseParameterizedProcess):
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
 
+        self.gu_pheno_tts[np.isnan(self.gu_pheno_tts)] = 0.
+        self.gu_stage[np.isnan(self.gu_stage)] = 0.
+        self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
+
         params = self.parameters
         Tbase_leaf_growth = params.Tbase_leaf_growth
 
@@ -138,7 +142,7 @@ class Phenology(BaseParameterizedProcess):
             self.gu_pheno_tts[in_stage] += max(0, self.TM - base)
             share = self.gu_pheno_tts[in_stage] / thresh
             self.gu_stage[in_stage] = np.where(share > 1., stage + 1., stage + share)
-            self.gu_pheno_tts[share > 1.] = 0.
+            self.gu_pheno_tts[np.nonzero(in_stage)] = np.where(share > 1., 0., self.gu_pheno_tts[np.nonzero(in_stage)])
 
         # inflorescences
 
@@ -161,7 +165,7 @@ class Phenology(BaseParameterizedProcess):
             self.inflo_pheno_tts[in_stage] += max(0, self.TM - base)
             share = self.inflo_pheno_tts[in_stage] / thresh
             self.inflo_stage[in_stage] = np.where(share > 1., stage + 1., stage + share)
-            self.inflo_pheno_tts[share > 1.] = 0.
+            self.inflo_pheno_tts[np.nonzero(in_stage)] = np.where(share > 1., 0., self.inflo_pheno_tts[np.nonzero(in_stage)])
 
         # leaves
 

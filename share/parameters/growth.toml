@@ -1,0 +1,60 @@
+t_ip_gu_mean = 1
+t_ip_gu_sd = 89.4
+t_ip_leaf = 91.02
+t_ip_inflo = 173.015
+
+# GUs length
+# Depends on Position. 3 Distributions are found. Apical Gu on Apical parent, Apical Gu on Lateral parent and Lateral GU.
+# Mean and Std dev of length distribution.
+# apical = 1, lateral = 0
+gu_length_distrib = [
+    [[1, 0], [18.14, 4.14]],
+    [[1, 1], [13.79, 4.03]],
+    [[0, 1], [12.59, 3.38]],
+    [[0, 0], [12.59, 3.38]]
+]
+
+inflo_length_distrib = [
+    23.15833,
+    6.767254
+]
+
+# Number of leafs
+# Depends on Position and GU's length
+# Ratio and intercept for the relation with leaf nb and length.
+leaf_nb_distrib = [
+    [[1], [0.59, 5.5]],
+    [[0], [0.62, 0.36]]
+]
+
+# Leaves length
+# Depends on Position
+# Mean and Std dev of length distribution.
+leaf_length_distrib = [
+    [[1], [17.06, 2.7]],
+    [[0], [14.87, 2.7]]
+]
+
+leaf_area_length_ratio = 2.3594
+leaf_width_length_ratio = 0.24
+
+radius_exponent_gu = 0.443
+radius_coefficient_gu = 0.415
+max_leafy_diameter_gu = 1.65
+final_diameter_gu = 0.2
+
+LEPF_distrib_apical = [
+    2.007,
+    0.763
+]
+LEPF_distrib_lateral = [
+    0.38,
+    0.88
+]
+
+B_gu = 22.418
+B_inflo = 50.853
+maxGR_leaf = [
+    -0.0188725,
+    0.0147985
+]

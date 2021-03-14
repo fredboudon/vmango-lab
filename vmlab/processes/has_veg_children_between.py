@@ -3,7 +3,7 @@ import numpy as np
 
 from . import topology, has_veg_children_within, fruiting, flowering
 from ._base.probability_table import BaseProbabilityTableProcess
-from ...enums import Nature
+from vmlab.enums import Nature
 
 
 @xs.process
