@@ -2,6 +2,7 @@ import xsimlab as xs
 
 from ..processes import (
     topology,
+    geometry,
     environment,
     phenology,
     growth,
@@ -29,6 +30,7 @@ vmango = xs.Model({
     'environment': environment.Environment,
     'phenology': phenology.Phenology,
     'topology': topology.Topology,
+    'geometry': geometry.Geometry,
     'growth': growth.Growth,
     'has_veg_children_within': has_veg_children_within.HasVegChildrenWithin,
     'has_apical_child_within': has_apical_child_within.HasApicalChildWithin,

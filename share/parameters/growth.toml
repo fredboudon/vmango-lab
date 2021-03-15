@@ -1,5 +1,5 @@
-t_ip_gu_mean = 1
-t_ip_gu_sd = 89.4
+t_ip_gu_mean = 79.40
+t_ip_gu_sd = 10.75
 t_ip_leaf = 91.02
 t_ip_inflo = 173.015
 
@@ -54,7 +54,3 @@ LEPF_distrib_lateral = [
 
 B_gu = 22.418
 B_inflo = 50.853
-maxGR_leaf = [
-    -0.0188725,
-    0.0147985
-]

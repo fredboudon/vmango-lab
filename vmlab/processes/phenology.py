@@ -36,7 +36,8 @@ class Phenology(BaseParameterizedProcess):
     )
     gu_stage = xs.variable(
         dims='GU',
-        intent='out'
+        intent='out',
+        groups='phenology'
     )
 
     inflo_growth_tts = xs.variable(
@@ -122,6 +123,7 @@ class Phenology(BaseParameterizedProcess):
         self.gu_pheno_tts[np.isnan(self.gu_pheno_tts)] = 0.
         self.gu_stage[np.isnan(self.gu_stage)] = 0.
         self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
+        self.leaf_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
 
         params = self.parameters
         Tbase_leaf_growth = params.Tbase_leaf_growth

@@ -104,9 +104,10 @@ class Environment(BaseParameterizedProcess):
 
         hourly = self.weather_hourly_df[step_data]
 
-        self.T_air = hourly['TM'].to_numpy()
-        self.TM_air = hourly['TM'].to_numpy()
-        self.GR = hourly['GR'].to_numpy()
-        self.RH = hourly['RH'].to_numpy()
+        # SMARTIS data sometimes not complete. Need a strategy to handle missing data
+        self.T_air = np.resize(hourly['TM'].to_numpy(), 24)
+        self.TM_air = np.resize(hourly['TM'].to_numpy(), 24)
+        self.GR = np.resize(hourly['GR'].to_numpy(), 24)
+        self.RH = np.resize(hourly['RH'].to_numpy(), 24)
         self.T_fruit = self.T_air
         self.TM = self.weather_daily_df['TM'][step_start]

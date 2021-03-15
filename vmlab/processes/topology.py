@@ -21,10 +21,6 @@ class Topology:
         global_name='GU'
     )
 
-    scene = xs.any_object(
-        global_name='scene'
-    )
-
     lstring = xs.any_object()
 
     adjacency = xs.variable(
@@ -91,7 +87,7 @@ class Topology:
 
     nb_leaf = xs.variable(
         dims='GU',
-        intent='inout'
+        intent='out'
     )
 
     nb_inflo = xs.variable(
@@ -120,7 +116,7 @@ class Topology:
         self.position = np.array(self.position)
         self.position_parent = np.full(self.GU.shape, Position.APICAL)
         self.position_parent[1:] = self.position[np.argwhere(self.adjacency)[:, 0]]
-        self.nb_leaf = np.array(self.nb_leaf)
+        self.nb_leaf = np.zeros(self.GU.shape)
         self.nb_inflo = np.array(self.nb_inflo)
 
         self.ancestor = np.array([-1])
@@ -142,9 +138,10 @@ class Topology:
 
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
         self.nb_descendants = self.distance.sum(axis=1, where=~np.isinf(self.distance))
+        self.nb_leaf = self.growth[('growth', 'nb_internode')]
 
         if not self.lsystem:
-            self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('vmango.lpy')), {
+            self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
                 'process': self,
                 'derivation_length': int(nsteps)
             })
@@ -158,4 +155,3 @@ class Topology:
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle
 
         self.lstring = self.lsystem.derive(self.lstring, 1)
-        self.scene = self.lsystem.sceneInterpretation(self.lstring)

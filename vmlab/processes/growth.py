@@ -3,6 +3,7 @@ import numpy as np
 import openalea.plantgl.all as pgl
 import math
 import zarr
+import typing
 
 from . import topology, phenology
 from ._base.parameter import BaseParameterizedProcess
@@ -23,6 +24,7 @@ class Growth(BaseParameterizedProcess):
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
 
     gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
+    leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
     inflo_growth_tts = xs.foreign(phenology.Phenology, 'inflo_growth_tts')
 
     radius_gu = xs.variable(
@@ -42,7 +44,8 @@ class Growth(BaseParameterizedProcess):
     )
     nb_internode = xs.variable(
         dims=('GU'),
-        intent='inout'
+        intent='inout',
+        groups='growth'
     )
     final_length_internodes = xs.variable(
         dims=('GU'),
@@ -52,13 +55,23 @@ class Growth(BaseParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
-    final_length_leaf = xs.variable(
+    final_length_leaves = xs.variable(
         dims=('GU'),
-        intent='out',
+        intent='inout',
+        groups='growth',
         encoding={
             'object_codec': zarr.JSON()
         }
     )
+    length_leaves = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        groups='growth',
+        encoding={
+            'object_codec': zarr.JSON()
+        }
+    )
+
     final_length_inflo = xs.variable(
         dims=('GU'),
         intent='out'
@@ -95,7 +108,7 @@ class Growth(BaseParameterizedProcess):
 
         return [LEPF] + [length * scaling for length in lengths]
 
-    def get_final_length_leaf(self, position, nb_internode, get_leaf_length, rng, params):
+    def get_final_length_leaves(self, position, nb_internode, get_leaf_length, rng, params):
         mu, sigma = params.leaf_length_distrib[(position, )]
         leaf_length = rng.normal(mu, sigma)
         while (leaf_length < 5) or (leaf_length > 34):
@@ -110,8 +123,11 @@ class Growth(BaseParameterizedProcess):
             inflo_length = rng.normal(mu, sigma)
         return inflo_length
 
-    def get_leaf_length(self):
-        pass
+    def get_length_leaves(self, final_length_leaves: typing.List[float], leaf_growth_tts, params):
+        final_length_leaves = np.array(final_length_leaves)
+        max_growth_rate = -0.0188725 + 0.0147985 * final_length_leaves * 4
+        B = final_length_leaves / max_growth_rate
+        return (final_length_leaves / (1. + np.exp(-(leaf_growth_tts - params.t_ip_leaf) / B))).tolist()
 
     def initialize(self):
 
@@ -127,9 +143,10 @@ class Growth(BaseParameterizedProcess):
         self.get_final_length_gu = np.vectorize(self.get_final_length_gu, excluded={'rng', 'params'})
         self.get_nb_internode = np.vectorize(self.get_nb_internode, excluded={'params'})
         self.get_final_length_internodes = np.vectorize(self.get_final_length_internodes, otypes=[np.object], excluded={'rng', 'params'})
-        self.get_final_length_leaf = np.vectorize(self.get_final_length_leaf, otypes=[np.object], excluded={'get_leaf_length', 'rng', 'params'})
+        self.get_final_length_leaves = np.vectorize(self.get_final_length_leaves, otypes=[np.object], excluded={'get_leaf_length', 'rng', 'params'})
         self.get_final_length_inflo = np.vectorize(self.get_final_length_inflo, excluded={'rng', 'params'})
 
+        self.get_length_leaves = np.vectorize(self.get_length_leaves, otypes=[np.object], excluded={'leaf_growth_tts', 'params'})
         self.get_leaf_length = pgl.QuantisedFunction(
             pgl.NurbsCurve2D(
                 pgl.Point3Array([(0, 1, 1), (0.00149779, 1.00072, 1), (1, 0.995671, 1), (1, 0.400121, 1)])
@@ -140,12 +157,13 @@ class Growth(BaseParameterizedProcess):
         self.final_length_inflo = np.zeros(self.GU.shape)
         self.length_gu = np.zeros(self.GU.shape)
         # self.final_length_internodes = np.full(self.GU.shape, None)
-        self.final_length_leaf = np.full(self.GU.shape, None)
+        # self.final_length_leaves = np.full(self.GU.shape, None)
+        # self.length_leaves = np.full(self.GU.shape, None)
 
     @xs.runtime(args=())
     def run_step(self):
 
-        self.radius_gu[np.isnan(self.radius_gu)] = 0.1
+        self.radius_gu[np.isnan(self.radius_gu)] = 0.
         self.nb_internode[np.isnan(self.nb_internode)] = 0.
         self.length_gu[np.isnan(self.length_gu)] = 0.
         self.final_length_gu[np.isnan(self.final_length_gu)] = 0.
@@ -157,7 +175,7 @@ class Growth(BaseParameterizedProcess):
         radius_exponent_gu = params.radius_exponent_gu
         radius_coefficient_gu = params.radius_coefficient_gu
 
-        self.radius_gu = radius_coefficient_gu * self.nb_descendants ** radius_exponent_gu
+        self.radius_gu = radius_coefficient_gu * (self.nb_descendants + 1) ** radius_exponent_gu
 
         no_final_length_gu = (self.final_length_gu == 0)
         if np.any(no_final_length_gu):
@@ -190,13 +208,20 @@ class Growth(BaseParameterizedProcess):
 
         # leaves
 
-        no_final_length_leaf = np.equal(self.final_length_leaf, None)
-        if np.any(no_final_length_leaf):
-            self.final_length_leaf[no_final_length_leaf] = self.get_final_length_leaf(
-                self.position[no_final_length_leaf],
-                self.nb_internode[no_final_length_leaf],
+        no_final_length_leaves = (np.equal(self.final_length_leaves, None)) | (self.final_length_leaves == 0)
+        if np.any(no_final_length_leaves):
+            self.final_length_leaves[no_final_length_leaves] = self.get_final_length_leaves(
+                self.position[no_final_length_leaves],
+                self.nb_internode[no_final_length_leaves],
                 self.get_leaf_length, self.rng, params
             )
+
+        # fix <string>:49: RuntimeWarning: invalid value encountered in double_scalars
+        self.length_leaves = self.get_length_leaves(
+            self.final_length_leaves,
+            self.leaf_growth_tts,
+            params
+        )
 
         # inflorescences
 
