@@ -2,7 +2,6 @@ import numpy as np
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
 
-colorcache = {}
 phyllotaxy = 144.
 branching_angle = 60.
 young_stem_color = 6
@@ -14,6 +13,8 @@ leaf_pheno_angles = [0, 90, 165, 60, 60]
 leaf_pheno_angle = pgl.QuantisedFunction(
     pgl.NurbsCurve2D(pgl.Point3Array(list(enumerate(leaf_pheno_angles)), 1), degree=1)
 )
+
+colorcache = {}
 
 
 def color_interpolator(i, j, r):
@@ -118,7 +119,7 @@ GU(idx):
     length_gu = process.growth[('growth', 'length_gu')][idx]
     final_length_gu = process.growth[('growth', 'final_length_gu')][idx]
     gu_stage = process.phenology[('phenology', 'gu_stage')][idx]
-    stem_color = old_stem_color if gu_stage >= 4. else young_stem_color
+    stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
     gu_growth_ratio = length_gu / final_length_gu
     if length_gu > 1e-3:
         nsproduce([EndGC(), SetColor(stem_color), StartGC()])
@@ -130,7 +131,7 @@ GU(idx):
                 length_petiole = (1.1 - (i * posnorm)) * final_length_leaf / 4.
             else:
                 length_petiole = max(0.01, (1 - (i * posnorm)) * final_length_leaf / 4.)
-            # stem
+            # internode
             nsproduce([F(final_length_internode * gu_growth_ratio, radius_gu), RollL(phyllotaxy)])
             # leaf & petiole
             nsproduce([SB()])
