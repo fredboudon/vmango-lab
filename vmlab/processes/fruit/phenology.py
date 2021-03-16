@@ -122,7 +122,7 @@ class FlowerPhenology(BaseParameterizedProcess):
         intent='out',
         description='days after bloom',
         attrs={
-            'unit': 'd'
+            'unit': 'day'
         }
     )
 

@@ -121,5 +121,5 @@ class Environment(BaseParameterizedProcess):
         self.TM_air = self.weather_df['TM'][step_start].to_numpy()
         self.GR = self.weather_df['GR'][step_start].to_numpy()
         self.RH = self.weather_df['RH'][step_start].to_numpy()
-        self.T_fruit = self.T_air
         self.TM = (self.weather_daily_df['TX'][step_start] + self.weather_daily_df['TN'][step_start]) / 2
+        self.T_fruit = self.TM_air

@@ -24,7 +24,7 @@ class LightInterception(BaseParameterizedProcess):
     LA = xs.variable(
         dims=('GU'),
         intent='out',
-        description='total leaf area per CU',
+        description='total leaf area per GU',
         attrs={
             'unit': 'm²'
         }
