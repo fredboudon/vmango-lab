@@ -5,7 +5,6 @@ import warnings
 from . import (
     environment,
     photosynthesis,
-    light_interception,
     carbon_demand,
     topology,
     phenology

@@ -64,7 +64,7 @@ class CarbonReserves(BaseParameterizedProcess):
 
     def initialize(self):
 
-        super(CarbonDemand, self).initialize()
+        super(CarbonReserves, self).initialize()
 
         params = self.parameters
 
