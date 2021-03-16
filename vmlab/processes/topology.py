@@ -112,7 +112,7 @@ class Topology:
         self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
         self.adjacency = np.array(self.adjacency)
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
-        self.nb_descendants = self.distance.sum(axis=1, where=~np.isinf(self.distance))
+        self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
         self.position = np.array(self.position)
         self.position_parent = np.full(self.GU.shape, Position.APICAL)
         self.position_parent[1:] = self.position[np.argwhere(self.adjacency)[:, 0]]
@@ -126,7 +126,7 @@ class Topology:
         self.appearance_month = np.zeros(self.GU.shape)
         self.appearance_date = np.array(['2002-08-01'], dtype='datetime64[D]')
         self.appeared = np.zeros(self.GU.shape)
-        self.cycle = np.array([self.current_cycle], dtype=np.float)
+        self.cycle = np.full(self.GU.shape, self.current_cycle, dtype=np.float)
 
     @xs.runtime(args=('step', 'step_start', 'nsteps'))
     def run_step(self, step, step_start, nsteps):
@@ -137,7 +137,7 @@ class Topology:
         self.nsteps = nsteps
 
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
-        self.nb_descendants = self.distance.sum(axis=1, where=~np.isinf(self.distance))
+        self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
         self.nb_leaf = self.growth[('growth', 'nb_internode')]
 
         if not self.lsystem:
