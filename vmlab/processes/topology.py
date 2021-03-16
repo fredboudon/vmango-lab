@@ -107,7 +107,8 @@ class Topology:
         static=True
     )
 
-    def initialize(self):
+    @xs.runtime(args=('nsteps'))
+    def initialize(self, nsteps):
 
         self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
         self.adjacency = np.array(self.adjacency)
@@ -128,6 +129,12 @@ class Topology:
         self.appeared = np.zeros(self.GU.shape)
         self.cycle = np.full(self.GU.shape, self.current_cycle, dtype=np.float)
 
+        self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
+            'process': self,
+            'derivation_length': int(nsteps)
+        })
+        self.lstring = self.lsystem.axiom
+
     @xs.runtime(args=('step', 'step_start', 'nsteps'))
     def run_step(self, step, step_start, nsteps):
 
@@ -139,13 +146,6 @@ class Topology:
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
         self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
         self.nb_leaf = self.growth[('growth', 'nb_internode')]
-
-        if not self.lsystem:
-            self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
-                'process': self,
-                'derivation_length': int(nsteps)
-            })
-            self.lstring = self.lsystem.axiom
 
         self.bursted[:] = 0.
         self.appeared[:] = 0.

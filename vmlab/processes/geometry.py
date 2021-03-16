@@ -20,14 +20,11 @@ class Geometry:
 
     def initialize(self):
 
-        self.scene = pgl.Scene()
+        self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('geometry.lpy')), {
+            'process': self
+        })
 
     @xs.runtime(args=())
     def run_step(self):
-
-        if not self.lsystem:
-            self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('geometry.lpy')), {
-                'process': self
-            })
 
         self.scene = self.lsystem.sceneInterpretation(self.lstring)
