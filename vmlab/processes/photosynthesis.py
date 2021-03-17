@@ -8,6 +8,7 @@ from ._base.parameter import BaseParameterizedProcess
 @xs.process
 class Photosythesis(BaseParameterizedProcess):
     """ Compute leaf photosythesis per GUs
+        - photosythesis only for fully developed GUs (gu_stage >= 4.)
     """
 
     GU = xs.foreign(topology.Topology, 'GU')

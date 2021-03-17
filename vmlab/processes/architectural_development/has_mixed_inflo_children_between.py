@@ -41,7 +41,7 @@ class HasMixedInfloChildrenBetween(BaseProbabilityTableProcess):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 if np.any((self.appeared == 1.) & not_has_veg_children_within):
-                    gu_indices = np.nonzero((self.appeared == 1.) & not_has_veg_children_within)
+                    gu_indices = np.flatnonzero((self.appeared == 1.) & not_has_veg_children_within)
                     indices = self.get_indices(tbl, gu_indices)
                     probability = tbl.loc[indices.tolist()].values.flatten()
                     self.has_mixed_inflo_children_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

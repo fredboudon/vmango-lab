@@ -67,21 +67,4 @@ A(idx):
                 nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle), GU(idx_child), A(idx_child), EB()])
 
 
-interpretation:
-maximum depth: 10
-
-
-GU(idx):
-    radius_gu = process.growth[('growth', 'radius_gu')][idx]
-    final_length_internodes = process.growth[('growth', 'final_length_internodes')][idx]
-    length_gu = process.growth[('growth', 'length_gu')][idx]
-    final_length_gu = process.growth[('growth', 'final_length_gu')][idx]
-    if length_gu > 1e-3:
-        gu_growth_ratio = length_gu / final_length_gu
-        nsproduce([EndGC(), StartGC()])
-        nsproduce([SetWidth(radius_gu)])
-        for final_length_internode in final_length_internodes:
-            nsproduce([F(final_length_internode * gu_growth_ratio, radius_gu), RollL(phyllotaxy)])
-        nsproduce([Sphere(radius_gu)])
-
 endlsystem

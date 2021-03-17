@@ -17,7 +17,7 @@ class Topology():
     position = xs.variable(dims='GU', intent='out')
     bursted = xs.variable(dims='GU', intent='out')
     appearance_month = xs.variable(dims='GU', intent='out')
-    appearance_date = xs.variable(dims='GU', intent='out')
+    appearance_date = xs.variable(dims='GU', intent='inout')
     appeared = xs.variable(dims='GU', intent='out')
     cycle = xs.variable(dims='GU', intent='out')
 
@@ -37,7 +37,7 @@ class Topology():
         self.position = np.array([Position.APICAL])
         self.bursted = np.array([0.])
         self.appearance_month = np.array([0.])
-        self.appearance_date = np.array(['2002-08-01'], dtype='datetime64[D]')
+        self.appearance_date = np.array(self.appearance_date, dtype='datetime64[D]')
         self.appeared = np.array([0.])
         self.cycle = np.array([self.current_cycle], dtype=np.float)
 

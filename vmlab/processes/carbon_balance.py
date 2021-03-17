@@ -14,6 +14,9 @@ from ._base.parameter import BaseParameterizedProcess
 
 @xs.process
 class CarbonBalance(BaseParameterizedProcess):
+    """
+        - only for fully developed GUs (gu_stage >= 4.)
+    """
 
     TM_air = xs.foreign(environment.Environment, 'TM_air')
     T_fruit = xs.foreign(environment.Environment, 'T_fruit')
@@ -79,7 +82,7 @@ class CarbonBalance(BaseParameterizedProcess):
     reserve_nmob_stem = xs.variable(
         dims=('GU'),
         intent='out',
-        description='carbon in stem non-mobile reserves',
+        description='carbon in stem "non-mobile" (not easily mobilized) reserves',
         attrs={
             'unit': 'g C'
         }
@@ -88,7 +91,7 @@ class CarbonBalance(BaseParameterizedProcess):
     reserve_nmob_leaf = xs.variable(
         dims=('GU'),
         intent='out',
-        description='carbon in leaf non-mobile reserves',
+        description='carbon in leaf "non-mobile" (not easily mobilized) reserves',
         attrs={
             'unit': 'g C'
         }
@@ -328,7 +331,7 @@ class CarbonBalance(BaseParameterizedProcess):
 
         assimilates_gt_mr_vegt = self.assimilates >= self.MR_veget
         mobilize_from_leaf = (self.assimilates + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
-        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & mobilize_from_leaf
+        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & (~assimilates_gt_mr_vegt & ~mobilize_from_leaf)
 
         # print(assimilates_gt_mr_vegt, mobilize_from_leaf, mobilize_from_stem)
         # print(self.remains_1, self.photo, self.reserve_mob, self.MR_veget)
@@ -352,7 +355,7 @@ class CarbonBalance(BaseParameterizedProcess):
         self.reserve_nmob_stem = np.where(
             mobilize_from_stem,
             self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
-            self.reserve_nmob_stem
+            0
         )
 
         if not np.all(assimilates_gt_mr_vegt + mobilize_from_leaf + mobilize_from_stem):

@@ -154,4 +154,5 @@ class Topology:
         day = step_start.astype('datetime64[D]').item()
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle
 
-        self.lstring = self.lsystem.derive(self.lstring, 1)
+        if np.any(self.bursted):
+            self.lstring = self.lsystem.derive(self.lstring, step)

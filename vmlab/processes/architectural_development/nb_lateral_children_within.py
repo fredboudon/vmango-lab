@@ -38,7 +38,7 @@ class NbLateralChildrenWithin(BaseProbabilityTableProcess):
             self.nb_lateral_children_within[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                gu_indices = np.nonzero(self.appeared)
+                gu_indices = np.flatnonzero(self.appeared)
                 indices = self.get_indices(tbl, gu_indices)
-                probability = tbl.loc[indices.tolist()].values.flatten()
-                self.nb_lateral_children_within[gu_indices] = self.rng.binomial(1, probability, probability.shape) + 1
+                lam = tbl.loc[indices.tolist()].values.flatten()
+                self.nb_lateral_children_within[gu_indices] = np.round(self.rng.poisson(lam, lam.shape) + 1., 0)

@@ -12,6 +12,10 @@ class CarbonDemand(BaseParameterizedProcess):
     """Compute carbon demand for all organs and processes:
         - actual maintenance (stem, leaf, fruit)
         - potential growth (fruit)
+        - maintenance only for fully developed GUs (gu_stage >= 4.)
+
+        TODO:
+            - add growth & maintenance demand for GU (gu_stage < 4.)
     """
 
     TM = xs.foreign(environment.Environment, 'TM')

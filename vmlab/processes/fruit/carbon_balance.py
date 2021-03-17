@@ -16,6 +16,8 @@ from ._base.parameter import BaseParameterizedProcess
 @xs.process
 class CarbonBalance(BaseParameterizedProcess):
 
+    LFratio_previous = None
+
     TM_air = xs.foreign(environment.Environment, 'TM_air')
     T_fruit = xs.foreign(environment.Environment, 'T_fruit')
     GR = xs.foreign(environment.Environment, 'GR')
@@ -220,14 +222,11 @@ class CarbonBalance(BaseParameterizedProcess):
         params = self.parameters
 
         cc_stem = params.cc_stem
-        cc_leaf = params.cc_leaf
         r_DM_stem_ini = params.r_DM_stem_ini
-        r_DM_leaf_ini = params.r_DM_leaf_ini
         DM_stem = params.DM_stem
-        DM_leaf_unit = params.DM_leaf_unit
 
         # initial amount of carbon in leaf and stem reserves :
-        self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
+        # self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
         self.reserve_stem = np.ones(self.GU.shape) * DM_stem * r_DM_stem_ini * cc_stem
 
         self.DM_structural_stem = np.zeros(self.GU.shape)
@@ -249,6 +248,8 @@ class CarbonBalance(BaseParameterizedProcess):
         self.DM_fruit = np.zeros(self.GU.shape)
         self.DM_fruit_delta = np.zeros(self.GU.shape)
         # self.D_fruit = np.zeros(self.GU.shape)
+
+        self.LFratio_previous = self.LFratio.copy()
 
     @xs.runtime(args=())
     def run_step(self):
@@ -273,15 +274,28 @@ class CarbonBalance(BaseParameterizedProcess):
         r_storage_leaf_max = params.r_storage_leaf_max
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
+        r_DM_leaf_ini = params.r_DM_leaf_ini
+        cc_leaf = params.cc_leaf
+        DM_leaf_unit = params.DM_leaf_unit
         # RGR_fruit_ini = params.RGR_fruit_ini
 
         # intitialize Fruit DM only if DM_fruit is still 0 and LFratio > 0
         self.DM_fruit = np.array([DM_fruit_0 if LFratio > 0 and DM_fruit == 0 else 0. if LFratio == 0 else DM_fruit
                                   for DM_fruit_0, DM_fruit, LFratio in zip(self.DM_fruit_0, self.DM_fruit, self.LFratio)])
 
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
+        # initial amount of carbon in leaf and stem reserves : if LFratio is > 0
+        if np.any(self.LFratio_previous == 0.):
+            self.reserve_leaf = np.where(
+                (self.LFratio_previous == 0.) & (self.LFratio > 0.),
+                (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf,
+                0
+            )
+
+        self.LFratio_previous = self.LFratio.copy()
+
+        self.remains_1[:] = 0.
+        self.remains_2[:] = 0.
+        self.remains_3[:] = 0.
 
         # dry mass of stem and leaf structure
         self.DM_structural_stem = np.ones(self.GU.shape) * DM_stem * (1 - r_DM_stem_ini)
@@ -347,7 +361,7 @@ class CarbonBalance(BaseParameterizedProcess):
         self.reserve_nmob_leaf = np.where(
             mobilize_from_leaf,
             self.assimilates + self.reserve_nmob_leaf - self.MR_veget,
-            0
+            self.reserve_nmob_leaf
         )
 
         # 2- mobilization of non-mobile reserves from stem
@@ -398,6 +412,8 @@ class CarbonBalance(BaseParameterizedProcess):
         reserve_leaf_provi = self.reserve_nmob_leaf + np.maximum(0, self.remains_3 - self.reserve_stem * r_mobile_stem)
 
         reserve_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
+
+        print(reserve_leaf_provi, reserve_max)
 
         self.reserve_leaf = np.where(
             reserve_leaf_provi > reserve_max,
