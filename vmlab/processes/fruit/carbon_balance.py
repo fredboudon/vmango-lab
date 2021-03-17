@@ -413,8 +413,6 @@ class CarbonBalance(BaseParameterizedProcess):
 
         reserve_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
 
-        print(reserve_leaf_provi, reserve_max)
-
         self.reserve_leaf = np.where(
             reserve_leaf_provi > reserve_max,
             reserve_max,
