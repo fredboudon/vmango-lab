@@ -13,6 +13,7 @@ class Phenology(BaseParameterizedProcess):
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     nb_leaf = xs.foreign(topology.Topology, 'nb_leaf')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
+    flowered = xs.foreign(topology.Topology, 'flowered')
 
     gu_stages = []
     inflo_stages = []
@@ -21,11 +22,6 @@ class Phenology(BaseParameterizedProcess):
         dims='GU',
         intent='out'
     )
-    leaf_pheno_tts = xs.variable(
-        dims='GU',
-        intent='out'
-    )
-
     gu_growth_tts = xs.variable(
         dims='GU',
         intent='out'
@@ -39,7 +35,11 @@ class Phenology(BaseParameterizedProcess):
         intent='out',
         groups='phenology'
     )
-
+    nb_gu_stage = xs.variable(
+        intent='out',
+        groups='phenology',
+        static=True
+    )
     inflo_growth_tts = xs.variable(
         dims='GU',
         intent='out'
@@ -50,9 +50,14 @@ class Phenology(BaseParameterizedProcess):
     )
     inflo_stage = xs.variable(
         dims='GU',
-        intent='out'
+        intent='out',
+        groups='phenology'
     )
-
+    nb_inflo_stage = xs.variable(
+        intent='out',
+        groups='phenology',
+        static=True
+    )
     bloom_date = xs.variable(
         dims='GU',
         intent='inout',
@@ -93,16 +98,19 @@ class Phenology(BaseParameterizedProcess):
 
         params = self.parameters
 
+        self.nb_gu_stage = len(params.Tbase_gu_stage)
+        self.nb_inflo_stage = len(params.Tbase_inflo_stage)
+
+        self.gu_stages = list(reversed(range(self.nb_gu_stage)))
+        self.inflo_stages = list(reversed(range(self.nb_inflo_stage)))
+
         # apply t sums reversed so we do not visit a gu twice because it passed the stage threshold in the iteration
         params.Tbase_gu_stage = list(reversed(params.Tbase_gu_stage))
         params.Tthresh_gu_stage = list(reversed(params.Tthresh_gu_stage))
-        self.gu_stages = list(reversed(range(len(params.Tbase_gu_stage))))
         params.Tbase_inflo_stage = list(reversed(params.Tbase_inflo_stage))
         params.Tthresh_inflo_stage = list(reversed(params.Tthresh_inflo_stage))
-        self.inflo_stages = list(reversed(range(len(params.Tbase_inflo_stage))))
 
         self.leaf_growth_tts = np.zeros(self.GU.shape)
-        self.leaf_pheno_tts = np.zeros(self.GU.shape)
 
         self.gu_growth_tts = np.zeros(self.GU.shape)
         self.gu_pheno_tts = np.zeros(self.GU.shape)
@@ -134,7 +142,7 @@ class Phenology(BaseParameterizedProcess):
         Tbase_gu_stage = params.Tbase_gu_stage
         Tthresh_gu_stage = params.Tthresh_gu_stage
 
-        self.gu_growth_tts += max(0, self.TM - Tbase_gu_growth)
+        self.gu_growth_tts[self.gu_stage < 4.] += max(0, self.TM - Tbase_gu_growth)
 
         # from max(gu_stages) to min(gu_stages)
         for stage, thresh, base in zip(self.gu_stages, Tthresh_gu_stage, Tbase_gu_stage):
@@ -155,7 +163,7 @@ class Phenology(BaseParameterizedProcess):
         has_inflos = (self.nb_inflo > 0.)
 
         self.inflo_growth_tts[~has_inflos] = 0.
-        self.inflo_growth_tts[has_inflos] += max(0, self.TM - Tbase_inflo_growth)
+        self.inflo_growth_tts[has_inflos & (self.inflo_stage < 5.)] += max(0, self.TM - Tbase_inflo_growth)
 
         # from max(inflo_stages) to min(inflo_stages)
         self.inflo_stage[~has_inflos] = 0.

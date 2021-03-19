@@ -13,6 +13,7 @@ class Geometry:
     lsystem = None
 
     lstring = xs.foreign(topology.Topology, 'lstring')
+    nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     phenology = xs.group_dict('phenology')
     growth = xs.group_dict('growth')
 
@@ -24,7 +25,7 @@ class Geometry:
             'process': self
         })
 
-    @xs.runtime(args=())
-    def run_step(self):
+    @xs.runtime(args=('step'))
+    def run_step(self, step):
 
         self.scene = self.lsystem.sceneInterpretation(self.lstring)

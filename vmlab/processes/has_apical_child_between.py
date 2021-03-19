@@ -41,7 +41,7 @@ class HasApicalChildBetween(BaseProbabilityTableProcess):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 if np.any((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
-                    gu_indices = np.nonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.))
+                    gu_indices = np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.))
                     indices = self.get_indices(tbl, gu_indices)
                     probability = tbl.loc[indices.tolist()].values.flatten()
                     self.has_apical_child_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

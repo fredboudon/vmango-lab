@@ -23,6 +23,7 @@ class Topology():
 
     current_cycle = xs.variable(intent='inout')
     month_begin_veg_cycle = xs.variable(intent='in', static=True)
+    doy_begin_flowering = xs.variable(intent='in', static=True)
     seed = xs.variable(intent='in', static=True)
 
     archdev = xs.group_dict('arch_dev')
@@ -44,11 +45,13 @@ class Topology():
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
+        step_date = step_start.astype('datetime64[D]').item()
+
         self.bursted[:] = 0.
         self.appeared[:] = 0.
 
         self.bursted[self.archdev[('arch_dev', 'burst_date')] == step_start] = 1.
-        self.current_cycle = self.current_cycle + 1 if step_start.astype('datetime64[D]').item().month == self.month_begin_veg_cycle else self.current_cycle
+        self.current_cycle = self.current_cycle + 1 if step_date.month == self.month_begin_veg_cycle else self.current_cycle
 
         if np.any(self.bursted):
 

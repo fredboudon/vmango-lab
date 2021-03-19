@@ -43,7 +43,7 @@ class Fruiting(BaseProbabilityTableProcess):
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 if np.any((self.flowering == 1.) & (self.appeared == 1.)):
-                    gu_indices = np.nonzero((self.flowering == 1.) & (self.appeared == 1.))
+                    gu_indices = np.flatnonzero((self.flowering == 1.) & (self.appeared == 1.))
                     indices = self.get_indices(tbl, gu_indices)
                     probability = tbl.loc[indices.tolist()].values.flatten()
                     self.fruiting[gu_indices] = self.rng.binomial(1, probability, probability.shape)

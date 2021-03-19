@@ -64,17 +64,18 @@ class FruitGrowth(BaseParameterizedProcess):
 
         super(FruitGrowth, self).initialize()
 
-        params = self.parameters
+        # params = self.parameters
 
-        weight_1 = params.fruitDM0_weight_1
-        mu_1 = params.fruitDM0_mu_1
-        sigma_1 = params.fruitDM0_sigma_1
-        weight_2 = params.fruitDM0_weight_2
-        mu_2 = params.fruitDM0_mu_2
-        sigma_2 = params.fruitDM0_sigma_2
+        # weight_1 = params.fruitDM0_weight_1
+        # mu_1 = params.fruitDM0_mu_1
+        # sigma_1 = params.fruitDM0_sigma_1
+        # weight_2 = params.fruitDM0_weight_2
+        # mu_2 = params.fruitDM0_mu_2
+        # sigma_2 = params.fruitDM0_sigma_2
 
         self.DM_fruit_max = np.zeros(self.GU.shape)
-        self.DM_fruit_0 = np.ones(self.GU.shape) * weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
+        # self.DM_fruit_0 = np.ones(self.GU.shape) * weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
+        self.DM_fruit_0 = np.ones(self.GU.shape) * 13.
         self.D_fruit = np.zeros(self.GU.shape)
 
         self.nb_fruits_ini = np.array(self.nb_fruits_ini)
@@ -105,8 +106,14 @@ class FruitGrowth(BaseParameterizedProcess):
             e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2,
             0
         )
+
+        DM_fruit_ = np.where(
+            (self.nb_fruits > 0) & (self.DM_fruit == 0.),
+            self.DM_fruit_0,
+            self.DM_fruit
+        )
         self.D_fruit = np.array([dd_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / DM_fruit_max))
-                                 if DM_fruit_max > 0 else 0. for dd_delta, DM_fruit, DM_fruit_max in zip(self.dd_delta, self.DM_fruit, self.DM_fruit_max)])
+                                 if DM_fruit_max > 0 else 0. for dd_delta, DM_fruit, DM_fruit_max in zip(self.dd_delta, DM_fruit_, self.DM_fruit_max)])
 
     def finalize_step(self):
         pass

@@ -1,11 +1,24 @@
 from xsimlab.model import _ModelBuilder, filter_variables
 from xsimlab.variable import VarType
-from xsimlab.stores import default_fill_value_from_dtype
 import numpy as np
 
 from .vmlab import create_setup
 from . import constants, enums
 from .vmlab import DotDict
+
+
+def default_fill_value_from_dtype(dtype=None):
+    """ Try to keep NaN for not yet appeard or pruned GUs """
+    if dtype is None:
+        return 0.
+    if dtype.kind in 'f':
+        return 0.
+    elif dtype.kind == 'M':
+        return np.datetime64('NAT')
+    elif dtype.kind == 'O':
+        return None
+    else:
+        return 0.
 
 
 class State(dict):

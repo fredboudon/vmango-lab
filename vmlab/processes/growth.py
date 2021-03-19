@@ -71,10 +71,15 @@ class Growth(BaseParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
-
     final_length_inflo = xs.variable(
         dims=('GU'),
-        intent='out'
+        intent='inout',
+        groups='growth'
+    )
+    length_inflo = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        groups='growth'
     )
 
     def get_final_length_gu(self, position, position_parent, rng, params):

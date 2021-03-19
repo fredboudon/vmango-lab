@@ -119,6 +119,8 @@ GU(idx):
     length_gu = process.growth[('growth', 'length_gu')][idx]
     final_length_gu = process.growth[('growth', 'final_length_gu')][idx]
     gu_stage = process.phenology[('phenology', 'gu_stage')][idx]
+    length_inflo = process.growth[('growth', 'length_inflo')][idx]
+    inflo_stage = process.phenology[('phenology', 'inflo_stage')][idx]
     stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
     gu_growth_ratio = length_gu / final_length_gu
     if length_gu > 1e-3:

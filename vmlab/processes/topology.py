@@ -65,6 +65,10 @@ class Topology:
         dims='GU',
         intent='out'
     )
+    flowered = xs.variable(
+        dims='GU',
+        intent='out'
+    )
     cycle = xs.variable(
         dims='GU',
         intent='out'
@@ -92,12 +96,12 @@ class Topology:
 
     nb_inflo = xs.variable(
         dims='GU',
-        intent='inout'
+        intent='out'
     )
 
     nb_fruit = xs.variable(
         dims='GU',
-        intent='inout'
+        intent='out'
     )
     current_cycle = xs.variable(
         intent='inout'
@@ -106,6 +110,7 @@ class Topology:
         intent='in',
         static=True
     )
+    doy_begin_flowering = xs.variable(intent='in', static=True)
 
     @xs.runtime(args=('nsteps'))
     def initialize(self, nsteps):
@@ -118,7 +123,8 @@ class Topology:
         self.position_parent = np.full(self.GU.shape, Position.APICAL)
         self.position_parent[1:] = self.position[np.argwhere(self.adjacency)[:, 0]]
         self.nb_leaf = np.zeros(self.GU.shape)
-        self.nb_inflo = np.array(self.nb_inflo)
+        self.nb_inflo = np.zeros(self.GU.shape)
+        self.nb_fruit = np.zeros(self.GU.shape)
 
         self.ancestor = np.array([-1])
         self.ancestor_is_apical = np.array([1.])
@@ -127,6 +133,7 @@ class Topology:
         self.appearance_month = np.zeros(self.GU.shape)
         self.appearance_date = np.array(['2002-08-01'], dtype='datetime64[D]')
         self.appeared = np.zeros(self.GU.shape)
+        self.flowered = np.zeros(self.GU.shape)
         self.cycle = np.full(self.GU.shape, self.current_cycle, dtype=np.float)
 
         self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
@@ -149,8 +156,12 @@ class Topology:
 
         self.bursted[:] = 0.
         self.appeared[:] = 0.
+        self.flowered[:] = 0.
 
         self.bursted[self.archdev[('arch_dev', 'burst_date')] == step_start] = 1.
+        self.flowered[self.archdev[('flowering_week', 'flowering_date')] == step_start] = 1.
+        self.nb_inflo[self.flowered == 1.] = self.archdev[('nb_inflorescences', 'nb_inflorescences')][self.flowered == 1.]
+
         day = step_start.astype('datetime64[D]').item()
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle
 

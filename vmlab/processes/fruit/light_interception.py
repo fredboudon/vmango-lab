@@ -82,7 +82,8 @@ class LightInterception(BaseParameterizedProcess):
             sep='\\s+',
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
-        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, self.rng.integers(0, 5)].to_numpy(dtype=np.float32)
+        # self.sunlit_bs = self.sunlit_fractions_df.iloc[:, self.rng.integers(0, 5)].to_numpy(dtype=np.float32)
+        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, 2].to_numpy(dtype=np.float32)
         self.LA = np.zeros(self.GU.shape)
         self.LA_sunlit = np.zeros(self.GU.shape)
         self.LA_shaded = np.zeros(self.GU.shape)

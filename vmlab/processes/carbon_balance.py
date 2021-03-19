@@ -331,6 +331,7 @@ class CarbonBalance(BaseParameterizedProcess):
 
         assimilates_gt_mr_vegt = self.assimilates >= self.MR_veget
         mobilize_from_leaf = (self.assimilates + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
+        # fix mobilize_from_stem
         mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & (~assimilates_gt_mr_vegt & ~mobilize_from_leaf)
 
         # print(assimilates_gt_mr_vegt, mobilize_from_leaf, mobilize_from_stem)
@@ -348,14 +349,14 @@ class CarbonBalance(BaseParameterizedProcess):
         self.reserve_nmob_leaf = np.where(
             mobilize_from_leaf,
             self.assimilates + self.reserve_nmob_leaf - self.MR_veget,
-            0
+            self.reserve_nmob_leaf
         )
 
         # 2- mobilization of non-mobile reserves from stem
         self.reserve_nmob_stem = np.where(
             mobilize_from_stem,
             self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
-            0
+            self.reserve_nmob_stem
         )
 
         if not np.all(assimilates_gt_mr_vegt + mobilize_from_leaf + mobilize_from_stem):
@@ -371,13 +372,14 @@ class CarbonBalance(BaseParameterizedProcess):
             (self.MR_repro - self.remains_1) / cc_fruit,
             0
         )
-        mobilize_from_fruit = remaining_assimilates_lt_mr_repro & (self.required_DM_fruit < self.DM_fruit)
+        mobilize_from_fruit = remaining_assimilates_lt_mr_repro & (self.required_DM_fruit < self.DM_fruit * self.nb_fruit)
         self.DM_fruit = np.where(
             mobilize_from_fruit,
-            self.DM_fruit - self.required_DM_fruit,
+            self.DM_fruit - self.required_DM_fruit / self.nb_fruit,
             self.DM_fruit
         )
 
+        # fix mobilize_from_fruit: only if all DM is mobilized
         if not np.all(~remaining_assimilates_lt_mr_repro + mobilize_from_fruit):
             # TODO: What to do with variables?
             # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :

@@ -45,10 +45,10 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
                 for gu in np.flatnonzero((self.has_veg_children_between == 1.) & (self.appeared == 1.)):
                     index = self.get_indices(tbl, np.array(gu))
                     probabilities = tbl.loc[index.tolist()].values.flatten()
-                    if len(probabilities):
-                        realization = np.flatnonzero(self.rng.multinomial(1, probabilities))[0]
+                    if probabilities.sum() > 0.:
+                        realization = self.rng.multinomial(1, probabilities)
                         # in case of several results ('101-102-..') we choose the first
-                        realization = int(tbl.columns[realization].split('-')[0])
+                        realization = int(tbl.columns.to_numpy()[np.nonzero(realization)][0].split('-')[0])
                         month = realization % 100
                         if month < self.month_begin_veg_cycle:
                             year = year + 1

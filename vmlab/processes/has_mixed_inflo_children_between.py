@@ -1,7 +1,7 @@
 import xsimlab as xs
 import numpy as np
 
-from . import topology, has_veg_children_within
+from . import topology, has_veg_children_within, burst_date_children_within
 from ._base.probability_table import BaseProbabilityTableProcess
 
 
@@ -26,6 +26,7 @@ class HasMixedInfloChildrenBetween(BaseProbabilityTableProcess):
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
 
     has_veg_children_within = xs.foreign(has_veg_children_within.HasVegChildrenWithin, 'has_veg_children_within')
+    burst_date_children_within = xs.foreign(burst_date_children_within.BurstDateChildrenWithin, 'burst_date_children_within')
 
     def initialize(self):
         self.has_mixed_inflo_children_between = np.zeros(self.GU.shape)
@@ -34,14 +35,13 @@ class HasMixedInfloChildrenBetween(BaseProbabilityTableProcess):
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
-
             not_has_veg_children_within = self.has_veg_children_within == 0.
             self.has_mixed_inflo_children_between[self.appeared == 1.] = 0.
 
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 if np.any((self.appeared == 1.) & not_has_veg_children_within):
-                    gu_indices = np.nonzero((self.appeared == 1.) & not_has_veg_children_within)
+                    gu_indices = np.flatnonzero((self.appeared == 1.) & not_has_veg_children_within)
                     indices = self.get_indices(tbl, gu_indices)
                     probability = tbl.loc[indices.tolist()].values.flatten()
                     self.has_mixed_inflo_children_between[gu_indices] = self.rng.binomial(1, probability, probability.shape)

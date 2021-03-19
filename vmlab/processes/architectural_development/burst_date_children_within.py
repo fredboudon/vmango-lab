@@ -14,6 +14,7 @@ class BurstDateChildrenWithin(BaseProbabilityTableProcess):
     probability_tables = xs.any_object()
 
     burst_date_children_within = xs.variable(dims='GU', intent='out')
+    burst_month_within = xs.variable(dims='GU', intent='out')
 
     GU = xs.foreign(topology.Topology, 'GU')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
@@ -32,24 +33,33 @@ class BurstDateChildrenWithin(BaseProbabilityTableProcess):
     def initialize(self):
         self.burst_date_children_within = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.probability_tables = self.get_probability_tables()
+        self.burst_month_within = np.where(
+            self.burst_date_children_within != np.datetime64('NAT'),
+            self.burst_date_children_within.astype('datetime64[M]').astype(np.int) % 12 + 1,
+            -1
+        )
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
         if np.any(self.appeared):
             self.burst_date_children_within[self.appeared == 1.] = np.datetime64('NAT')
-            gu_mask = (self.has_veg_children_within == 1.) & (self.appeared == 1.)
-            if np.any(gu_mask):
-                gu_indices = np.nonzero(gu_mask)
-                year = step_start.astype('datetime64[D]').item().year
-                if self.current_cycle in self.probability_tables:
-                    tbl = self.probability_tables[self.current_cycle]
-                    indices = self.get_indices(tbl, gu_indices)
-                    probabilities = tbl.loc[indices.tolist()].values
-                    realization = np.array([self.rng.multinomial(1, ps) for ps in probabilities])
-                    month = (tbl.columns.to_numpy()[np.argwhere(realization)[:, 1]]).astype(np.int)
-                    self.burst_date_children_within[gu_indices] = np.where(
-                        month > self.appearance_month[gu_indices],
-                        [np.datetime64(datetime(year, month, 1)) for month in month],
-                        [np.datetime64(datetime(year + 1, month, 1)) for month in month],
-                    )
+            year = step_start.astype('datetime64[D]').item().year
+            if self.current_cycle in self.probability_tables:
+                tbl = self.probability_tables[self.current_cycle]
+                for gu in np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.)):
+                    index = self.get_indices(tbl, np.array(gu))
+                    probabilities = tbl.loc[index.tolist()].values.flatten()
+                    if probabilities.sum() > 0.:
+                        realization = self.rng.multinomial(1, probabilities)
+                        month = (tbl.columns.to_numpy()[np.nonzero(realization)]).astype(np.int)[0]
+                        appearance_month = self.appearance_month[gu]
+                        year = year if month > appearance_month else year + 1
+                        self.burst_date_children_within[gu] = np.datetime64(
+                            datetime(year, month, 1)
+                        )
+            self.burst_month_within = np.where(
+                self.burst_date_children_within != np.datetime64('NAT'),
+                self.burst_date_children_within.astype('datetime64[M]').astype(np.int) % 12 + 1,
+                -1
+            )
