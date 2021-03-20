@@ -30,7 +30,7 @@ class BaseProbabilityTableProcess():
         'ancestor_nature': list(Nature.values()),
         'flowering_week': range(0, 13),  # 0 = no flowering
         'nature': list(Nature.values()),
-        'nb_inflorescences': [0., 1., 2., 3.],
+        'nb_inflorescences': range(0, 10),
         'has_apical_child_between': [0., 1.]
     }
 

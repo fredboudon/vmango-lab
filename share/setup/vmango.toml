@@ -4,6 +4,7 @@ title = 'vmango'
 environment = '../parameters/environment_vmango.toml'
 phenology = '../parameters/phenology.toml'
 growth = '../parameters/growth.toml'
+appearance = '../parameters/growth.toml'
 
 [probability_tables]
 has_veg_children_within = '../probability_tables/interaction_glm/has_veg_children_within'

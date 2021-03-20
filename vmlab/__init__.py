@@ -7,7 +7,7 @@ from . import constants, enums
 from .vmlab import DotDict
 
 
-def default_fill_value_from_dtype(dtype=None):
+def fill_value_from_dtype(dtype=None):
     """ Try to keep NaN for not yet appeard or pruned GUs """
     if dtype is None:
         return 0.
@@ -45,12 +45,16 @@ class State(dict):
                     if 'fill_value' in var_enc:
                         fill_value = var_enc['fill_value']
                     else:
-                        fill_value = default_fill_value_from_dtype(var_value.dtype)
+                        fill_value = fill_value_from_dtype(var_value.dtype)
                     var_shape = (var_dims == index_name) * new_shape + (var_dims != index_name) * var_shape
                     if (tuple(var_shape) != var_value.shape):
-                        slices = tuple([slice(0, i) for i in var_value.shape])
-                        data = np.full(var_shape, fill_value, dtype=var_value.dtype)
-                        data[slices] = var_value
+                        if len(var_shape) == 1:
+                            data = np.empty(var_shape, dtype=var_value.dtype)
+                            data[0:var_value.shape[0]] = var_value
+                            data[var_value.shape[0]:] = fill_value
+                        else:
+                            data = np.full(var_shape, fill_value, dtype=var_value.dtype)
+                            data[tuple([slice(0, i) for i in var_value.shape])] = var_value
                         super(State, self).__setitem__(var_name, data)
 
     def __setitem__(self, item, new):

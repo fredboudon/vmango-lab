@@ -30,19 +30,12 @@ A(idx):
         has_apical_child = process.archdev[('arch_dev', 'has_apical_child')]
         nature = process.archdev[('arch_dev', 'nature')]
         # idx of first child
-        idx_first_child = process.GU.shape[0]
+        idx_first_child = process.idx_first_child
         nb_children = int(nb_lateral_children[idx] + has_apical_child[idx])
-        process.GU = np.append(process.GU, [f'GU{i + process.GU.shape[0]}' for i in range(nb_children)])
-        step_date = process.step_start.astype('datetime64[D]')
-        # initialize new GUs
-        process.appearance_month[idx_first_child:] = step_date.item().month
-        process.appearance_date[idx_first_child:] = step_date
-        process.appeared[idx_first_child:] = 1.
-        process.adjacency[np.isnan(process.adjacency)] = 0.
-        process.cycle[idx_first_child:] = process.current_cycle
         # set child idx_first_child process variable values and produce
         for i_child in range(nb_children):
             idx_child = idx_first_child + i_child
+            # apical child must come last
             if i_child == nb_children - 1 and has_apical_child[idx]:
                 process.position[idx_child] = Position.APICAL
                 nsproduce([GU(idx_child), A(idx_child)])
@@ -59,12 +52,15 @@ A(idx):
                 process.ancestor_nature[idx_child] = process.ancestor_nature[idx]
             process.adjacency[idx, idx_child] = 1.
             process.position_parent[idx_child] = process.position[idx]
+        process.idx_first_child = process.idx_first_child + nb_children
     else:
+        idx_child_apical = -1.
         for idx_child in np.flatnonzero(process.adjacency[idx, :]):
             if process.position[idx_child] == Position.APICAL:
-                nsproduce([GU(idx_child), A(idx_child)])
+                idx_child_apical = idx_child
             else:
                 nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle), GU(idx_child), A(idx_child), EB()])
-
+        if idx_child_apical >= 0:
+            nsproduce([GU(idx_child_apical), A(idx_child_apical)])
 
 endlsystem

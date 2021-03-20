@@ -15,16 +15,6 @@ leaf_pheno_angles = [0, 90, 165, 60, 60]
 leaf_pheno_angle = pgl.QuantisedFunction(
     pgl.NurbsCurve2D(pgl.Point3Array(list(enumerate(leaf_pheno_angles)), 1), degree=1)
 )
-inflo_nb_axes_length_ratio = [0.9, 10.02]
-inflo_base_color = 20
-inflo_pheno_color = [c + inflo_base_color for c in [0, 0, 1, 1, 2, 3]]
-flower_base_color = 25
-flower_pheno_color = list(range(flower_base_color, flower_base_color + 6))
-fruit_color = 32
-
-
-def inflo_color_interpolator(x, coef):
-    return 1. / (1. + exp(-(x - (0.8 - 0.6 * coef)) / 0.05))
 
 
 def color_interpolator(i, j, r):
@@ -122,12 +112,12 @@ maximum depth: 10
 
 
 GU(idx):
-    final_length_internodes = process.appearance[('appearance', 'final_length_internodes')][idx]
-    final_length_leaves = process.appearance[('appearance', 'final_length_leaves')][idx]
-    final_length_gu = process.appearance[('appearance', 'final_length_gu')][idx]
     radius_gu = process.growth[('growth', 'radius_gu')][idx]
+    final_length_internodes = process.growth[('growth', 'final_length_internodes')][idx]
+    final_length_leaves = process.growth[('growth', 'final_length_leaves')][idx]
     length_leaves = process.growth[('growth', 'length_leaves')][idx]
     length_gu = process.growth[('growth', 'length_gu')][idx]
+    final_length_gu = process.growth[('growth', 'final_length_gu')][idx]
     gu_stage = process.phenology[('phenology', 'gu_stage')][idx]
     stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
     gu_growth_ratio = length_gu / final_length_gu
@@ -159,35 +149,6 @@ GU(idx):
                 nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
             nsproduce([EB()])
         nsproduce([Sphere(radius_gu)])
-    final_length_inflos = process.appearance[('appearance', 'final_length_inflos')][idx]
-    inflo_stage = process.phenology[('phenology', 'inflo_stage')][idx]
-    length_inflos = process.growth[('growth', 'length_inflos')][idx]
-    radius_inflo = process.growth[('growth', 'radius_inflo')][idx]
-    if inflo_stage > 0 and final_length_inflos is not None:
-        stage = int(inflo_stage)
-        for final_length_inflo, length_inflo in zip(final_length_inflos, length_inflos):
-            nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
-            internode_length = length_inflo / nb_axes
-            phyloangles = [((60 + np.random.randint(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220) for i in range(nb_axes)]
-            total_phyloangles = sum(phyloangles)
-            nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
-            nsproduce([EndGC(), Tropism(0, 0, -1)])
-            if stage >= 4.:
-                if stage == 4.:
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
-                else:
-                    nsproduce([SetColor(inflo_pheno_color[5])])
-                nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
-            else:
-                nsproduce([f(0.3)])
-                if stage >= 3:
-                    elasticity = 0.005 + 0.035 * (inflo_stage % 1.)
-                else:
-                    elasticity = 0.005 * (inflo_stage / 3.)
-                nsproduce([Elasticity(elasticity)])
-                nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
-            nsproduce([EB()])
-
 
 endlsystem
 

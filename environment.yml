@@ -12,6 +12,7 @@ dependencies:
   - ipython=7
   - toml
   - matplotlib
+  - numpy>=1.20
   - pandas
   - python-igraph
   - sparse

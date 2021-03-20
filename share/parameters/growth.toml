@@ -40,6 +40,8 @@ leaf_width_length_ratio = 0.24
 
 radius_exponent_gu = 0.443
 radius_coefficient_gu = 0.415
+radius_slope_inflo = 0.3
+radius_coefficient_inflo = 0.05
 max_leafy_diameter_gu = 1.65
 final_diameter_gu = 0.2
 

@@ -1,7 +1,7 @@
 import xsimlab as xs
 import numpy as np
 
-from . import environment, topology
+from . import environment, topology, appearance
 from ._base.parameter import BaseParameterizedProcess
 
 
@@ -11,7 +11,7 @@ class Phenology(BaseParameterizedProcess):
     GU = xs.global_ref('GU')
     TM = xs.foreign(environment.Environment, 'TM')
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
-    nb_leaf = xs.foreign(topology.Topology, 'nb_leaf')
+    nb_leaf = xs.foreign(appearance.Appearance, 'nb_leaf')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
     flowered = xs.foreign(topology.Topology, 'flowered')
 
@@ -114,11 +114,11 @@ class Phenology(BaseParameterizedProcess):
 
         self.gu_growth_tts = np.zeros(self.GU.shape)
         self.gu_pheno_tts = np.zeros(self.GU.shape)
-        self.gu_stage = np.zeros(self.GU.shape)
+        self.gu_stage = np.full(self.GU.shape, float(self.nb_gu_stage))
 
         self.inflo_growth_tts = np.zeros(self.GU.shape)
         self.inflo_pheno_tts = np.zeros(self.GU.shape)
-        self.inflo_stage = np.zeros(self.GU.shape)
+        self.inflo_stage = np.full(self.GU.shape, float(self.nb_inflo_stage))
 
         self.bloom_date = np.array(self.bloom_date, dtype='datetime64[D]')
         self.DAB = np.zeros(self.GU.shape)

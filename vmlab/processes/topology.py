@@ -11,7 +11,6 @@ from vmlab.enums import Position, Nature
 class Topology:
 
     archdev = xs.group_dict('arch_dev')
-    growth = xs.group_dict('growth')
     rng = xs.global_ref('rng')
 
     lsystem = None
@@ -89,11 +88,6 @@ class Topology:
         intent='out'
     )
 
-    nb_leaf = xs.variable(
-        dims='GU',
-        intent='out'
-    )
-
     nb_inflo = xs.variable(
         dims='GU',
         intent='out'
@@ -140,7 +134,7 @@ class Topology:
             'process': self,
             'derivation_length': int(nsteps)
         })
-        self.lstring = self.lsystem.axiom
+        self.lstring = self.lsystem.derive(self.lsystem.axiom, 1, 1)
 
     @xs.runtime(args=('step', 'step_start', 'nsteps'))
     def run_step(self, step, step_start, nsteps):
@@ -150,14 +144,11 @@ class Topology:
         self.step_start = step_start
         self.nsteps = nsteps
 
-        self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
-        self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
-        self.nb_leaf = self.growth[('growth', 'nb_internode')]
-
         self.bursted[:] = 0.
         self.appeared[:] = 0.
         self.flowered[:] = 0.
 
+        # make boolean. these are just helpers and do not need to appear in sim. output
         self.bursted[self.archdev[('arch_dev', 'burst_date')] == step_start] = 1.
         self.flowered[self.archdev[('flowering_week', 'flowering_date')] == step_start] = 1.
         self.nb_inflo[self.flowered == 1.] = self.archdev[('nb_inflorescences', 'nb_inflorescences')][self.flowered == 1.]
@@ -166,4 +157,16 @@ class Topology:
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle
 
         if np.any(self.bursted):
-            self.lstring = self.lsystem.derive(self.lstring, step)
+            total_nb_children = np.sum(self.archdev[('arch_dev', 'nb_lateral_children')][self.bursted == 1.] + self.archdev[('arch_dev', 'has_apical_child')][self.bursted == 1.])
+            self.idx_first_child = self.GU.shape[0]
+            self.GU = np.append(self.GU, [f'GU{i + self.GU.shape[0]}' for i in range(int(total_nb_children))])
+            # initialize new GUs
+            step_date = step_start.astype('datetime64[D]')
+            self.appearance_month[self.idx_first_child:] = step_date.item().month
+            self.appearance_date[self.idx_first_child:] = step_date
+            self.appeared[self.idx_first_child:] = 1.
+            self.adjacency[np.isnan(self.adjacency)] = 0.
+            self.cycle[self.idx_first_child:] = self.current_cycle
+            self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
+            self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
+            self.lstring = self.lsystem.derive(self.lstring, step, 1)
