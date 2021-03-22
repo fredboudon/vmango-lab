@@ -1,0 +1,20 @@
+title = 'architectural developmentl'
+
+# all paths must be relative to this file and name must match process name in model
+[probability_tables]
+has_veg_children_within = '../probability_tables/interaction_glm/has_veg_children_within'
+has_apical_child_within = '../probability_tables/interaction_glm/has_apical_child_within'
+burst_date_children_within = '../probability_tables/interaction_glm/burst_date_children_within'
+has_lateral_children_within = '../probability_tables/interaction_glm/has_lateral_children_within'
+nb_lateral_children_within = '../probability_tables/interaction_glm/nb_lateral_children_within'
+has_mixed_inflo_children_between = '../probability_tables/interaction_glm/has_mixed_inflo_children_between'
+has_veg_children_between = '../probability_tables/interaction_glm/has_veg_children_between'
+has_apical_child_between = '../probability_tables/interaction_glm/has_apical_child_between'
+burst_date_children_between = '../probability_tables/interaction_glm/burst_date_children_between'
+has_lateral_children_between = '../probability_tables/interaction_glm/has_lateral_children_between'
+nb_lateral_children_between = '../probability_tables/interaction_glm/nb_lateral_children_between'
+flowering = '../probability_tables/interaction_glm/flowering'
+flowering_week = '../probability_tables/interaction_glm/flowering_week'
+nb_inflorescences = '../probability_tables/interaction_glm/nb_inflorescences'
+fruiting = '../probability_tables/interaction_glm/fruiting'
+nb_fruits = '../probability_tables/interaction_glm/nb_fruits'

@@ -1,13 +1,24 @@
 import xsimlab as xs
+import io
+import toml
+import warnings
+import pathlib
+
+
+class DotDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(DotDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
 
 
 def create_setup(
     model=None,
     clocks=None,
-    master_clock=None,
+    main_clock=None,
     input_vars=None,
     output_vars=None,
     fill_default=True,
+    setup_toml=None
 ):
     """Create a specific setup for model runs.
 
@@ -26,7 +37,7 @@ def create_setup(
         values are anything that can be easily converted to
         :class:`xarray.IndexVariable` objects (e.g., a 1-d
         :class:`numpy.ndarray` or a :class:`pandas.Index`).
-    master_clock : str or dict, optional
+    main_clock : str or dict, optional
         Name of the clock coordinate (dimension) to use as master clock.
         If not set, the name is inferred from ``clocks`` (only if
         one coordinate is given and if Dataset has no master clock
@@ -80,18 +91,60 @@ def create_setup(
     Shamelessly copied from xs.create_setup. But we export all if output_vars=None
     """
 
+    input_vars = {
+        **({} if input_vars is None else input_vars)
+    }
+
+    if main_clock is None and len(clocks.keys()):
+        main_clock = list(clocks.keys())[0]
+
+    # set toml file path as process input from 'parameters' section in setup_toml
+    if setup_toml is not None:
+        with io.open(setup_toml) as setup_file:
+            setup = toml.loads(setup_file.read())
+            if 'parameters' in setup:
+                dir_path = pathlib.Path(setup_toml).parent
+                for prc_name, rel_file_path in setup['parameters'].items():
+                    path = dir_path.joinpath(rel_file_path)
+                    if not path.exists():
+                        warnings.warn(f'Input file "{path}" does not exist')
+                    elif prc_name in model:
+                        # process 'prc_name' must inherit from BaseParameterizedProcess or
+                        # declare a parameter_file_path 'in' variable and handle it
+                        input_vars[f'{prc_name}__parameter_file_path'] = str(path)
+                    else:
+                        warnings.warn(f'Process "{prc_name}" does not exist')
+
+    # set toml file path as process input from 'probability_tables' section in setup_toml
+    if setup_toml is not None:
+        with io.open(setup_toml) as setup_file:
+            setup = toml.loads(setup_file.read())
+            if 'probability_tables' in setup:
+                dir_path = pathlib.Path(setup_toml).parent
+                for prc_name, rel_dir_path in setup['probability_tables'].items():
+                    path = dir_path.joinpath(rel_dir_path)
+                    if not path.exists():
+                        warnings.warn(f'Input dir "{path}" does not exist')
+                    elif prc_name in model:
+                        # process 'prc_name' must inherit from BaseProbabilityTableProcess
+                        input_vars[f'{prc_name}__table_dir_path'] = str(path)
+                    else:
+                        warnings.warn(f'Process "{prc_name}" does not exist')
+
     if output_vars is None:
         output_vars = {}
         for prc_name in model:
             output_vars[prc_name] = {}
             prc = model[prc_name]
-            for var_name in xs.filter_variables(prc, var_type='variable'):
-                output_vars[prc_name][var_name] = master_clock
+            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
+                output_vars[prc_name][var_name] = None
+            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
+                output_vars[prc_name][var_name] = main_clock
 
     return xs.create_setup(
         model,
         clocks,
-        master_clock,
+        main_clock,
         input_vars,
         output_vars,
         fill_default

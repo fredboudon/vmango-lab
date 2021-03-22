@@ -1,5 +1,5 @@
 fruitDM0_weight_1 = 0.97        # specific parameter for fruit dry mass distribution at the end of cell division [dimensionless]
-fruitDM0_mu_1 = 13.9	          # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
+fruitDM0_mu_1 = 13.9	        # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
 fruitDM0_sigma_1 = 4.1          # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
 fruitDM0_weight_2 = 0.03        # specific parameter for fruit dry mass distribution at the end of cell division [dimensionless]
 fruitDM0_mu_2 = 29.2            # specific parameter for fruit dry mass distribution at the end of cell division [g DM]

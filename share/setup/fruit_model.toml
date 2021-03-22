@@ -1,0 +1,11 @@
+title = 'fruit model'
+
+# all paths must be relative to this file and name must match process name in model
+[parameters]
+carbon_balance = '../parameters/carbon_balance.toml'
+environment = '../parameters/environment.toml'
+fruit_growth = '../parameters/fruit_growth.toml'
+fruit_quality = '../parameters/fruit_quality.toml'
+light_interception = '../parameters/light_interception.toml'
+photosynthesis = '../parameters/photosynthesis.toml'
+flower_phenology = '../parameters/phenology.toml'
