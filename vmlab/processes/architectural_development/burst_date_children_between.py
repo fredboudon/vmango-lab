@@ -38,7 +38,7 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
-            year = step_start.astype('datetime64[D]').item().year
+            step_year = step_start.astype('datetime64[D]').item().year
             self.burst_date_children_between[self.appeared == 1.] = np.datetime64('NAT')
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
@@ -46,14 +46,23 @@ class BurstDateChildrenBetween(BaseProbabilityTableProcess):
                     index = self.get_indices(tbl, np.array(gu))
                     probabilities = tbl.loc[index.tolist()].values.flatten()
                     if probabilities.sum() > 0.:
-                        realization = self.rng.multinomial(1, probabilities)
+                        realization_ = self.rng.multinomial(1, probabilities)
                         # in case of several results ('101-102-..') we choose the first
-                        realization = int(tbl.columns.to_numpy()[np.nonzero(realization)][0].split('-')[0])
+                        realization = int(tbl.columns.to_numpy()[np.nonzero(realization_)][0].split('-')[0])
                         month = realization % 100
+                        appearance_month = self.appearance_month[gu]
                         if month < self.month_begin_veg_cycle:
-                            year = year + 1
-                        if realization // 100 > 1:
-                            year = year + (realization // 100) - 1
+                            year = step_year + 1
+                        if appearance_month > self.month_begin_veg_cycle:
+                            if month < self.month_begin_veg_cycle:
+                                year = step_year + 2
+                            else:
+                                year = step_year + 1
+                        else:
+                            if month < self.month_begin_veg_cycle:
+                                year = step_year + 1
+                            else:
+                                year = step_year
                         self.burst_date_children_between[gu] = np.datetime64(datetime(
                             year,
                             month,

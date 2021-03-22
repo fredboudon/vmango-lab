@@ -331,17 +331,14 @@ class CarbonBalance(BaseParameterizedProcess):
 
         assimilates_gt_mr_vegt = self.assimilates >= self.MR_veget
         mobilize_from_leaf = (self.assimilates + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
-        # fix mobilize_from_stem
-        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & (~assimilates_gt_mr_vegt & ~mobilize_from_leaf)
-
-        # print(assimilates_gt_mr_vegt, mobilize_from_leaf, mobilize_from_stem)
-        # print(self.remains_1, self.photo, self.reserve_mob, self.MR_veget)
+        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & ~mobilize_from_leaf
+        gu_died = ~assimilates_gt_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
 
         # use of assimilates for maintenance respiration of vegetative components :
         self.remains_1 = np.where(
             assimilates_gt_mr_vegt,
             self.remains_1 + self.assimilates - self.MR_veget,
-            0
+            0.
         )
 
         # mobilization of non-mobile reserves if maintenance respiration is not satified by assimilates :
@@ -359,9 +356,19 @@ class CarbonBalance(BaseParameterizedProcess):
             self.reserve_nmob_stem
         )
 
-        if not np.all(assimilates_gt_mr_vegt + mobilize_from_leaf + mobilize_from_stem):
+        if np.any(gu_died):
             # TODO: What to do with variables?
             warnings.warn('Vegetative part of the system dies ...')
+            self.reserve_nmob_leaf = np.where(
+                gu_died,
+                0.,
+                self.reserve_nmob_leaf
+            )
+            self.reserve_nmob_stem = np.where(
+                gu_died,
+                0.,
+                self.reserve_nmob_stem
+            )
 
         # use of remaining assimilates for maintenance respiration of reproductive components :
         remaining_assimilates_lt_mr_repro = self.remains_1 < self.MR_repro
@@ -379,11 +386,17 @@ class CarbonBalance(BaseParameterizedProcess):
             self.DM_fruit
         )
 
-        # fix mobilize_from_fruit: only if all DM is mobilized
-        if not np.all(~remaining_assimilates_lt_mr_repro + mobilize_from_fruit):
+        fruit_died = ~remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
+
+        if not np.any(fruit_died):
             # TODO: What to do with variables?
             # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
             warnings.warn('Reproductive part of the system dies ...')
+            self.DM_fruit = np.where(
+                fruit_died,
+                0.,
+                self.DM_fruit
+            )
 
         self.remains_2 = np.maximum(0, self.remains_1 - self.MR_repro)
 

@@ -43,4 +43,5 @@ class HasApicalChildWithin(BaseProbabilityTableProcess):
                     gu_indices = np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.))
                     indices = self.get_indices(tbl, gu_indices)
                     probability = tbl.loc[indices.tolist()].values.flatten()
-                    self.has_apical_child_within[gu_indices] = self.rng.binomial(1, probability, probability.shape)
+                    realization = self.rng.binomial(1, probability, probability.shape)
+                    self.has_apical_child_within[gu_indices] = realization

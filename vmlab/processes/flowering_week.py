@@ -33,13 +33,14 @@ class FloweringWeek(BaseProbabilityTableProcess):
 
     def initialize(self):
         self.flowering_week = np.full(self.GU.shape, np.nan)
-        self.flowering_date = np.array(self.flowering_date)
+        self.flowering_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.probability_tables = self.get_probability_tables()
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
         if np.any(self.appeared):
             self.flowering_date[(self.appeared == 1.)] = np.datetime64('NAT')
+            self.flowering_week[(self.appeared == 1.)] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 if np.any((self.flowering == 1.) & (self.appeared == 1.)):

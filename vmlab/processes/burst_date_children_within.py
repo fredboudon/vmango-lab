@@ -44,7 +44,7 @@ class BurstDateChildrenWithin(BaseProbabilityTableProcess):
 
         if np.any(self.appeared):
             self.burst_date_children_within[self.appeared == 1.] = np.datetime64('NAT')
-            year = step_start.astype('datetime64[D]').item().year
+            step_year = step_start.astype('datetime64[D]').item().year
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
                 for gu in np.flatnonzero((self.has_veg_children_within == 1.) & (self.appeared == 1.)):
@@ -54,7 +54,7 @@ class BurstDateChildrenWithin(BaseProbabilityTableProcess):
                         realization = self.rng.multinomial(1, probabilities)
                         month = (tbl.columns.to_numpy()[np.nonzero(realization)]).astype(np.int)[0]
                         appearance_month = self.appearance_month[gu]
-                        year = year if month > appearance_month else year + 1
+                        year = step_year if month > appearance_month else step_year + 1
                         self.burst_date_children_within[gu] = np.datetime64(
                             datetime(year, month, 1)
                         )

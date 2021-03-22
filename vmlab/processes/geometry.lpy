@@ -3,6 +3,7 @@ from math import exp
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
 
+# TODO: add no fruitmodel detection
 colorcache = {}
 phyllotaxy = 144.
 branching_angle = 60.
@@ -122,13 +123,16 @@ maximum depth: 10
 
 
 GU(idx):
-    final_length_internodes = process.appearance[('appearance', 'final_length_internodes')][idx]
-    final_length_leaves = process.appearance[('appearance', 'final_length_leaves')][idx]
-    final_length_gu = process.appearance[('appearance', 'final_length_gu')][idx]
-    radius_gu = process.growth[('growth', 'radius_gu')][idx]
-    length_leaves = process.growth[('growth', 'length_leaves')][idx]
-    length_gu = process.growth[('growth', 'length_gu')][idx]
-    gu_stage = process.phenology[('phenology', 'gu_stage')][idx]
+    appearance = process.appearance
+    growth = process.growth
+    phenology = process.phenology
+    final_length_internodes = appearance[('appearance', 'final_length_internodes')][idx]
+    final_length_leaves = appearance[('appearance', 'final_length_leaves')][idx]
+    final_length_gu = appearance[('appearance', 'final_length_gu')][idx]
+    radius_gu = growth[('growth', 'radius_gu')][idx]
+    length_leaves = growth[('growth', 'length_leaves')][idx]
+    length_gu = growth[('growth', 'length_gu')][idx]
+    gu_stage = phenology[('phenology', 'gu_stage')][idx]
     stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
     gu_growth_ratio = length_gu / final_length_gu
     if length_gu > 1e-3:
@@ -159,11 +163,11 @@ GU(idx):
                 nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
             nsproduce([EB()])
         nsproduce([Sphere(radius_gu)])
-    final_length_inflos = process.appearance[('appearance', 'final_length_inflos')][idx]
-    inflo_stage = process.phenology[('phenology', 'inflo_stage')][idx]
-    length_inflos = process.growth[('growth', 'length_inflos')][idx]
-    radius_inflo = process.growth[('growth', 'radius_inflo')][idx]
+    inflo_stage = phenology[('phenology', 'inflo_stage')][idx]
+    final_length_inflos = appearance[('appearance', 'final_length_inflos')][idx]
     if inflo_stage > 0 and final_length_inflos is not None:
+        length_inflos = growth[('growth', 'length_inflos')][idx]
+        radius_inflo = growth[('growth', 'radius_inflo')][idx]
         stage = int(inflo_stage)
         for final_length_inflo, length_inflo in zip(final_length_inflos, length_inflos):
             nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
