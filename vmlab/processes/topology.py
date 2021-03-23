@@ -62,7 +62,8 @@ class Topology:
     )
     appeared = xs.variable(
         dims='GU',
-        intent='out'
+        intent='out',
+        global_name='gu_appeared'
     )
     flowered = xs.variable(
         dims='GU',

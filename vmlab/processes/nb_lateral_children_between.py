@@ -36,11 +36,11 @@ class NbLateralChildrenBetween(BaseProbabilityTableProcess):
 
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
-        if np.any(self.appeared):
+        if np.any((self.appeared == 1.) & (self.has_lateral_children_between == 1.)):
             self.nb_lateral_children_between[self.appeared == 1.] = 0.
             if self.current_cycle in self.probability_tables:
                 tbl = self.probability_tables[self.current_cycle]
-                gu_indices = np.flatnonzero(self.appeared)
+                gu_indices = np.flatnonzero((self.appeared == 1.) & (self.has_lateral_children_between == 1.))
                 indices = self.get_indices(tbl, gu_indices)
                 lam = tbl.loc[indices.tolist()].values.flatten()
                 self.nb_lateral_children_between[gu_indices] = np.round(self.rng.poisson(lam, lam.shape) + 1., 0)
