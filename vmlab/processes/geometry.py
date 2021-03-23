@@ -52,8 +52,12 @@ class Geometry:
         self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('geometry.lpy')), {
             'process': self
         })
+        self.scene = self.lsystem.sceneInterpretation(self.lstring)
 
-    @xs.runtime(args=('step'))
-    def run_step(self, step):
-        if step % self.sampling_rate == 0:
+    @xs.runtime(args=('step', 'nsteps'))
+    def run_step(self, step, nsteps):
+        if self.sampling_rate == -1:
+            if step == nsteps - 1:
+                self.scene = self.lsystem.sceneInterpretation(self.lstring)
+        elif step % self.sampling_rate == 0:
             self.scene = self.lsystem.sceneInterpretation(self.lstring)

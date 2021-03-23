@@ -82,10 +82,8 @@ class BaseProbabilityTableProcess():
                 # cast all values to float
                 tbl.astype(np.float, copy=False)
 
-                # normalize probabilities (0 <= sum(p) >= 1)
-                if 'probability' in tbl.columns:  # binominal
-                    tbl[tbl > 1.] = 1.
-                else:  # multinominal
+                # normalize probabilities (0 <= sum(p) >= 1) for nominal and multinominal distributions (lambda is possion)
+                if 'lambda' not in tbl.columns:
                     tbl.where(tbl.sum(axis=1) <= 1., tbl.divide(tbl.sum(axis=1), axis='rows'), inplace=True)
 
                 # extend tbl so all possible factor combinations are present
