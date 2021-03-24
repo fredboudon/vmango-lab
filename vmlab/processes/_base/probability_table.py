@@ -105,12 +105,10 @@ class BaseProbabilityTableProcess():
 @xs.process
 class ProbabilityTableProcess(ParameterizedProcess):
 
-    table_dir_path = xs.variable(intent='in', static=True, default=None)
-
     # new factor names (values in dict) must match variable names in process
     _factors = {
         'Burst_Month': 'appearance_month',
-        'Position_A': 'position',
+        'Position_A': 'is_apical',
         'Position_Ancestor_A': 'ancestor_is_apical',
         'Nature_Ancestor_F': 'ancestor_nature',
         'Flowering_Week': 'flowering_week',
@@ -121,7 +119,7 @@ class ProbabilityTableProcess(ParameterizedProcess):
     # factor values
     _factor_values = {
         'appearance_month': range(1, 13),
-        'position': list(Position.values()),
+        'is_apical': [0., 1.],
         'ancestor_is_apical': [0., 1.],
         'ancestor_nature': list(Nature.values()),
         'flowering_week': range(0, 13),  # 0 = no flowering
@@ -155,10 +153,11 @@ class ProbabilityTableProcess(ParameterizedProcess):
 
     def get_probability_tables(self):
 
+        dir_path = Path(self.parameter_file_path).parent
         tbls = {}
         for var_name, tbl_dir_path in self.parameters.probability_tables.items():
             tbls[var_name] = {}
-            path = Path(tbl_dir_path)
+            path = dir_path.joinpath(tbl_dir_path)
             for file in path.iterdir():
                 if file.suffix == '.csv':
                     df = pd.read_csv(file).rename(self._factors, axis=1)
@@ -213,3 +212,6 @@ class ProbabilityTableProcess(ParameterizedProcess):
                     tbls[var_name][cycle] = tbl
 
         return tbls
+
+    def initialize(self):
+        super(ProbabilityTableProcess, self).initialize()

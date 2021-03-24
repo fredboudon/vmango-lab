@@ -6,7 +6,6 @@ import zarr
 
 from . import topology
 from ._base.parameter import BaseParameterizedProcess
-from vmlab.enums import Position
 
 
 @xs.process
@@ -16,8 +15,8 @@ class Appearance(BaseParameterizedProcess):
     rng = xs.global_ref('rng')
 
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
-    position = xs.foreign(topology.Topology, 'position')
-    position_parent = xs.foreign(topology.Topology, 'position_parent')
+    is_apical = xs.foreign(topology.Topology, 'is_apical')
+    parent_is_apical = xs.foreign(topology.Topology, 'parent_is_apical')
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
     flowered = xs.foreign(topology.Topology, 'flowered')
@@ -65,20 +64,20 @@ class Appearance(BaseParameterizedProcess):
         }
     )
 
-    def get_final_length_gu(self, position, position_parent, rng, params):
-        mu, sigma = params.gu_length_distrib[(position, position_parent)]
+    def get_final_length_gu(self, is_apical, parent_is_apical, rng, params):
+        mu, sigma = params.gu_length_distrib[(is_apical, parent_is_apical)]
         gu_length = rng.normal(mu, sigma)
         while (gu_length < 5) or (gu_length > 25):
             gu_length = rng.normal(mu, sigma)
         return gu_length
 
-    def get_nb_internode(self, position, final_length_gu, params):
-        ratio, intercept = params.leaf_nb_distrib[(position, )]
+    def get_nb_internode(self, is_apical, final_length_gu, params):
+        ratio, intercept = params.leaf_nb_distrib[(is_apical, )]
         return max(round(intercept + ratio * final_length_gu), 1)
 
-    def get_final_length_internodes(self, position, final_length_gu, nb_internode, rng, params):
+    def get_final_length_internodes(self, is_apical, final_length_gu, nb_internode, rng, params):
         LEPF = 0.  # length of space before the first leaf
-        if position == Position.APICAL:
+        if is_apical == 1.:
             mu, sigma = (2.007, 0.763)
             LEPF = rng.gamma(mu, sigma)
             while (LEPF < 0) or (LEPF > 8):
@@ -106,8 +105,8 @@ class Appearance(BaseParameterizedProcess):
             final_length_inflos.append(inflo_length)
         return final_length_inflos
 
-    def get_final_length_leaves(self, position, nb_internode, get_final_length_leaf, rng, params):
-        mu, sigma = params.leaf_length_distrib[(position,)]
+    def get_final_length_leaves(self, is_apical, nb_internode, get_final_length_leaf, rng, params):
+        mu, sigma = params.leaf_length_distrib[(is_apical,)]
         leaf_length = rng.normal(mu, sigma)
         while (leaf_length < 5) or (leaf_length > 34):
             leaf_length = rng.normal(mu, sigma)
@@ -155,21 +154,21 @@ class Appearance(BaseParameterizedProcess):
             # growth units
 
             self.final_length_gu[appeared] = self.get_final_length_gu(
-                self.position[appeared],
-                self.position_parent[appeared],
+                self.is_apical[appeared],
+                self.parent_is_apical[appeared],
                 self.rng, params
             )
 
             # internodes
 
             self.nb_internode[appeared] = self.get_nb_internode(
-                self.position[appeared],
+                self.is_apical[appeared],
                 self.final_length_gu[appeared],
                 params
             )
 
             self.final_length_internodes[appeared] = self.get_final_length_internodes(
-                self.position[appeared],
+                self.is_apical[appeared],
                 self.final_length_gu[appeared],
                 self.nb_internode[appeared],
                 self.rng, params
@@ -180,7 +179,7 @@ class Appearance(BaseParameterizedProcess):
             self.nb_leaf[appeared] = self.nb_internode[appeared]
 
             self.final_length_leaves[appeared] = self.get_final_length_leaves(
-                self.position[appeared],
+                self.is_apical[appeared],
                 self.nb_internode[appeared],
                 self.get_final_length_leaf, self.rng, params
             )

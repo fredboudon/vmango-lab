@@ -114,7 +114,6 @@ execContext().turtle.setSurface('finalleaf', leaf_symbol())
 
 
 module GU(idx)
-module A(idx)
 
 production:
 

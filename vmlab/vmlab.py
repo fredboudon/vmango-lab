@@ -116,20 +116,20 @@ def create_setup(
                         warnings.warn(f'Process "{prc_name}" does not exist')
 
     # set toml file path as process input from 'probability_tables' section in setup_toml
-    if setup_toml is not None:
-        with io.open(setup_toml) as setup_file:
-            setup = toml.loads(setup_file.read())
-            if 'probability_tables' in setup:
-                dir_path = pathlib.Path(setup_toml).parent
-                for prc_name, rel_dir_path in setup['probability_tables'].items():
-                    path = dir_path.joinpath(rel_dir_path)
-                    if not path.exists():
-                        warnings.warn(f'Input dir "{path}" does not exist')
-                    elif prc_name in model:
-                        # process 'prc_name' must inherit from BaseProbabilityTableProcess
-                        input_vars[f'{prc_name}__table_dir_path'] = str(path)
-                    else:
-                        warnings.warn(f'Process "{prc_name}" does not exist')
+    # if setup_toml is not None:
+    #     with io.open(setup_toml) as setup_file:
+    #         setup = toml.loads(setup_file.read())
+    #         if 'probability_tables' in setup:
+    #             dir_path = pathlib.Path(setup_toml).parent
+    #             for prc_name, rel_dir_path in setup['probability_tables'].items():
+    #                 path = dir_path.joinpath(rel_dir_path)
+    #                 if not path.exists():
+    #                     warnings.warn(f'Input dir "{path}" does not exist')
+    #                 elif prc_name in model:
+    #                     # process 'prc_name' must inherit from BaseProbabilityTableProcess
+    #                     input_vars[f'{prc_name}__table_dir_path'] = str(path)
+    #                 else:
+    #                     warnings.warn(f'Process "{prc_name}" does not exist')
 
     output_vars_ = {}
     for prc_name in model:

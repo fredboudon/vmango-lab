@@ -2,20 +2,17 @@ import numpy as np
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
 
-from vmlab.enums import Position
-
 phyllotaxy = 144.
 branching_angle = 60.
 
 module GU(idx)
 module A(idx)
 
-
 Axiom:
     nproduce @Tp(0, 0, 1) @Ts(0.02)
     nproduce SectionResolution(8)
     nproduce @Gc
-    nproduce GU(0) A(0)
+    nproduce GU(0)A(0)
 
 
 derivation length: derivation_length
@@ -24,11 +21,10 @@ ignore: / &
 production:
 
 A(idx):
-    # grow index by nb_children
     if process.bursted[idx] == 1.:
-        nb_lateral_children = process.archdev[('arch_dev', 'nb_lateral_children')]
-        has_apical_child = process.archdev[('arch_dev', 'has_apical_child')]
-        nature = process.archdev[('arch_dev', 'nature')]
+        nb_lateral_children = process.archdev[('arch_dev', 'pot_nb_lateral_children')]
+        has_apical_child = process.archdev[('arch_dev', 'pot_has_apical_child')]
+        nature = process.archdev[('arch_dev', 'pot_nature')]
         # idx of first child
         idx_first_child = process.idx_first_child
         nb_children = int(nb_lateral_children[idx] + has_apical_child[idx])
@@ -37,26 +33,26 @@ A(idx):
             idx_child = idx_first_child + i_child
             # apical child must come last
             if i_child == nb_children - 1 and has_apical_child[idx]:
-                process.position[idx_child] = Position.APICAL
+                process.is_apical[idx_child] = 1.
                 nsproduce([GU(idx_child), A(idx_child)])
             else:
-                process.position[idx_child] = Position.LATERAL
+                process.is_apical[idx_child] = 0.
                 nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle), GU(idx_child), A(idx_child), EB()])
             if process.current_cycle != process.cycle[idx]:
                 process.ancestor[idx_child] = idx
-                process.ancestor_is_apical[idx_child] = process.position[idx]
+                process.ancestor_is_apical[idx_child] = process.is_apical[idx]
                 process.ancestor_nature[idx_child] = nature[idx]
             else:
                 process.ancestor[idx_child] = process.ancestor[idx]
                 process.ancestor_is_apical[idx_child] = process.ancestor_is_apical[idx]
                 process.ancestor_nature[idx_child] = process.ancestor_nature[idx]
             process.adjacency[idx, idx_child] = 1.
-            process.position_parent[idx_child] = process.position[idx]
+            process.parent_is_apical[idx_child] = process.is_apical[idx]
         process.idx_first_child = process.idx_first_child + nb_children
     else:
         idx_child_apical = -1.
         for idx_child in np.flatnonzero(process.adjacency[idx, :]):
-            if process.position[idx_child] == Position.APICAL:
+            if process.is_apical[idx_child] == 1.:
                 idx_child_apical = idx_child
             else:
                 nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle), GU(idx_child), A(idx_child), EB()])

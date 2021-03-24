@@ -10,17 +10,20 @@ from ._base.probability_table import ProbabilityTableProcess
 class ArchDevVegWithin(ProbabilityTableProcess):
 
     rng = xs.global_ref('rng')
-    gu_appeared = xs.global_ref('gu_appeared')
 
     GU = xs.foreign(topology.Topology, 'GU')
+    appeared = xs.foreign(topology.Topology, 'appeared')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
+    is_apical = xs.foreign(topology.Topology, 'is_apical')
+    ancestor_is_apical = xs.foreign(topology.Topology, 'ancestor_is_apical')
+    ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
 
-    tbls_has_veg_children_within = xs.any_object()
-    tbls_has_apical_child_within = xs.any_object()
-    tbls_burst_date_children_within = xs.any_object()
-    tbls_has_lateral_children_within = xs.any_object()
-    tbls_nb_lateral_children_within = xs.any_object()
+    tbls_has_veg_children_within = None
+    tbls_has_apical_child_within = None
+    tbls_burst_date_children_within = None
+    tbls_has_lateral_children_within = None
+    tbls_nb_lateral_children_within = None
 
     has_veg_children_within = xs.variable(dims='GU', intent='out')
     has_apical_child_within = xs.variable(dims='GU', intent='out')
@@ -30,6 +33,8 @@ class ArchDevVegWithin(ProbabilityTableProcess):
     nb_lateral_children_within = xs.variable(dims='GU', intent='out')
 
     def initialize(self):
+
+        super(ArchDevVegWithin, self).initialize()
 
         self.has_veg_children_within = np.zeros(self.GU.shape)
         self.has_apical_child_within = np.zeros(self.GU.shape)
@@ -73,11 +78,11 @@ class ArchDevVegWithin(ProbabilityTableProcess):
                     tbl = self.tbls_has_veg_children_within[self.current_cycle]
                     self.has_apical_child_within[gu_indices] = self.get_binomial(tbl, gu_indices)
 
-                if self.current_cycle in self.probability_tables:
+                if self.current_cycle in self.tbls_has_lateral_children_within:
                     self.has_lateral_children_within[  # True if no apical child
                         has_veg_children_within & (self.has_apical_child_within == 0.)
                     ] = 1.
-                    tbl = self.probability_tables[self.current_cycle]
+                    tbl = self.tbls_has_lateral_children_within[self.current_cycle]
                     has_apical_child_within_indices = np.flatnonzero(has_veg_children_within & (self.has_apical_child_within == 1.))
                     self.has_lateral_children_within[has_apical_child_within_indices] = self.get_binomial(tbl, has_apical_child_within_indices)
 

@@ -14,9 +14,6 @@ class Environment(BaseParameterizedProcess):
     weather_daily_df = None
     weather_hourly_df = None
 
-    # numpy random generator
-    rng = xs.any_object(global_name='rng')
-
     T_air = xs.variable(
         dims=('hour'),
         intent='out',
@@ -76,8 +73,6 @@ class Environment(BaseParameterizedProcess):
 
         self.hour = np.arange(24, dtype=np.int8)
 
-        self.rng = np.random.default_rng(self.parameters.seed)
-
         weather_file_path = pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.weather_file_path)
 
         smartis = pd.read_csv(
@@ -91,7 +86,7 @@ class Environment(BaseParameterizedProcess):
         self.weather_hourly_df = smartis.rename(
             columns={'Jour': 'DATETIME', 'tm': 'TM', 'glot': 'GR', 'um': 'RH'},
             inplace=False
-        ).set_index('DATETIME',inplace=False)
+        ).set_index('DATETIME', inplace=False)
 
         self.weather_daily_df = pd.DataFrame({
             'TM': self.weather_hourly_df['TM'].groupby(pd.Grouper(freq="1D")).mean()

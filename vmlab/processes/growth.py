@@ -14,10 +14,6 @@ class Growth(BaseParameterizedProcess):
     rng = xs.global_ref('rng')
 
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
-    position = xs.foreign(topology.Topology, 'position')
-    position_parent = xs.foreign(topology.Topology, 'position_parent')
-    nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
-    nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
 
     gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
     leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
