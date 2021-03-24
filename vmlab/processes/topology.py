@@ -46,14 +46,14 @@ class Topology:
 
         self.rng = np.random.default_rng(self.seed)
 
-        self.adjacency = np.array(self.adjacency)
+        self.adjacency = np.array(self.adjacency, dtype=np.float32)
         self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
 
-        self.ancestor_is_apical = np.array(self.ancestor_is_apical, dtype=np.float)
-        self.ancestor_nature = np.array(self.ancestor_nature, dtype=np.float)
-        self.is_apical = np.array(self.is_apical, dtype=np.float)
-        self.appearance_month = np.array(self.appearance_month, dtype=np.float)
-        self.cycle = np.array(self.cycle, dtype=np.float)
+        self.ancestor_is_apical = np.array(self.ancestor_is_apical, dtype=np.float32)
+        self.ancestor_nature = np.array(self.ancestor_nature, dtype=np.float32)
+        self.is_apical = np.array(self.is_apical, dtype=np.float32)
+        self.appearance_month = np.array(self.appearance_month, dtype=np.float32)
+        self.cycle = np.array(self.cycle, dtype=np.float32)
         self.appearance_date = np.array(self.appearance_date, dtype='datetime64[D]')
 
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
@@ -62,13 +62,13 @@ class Topology:
         self.ancestor = np.full(self.GU.shape, 0.)
         self.parent_is_apical[1:] = self.is_apical[np.argwhere(self.adjacency)[:, 0]]
 
-        self.nb_leaf = np.zeros(self.GU.shape)
-        self.nb_inflo = np.zeros(self.GU.shape)
-        self.nb_fruit = np.zeros(self.GU.shape)
+        self.nb_leaf = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
 
-        self.bursted = np.zeros(self.GU.shape)
-        self.appeared = np.zeros(self.GU.shape)
-        self.flowered = np.zeros(self.GU.shape)
+        self.bursted = np.zeros(self.GU.shape, dtype=np.float32)
+        self.appeared = np.zeros(self.GU.shape, dtype=np.float32)
+        self.flowered = np.zeros(self.GU.shape, dtype=np.float32)
 
         self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
             'process': self,
@@ -95,6 +95,7 @@ class Topology:
         self.bursted[self.archdev[('arch_dev', 'pot_burst_date')] == step_start] = 1.
         self.flowered[self.archdev[('arch_dev', 'pot_flowering_date')] == step_start] = 1.
         self.nb_inflo[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_inflo')][self.flowered == 1.]
+        self.nb_fruit[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_fruit')][self.flowered == 1.]
 
         day = step_start.astype('datetime64[D]').item()
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle
