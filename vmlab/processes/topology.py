@@ -10,7 +10,6 @@ class Topology:
 
     archdev = xs.group_dict('arch_dev')
     # numpy random generator
-    rng = xs.any_object(global_name='rng')
     seed = xs.variable(default=0)
 
     lsystem = None
@@ -43,8 +42,6 @@ class Topology:
 
     @xs.runtime(args=('nsteps', 'step_start'))
     def initialize(self, nsteps, step_start):
-
-        self.rng = np.random.default_rng(self.seed)
 
         self.adjacency = np.array(self.adjacency, dtype=np.float32)
         self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))

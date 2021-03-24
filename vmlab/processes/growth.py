@@ -11,9 +11,10 @@ from ._base.parameter import BaseParameterizedProcess
 class Growth(BaseParameterizedProcess):
 
     GU = xs.global_ref('GU')
-    rng = xs.global_ref('rng')
+    rng = None
 
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
+    seed = xs.foreign(topology.Topology, 'seed')
 
     gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
     leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
@@ -76,6 +77,8 @@ class Growth(BaseParameterizedProcess):
     def initialize(self):
 
         super(Growth, self).initialize()
+
+        self.rng = np.random.default_rng(seed=self.seed)
 
         params = self.parameters
         radius_exponent_gu = params.radius_exponent_gu

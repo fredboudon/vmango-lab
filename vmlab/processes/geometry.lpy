@@ -171,8 +171,8 @@ GU(idx):
         for final_length_inflo, length_inflo in zip(final_length_inflos, length_inflos):
             nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
             internode_length = length_inflo / nb_axes
-            phyloangles = [((60 + np.random.randint(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220) for i in range(nb_axes)]
-            total_phyloangles = sum(phyloangles)
+            phyloangles = [((60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220) for i in range(nb_axes)]
+            total_phyloangles = float(sum(phyloangles))
             nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
             nsproduce([EndGC(), Tropism(0, 0, -1)])
             if stage >= 4.:

@@ -9,9 +9,8 @@ from ._base.probability_table import ProbabilityTableProcess
 @xs.process
 class ArchDevVegWithin(ProbabilityTableProcess):
 
-    rng = xs.global_ref('rng')
-
     GU = xs.foreign(topology.Topology, 'GU')
+    seed = xs.foreign(topology.Topology, 'seed')
     appeared = xs.foreign(topology.Topology, 'appeared')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')

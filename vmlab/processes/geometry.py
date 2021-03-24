@@ -13,6 +13,7 @@ class Geometry:
 
     lstring = xs.foreign(topology.Topology, 'lstring')
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
+    seed = xs.foreign(topology.Topology, 'seed')
 
     phenology = xs.group_dict('phenology')
     growth = xs.group_dict('growth')
@@ -25,6 +26,7 @@ class Geometry:
 
     @xs.runtime(args=('nsteps'))
     def initialize(self, nsteps):
+        self.rng = np.random.default_rng(seed=self.seed)
         self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('geometry.lpy')), {
             'process': self
         })

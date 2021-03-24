@@ -11,8 +11,9 @@ from ._base.parameter import BaseParameterizedProcess
 @xs.process
 class Appearance(BaseParameterizedProcess):
 
+    rng = None
+
     GU = xs.global_ref('GU')
-    rng = xs.global_ref('rng')
 
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
@@ -20,6 +21,7 @@ class Appearance(BaseParameterizedProcess):
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
     flowered = xs.foreign(topology.Topology, 'flowered')
+    seed = xs.foreign(topology.Topology, 'seed')
 
     appeared = xs.variable(
         dims='GU',
@@ -118,6 +120,8 @@ class Appearance(BaseParameterizedProcess):
     def initialize(self):
 
         super(Appearance, self).initialize()
+
+        self.rng = np.random.default_rng(seed=self.seed)
 
         params = self.parameters
 

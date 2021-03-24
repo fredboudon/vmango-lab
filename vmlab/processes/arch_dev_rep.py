@@ -10,9 +10,8 @@ from ._base.probability_table import ProbabilityTableProcess
 @xs.process
 class ArchDevRep(ProbabilityTableProcess):
 
-    rng = xs.global_ref('rng')
-
     GU = xs.foreign(topology.Topology, 'GU')
+    seed = xs.foreign(topology.Topology, 'seed')
     appeared = xs.foreign(topology.Topology, 'appeared')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')

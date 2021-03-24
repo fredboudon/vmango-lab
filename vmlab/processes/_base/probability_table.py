@@ -10,6 +10,8 @@ from vmlab.enums import Position, Nature
 @xs.process
 class BaseProbabilityTableProcess():
 
+    rng = None
+
     table_dir_path = xs.variable(intent='in', static=True, default=None)
 
     # new factor names (values in dict) must match variable names in process
@@ -214,4 +216,5 @@ class ProbabilityTableProcess(ParameterizedProcess):
         return tbls
 
     def initialize(self):
+        self.rng = np.random.default_rng(seed=self.seed)
         super(ProbabilityTableProcess, self).initialize()
