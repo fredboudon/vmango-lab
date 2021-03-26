@@ -140,11 +140,11 @@ class Appearance(BaseParameterizedProcess):
             )
         )
 
-        self.appeared = np.ones(self.GU.shape)
-        self.nb_internode = np.ones(self.GU.shape)
-        self.final_length_internodes = np.full(self.GU.shape, None)
-        self.final_length_leaves = np.full(self.GU.shape, None)
-        self.final_length_inflos = np.full(self.GU.shape, None)
+        self.appeared = np.ones(self.GU.shape, dtype=np.float32)
+        self.nb_internode = np.ones(self.GU.shape, dtype=np.float32)
+        self.final_length_internodes = np.full(self.GU.shape, None, dtype=object)
+        self.final_length_leaves = np.full(self.GU.shape, None, dtype=object)
+        self.final_length_inflos = np.full(self.GU.shape, None, dtype=object)
 
         self.run_step(-1)
 

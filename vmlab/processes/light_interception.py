@@ -75,9 +75,9 @@ class LightInterception(ParameterizedProcess):
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
         self.sunlit_bs = self.sunlit_fractions_df.iloc[:, 3].to_numpy(dtype=np.float32)
-        self.LA = np.zeros(self.nb_gu)
-        self.LA_sunlit = np.zeros(self.nb_gu)
-        self.LA_shaded = np.zeros(self.nb_gu)
+        self.LA = np.zeros(self.nb_gu, dtype=np.float32)
+        self.LA_sunlit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.LA_shaded = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):

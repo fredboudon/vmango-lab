@@ -86,11 +86,11 @@ class Environment(BaseParameterizedProcess):
         self.weather_hourly_df = smartis.rename(
             columns={'Jour': 'DATETIME', 'tm': 'TM', 'glot': 'GR', 'um': 'RH'},
             inplace=False
-        ).set_index('DATETIME', inplace=False)
+        ).set_index('DATETIME', inplace=False).astype(np.float32)
 
         self.weather_daily_df = pd.DataFrame({
             'TM': self.weather_hourly_df['TM'].groupby(pd.Grouper(freq="1D")).mean()
-        })
+        }).astype(np.float32)
 
     @xs.runtime(args=('step', 'step_start', 'step_end', 'step_delta'))
     def run_step(self, step, step_start, step_end, step_delta):

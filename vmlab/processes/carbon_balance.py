@@ -148,13 +148,13 @@ class CarbonBalance(ParameterizedProcess):
 
         super(CarbonBalance, self).initialize()
 
-        self.carbon_supply = np.zeros(self.GU.shape)
-        self.required_DM_fruit = np.zeros(self.GU.shape)
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
-        self.DM_fruit = np.zeros(self.GU.shape)
-        self.DM_fruit_delta = np.zeros(self.GU.shape)
+        self.carbon_supply = np.zeros(self.GU.shape, dtype=np.float32)
+        self.required_DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
+        self.remains_1 = np.zeros(self.GU.shape, dtype=np.float32)
+        self.remains_2 = np.zeros(self.GU.shape, dtype=np.float32)
+        self.remains_3 = np.zeros(self.GU.shape, dtype=np.float32)
+        self.DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
+        self.DM_fruit_delta = np.zeros(self.GU.shape, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):

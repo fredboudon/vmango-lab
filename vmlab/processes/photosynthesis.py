@@ -79,13 +79,13 @@ class Photosythesis(ParameterizedProcess):
 
         super(Photosythesis, self).initialize()
 
-        self.Pmax = np.zeros(self.nb_gu)
-        self.P_rate_sunlit = np.zeros((self.nb_gu, 24))
-        self.P_rate_shaded = np.zeros((self.nb_gu, 24))
+        self.Pmax = np.zeros(self.nb_gu, dtype=np.float32)
+        self.P_rate_sunlit = np.zeros((self.nb_gu, 24), dtype=np.float32)
+        self.P_rate_shaded = np.zeros((self.nb_gu, 24), dtype=np.float32)
 
-        self.photo_shaded = np.zeros(self.nb_gu)
-        self.photo_sunlit = np.zeros(self.nb_gu)
-        self.photo = np.zeros(self.nb_gu)
+        self.photo_shaded = np.zeros(self.nb_gu, dtype=np.float32)
+        self.photo_sunlit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.photo = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):

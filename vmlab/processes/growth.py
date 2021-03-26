@@ -96,8 +96,8 @@ class Growth(BaseParameterizedProcess):
         self.get_length_inflos = np.vectorize(self.get_length_inflos, otypes=[object], excluded={'params'})
         self.get_length_leaves = np.vectorize(self.get_length_leaves, otypes=[object], excluded={'leaf_growth_tts', 'params'})
 
-        self.radius_gu = radius_coefficient_gu * (self.nb_descendants + 1) ** radius_exponent_gu
-        self.radius_inflo = np.zeros(self.GU.shape)
+        self.radius_gu = (radius_coefficient_gu * (self.nb_descendants + 1) ** radius_exponent_gu).astype(np.float32)
+        self.radius_inflo = np.zeros(self.GU.shape, dtype=np.float32)
         self.length_gu = self.final_length_gu.copy()
         self.length_leaves = self.final_length_leaves.copy()
         self.length_inflos = self.final_length_inflos.copy()
@@ -105,7 +105,7 @@ class Growth(BaseParameterizedProcess):
             self.radius_gu * 2 >= max_leafy_diameter_gu,
             0.,
             self.nb_internode
-        )
+        ).astype(np.float32)
         self.any_is_growing = False
 
     @xs.runtime(args=('step'))

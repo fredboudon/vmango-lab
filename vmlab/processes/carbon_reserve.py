@@ -105,18 +105,18 @@ class CarbonReserve(ParameterizedProcess):
         DM_stem_gu = params.DM_stem_gu
         DM_leaf_unit = params.DM_leaf_unit
 
-        self.DM_structural_leaf = DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini)
-        self.reserve_leaf = DM_leaf_unit * self.nb_leaf * r_DM_leaf_ini * cc_leaf
+        self.DM_structural_leaf = np.float32(DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini))
+        self.reserve_leaf = np.float32(DM_leaf_unit * self.nb_leaf * r_DM_leaf_ini * cc_leaf)
 
-        self.DM_structural_stem = np.full(self.nb_gu, DM_stem_gu * (1 - r_DM_stem_ini))
-        self.reserve_stem = np.full(self.nb_gu, DM_stem_gu * r_DM_stem_ini * cc_stem)
+        self.DM_structural_stem = np.full(self.nb_gu, DM_stem_gu * (1 - r_DM_stem_ini), dtype=np.float32)
+        self.reserve_stem = np.full(self.nb_gu, DM_stem_gu * r_DM_stem_ini * cc_stem, dtype=np.float32)
 
-        self.reserve_mob = (r_mobile_leaf * self.reserve_leaf) + (r_mobile_stem * self.reserve_stem)
+        self.reserve_mob = ((r_mobile_leaf * self.reserve_leaf) + (r_mobile_stem * self.reserve_stem)).astype(np.float32)
 
-        self.reserve_nmob_leaf = self.reserve_leaf * (1 - r_mobile_leaf)
-        self.reserve_nmob_stem = self.reserve_stem * (1 - r_mobile_stem)
+        self.reserve_nmob_leaf = (self.reserve_leaf * (1 - r_mobile_leaf)).astype(np.float32)
+        self.reserve_nmob_stem = (self.reserve_stem * (1 - r_mobile_stem)).astype(np.float32)
 
-        self.reserve_leaf_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
+        self.reserve_leaf_max = ((r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf).astype(np.float32)
 
     @xs.runtime(args=())
     def run_step(self):

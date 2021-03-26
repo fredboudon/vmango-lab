@@ -37,16 +37,16 @@ class ArchDevVegWithin(ProbabilityTableProcess):
 
         super(ArchDevVegWithin, self).initialize()
 
-        self.has_veg_children_within = np.zeros(self.GU.shape)
-        self.has_apical_child_within = np.zeros(self.GU.shape)
+        self.has_veg_children_within = np.zeros(self.GU.shape, dtype=np.float32)
+        self.has_apical_child_within = np.zeros(self.GU.shape, dtype=np.float32)
         self.burst_date_children_within = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.burst_month_children_within = np.where(
             self.burst_date_children_within != np.datetime64('NAT'),
             self.burst_date_children_within.astype('datetime64[M]').astype(np.int) % 12 + 1,
             -1
-        )
-        self.has_lateral_children_within = np.zeros(self.GU.shape)
-        self.nb_lateral_children_within = np.zeros(self.GU.shape)
+        ).astype(np.int8)
+        self.has_lateral_children_within = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nb_lateral_children_within = np.zeros(self.GU.shape, dtype=np.float32)
 
         probability_tables = self.get_probability_tables()
 

@@ -109,20 +109,20 @@ class Phenology(BaseParameterizedProcess):
         params.Tbase_inflo_stage = list(reversed(params.Tbase_inflo_stage))
         params.Tthresh_inflo_stage = list(reversed(params.Tthresh_inflo_stage))
 
-        self.leaf_growth_tts = np.zeros(self.GU.shape)
+        self.leaf_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
 
-        self.gu_growth_tts = np.zeros(self.GU.shape)
-        self.gu_pheno_tts = np.zeros(self.GU.shape)
-        self.gu_stage = np.full(self.GU.shape, float(self.nb_gu_stage))
+        self.gu_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
+        self.gu_pheno_tts = np.zeros(self.GU.shape, dtype=np.float32)
+        self.gu_stage = np.full(self.GU.shape, np.float32(self.nb_gu_stage))
 
-        self.inflo_growth_tts = np.zeros(self.GU.shape)
-        self.inflo_pheno_tts = np.zeros(self.GU.shape)
-        self.inflo_stage = np.full(self.GU.shape, float(self.nb_inflo_stage))
+        self.inflo_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
+        self.inflo_pheno_tts = np.zeros(self.GU.shape, dtype=np.float32)
+        self.inflo_stage = np.full(self.GU.shape, np.float32(self.nb_inflo_stage))
 
         self.full_bloom_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
-        self.DAFB = np.zeros(self.GU.shape)
-        self.fruit_growth_tts = np.zeros(self.GU.shape)
-        self.fruit_growth_tts_delta = np.zeros(self.GU.shape)
+        self.DAFB = np.zeros(self.GU.shape, dtype=np.float32)
+        self.fruit_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
+        self.fruit_growth_tts_delta = np.zeros(self.GU.shape, dtype=np.float32)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):

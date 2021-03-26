@@ -127,12 +127,12 @@ class CarbonDemand(ParameterizedProcess):
         self.DM_fruit_0 = weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
         self.DM_fruit_max = e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2
 
-        self.D_fruit = np.zeros(self.nb_gu)
-        self.MR_stem = np.zeros(self.nb_gu)
-        self.MR_leaf = np.zeros(self.nb_gu)
-        self.MR_fruit = np.zeros(self.nb_gu)
-        self.MR_repro = np.zeros(self.nb_gu)
-        self.MR_veget = np.zeros(self.nb_gu)
+        self.D_fruit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.MR_stem = np.zeros(self.nb_gu, dtype=np.float32)
+        self.MR_leaf = np.zeros(self.nb_gu, dtype=np.float32)
+        self.MR_fruit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.MR_repro = np.zeros(self.nb_gu, dtype=np.float32)
+        self.MR_veget = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):

@@ -25,7 +25,7 @@ class ArchDevMix(ProbabilityTableProcess):
 
         super(ArchDevMix, self).initialize()
 
-        self.has_mixed_inflo_children_between = np.zeros(self.GU.shape)
+        self.has_mixed_inflo_children_between = np.zeros(self.GU.shape, dtype=np.float32)
 
         probability_tables = self.get_probability_tables()
 

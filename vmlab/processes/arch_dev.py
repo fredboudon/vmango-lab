@@ -46,11 +46,11 @@ class ArchDev:
 
         self.pot_burst_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.pot_flowering_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
-        self.pot_nature = np.full(self.GU.shape, Nature.VEGETATIVE)
-        self.pot_has_apical_child = np.full(self.GU.shape, 0.)
-        self.pot_nb_lateral_children = np.full(self.GU.shape, 0.)
-        self.pot_nb_inflo = np.full(self.GU.shape, 0.)
-        self.pot_nb_fruit = np.full(self.GU.shape, 0.)
+        self.pot_nature = np.full(self.GU.shape, Nature.VEGETATIVE, dtype=np.float32)
+        self.pot_has_apical_child = np.zeros(self.GU.shape, dtype=np.float32)
+        self.pot_nb_lateral_children = np.zeros(self.GU.shape, dtype=np.float32)
+        self.pot_nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
+        self.pot_nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
 
         self.run_step(-1)
 

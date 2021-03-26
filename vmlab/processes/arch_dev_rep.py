@@ -43,13 +43,13 @@ class ArchDevRep(ProbabilityTableProcess):
 
         super(ArchDevRep, self).initialize()
 
-        self.flowering = np.zeros(self.GU.shape)
-        self.flowering_week = np.zeros(self.GU.shape)
+        self.flowering = np.zeros(self.GU.shape, dtype=np.float32)
+        self.flowering_week = np.zeros(self.GU.shape, dtype=np.float32)
         self.flowering_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
-        self.nb_inflorescences = np.zeros(self.GU.shape)
-        self.fruiting = np.zeros(self.GU.shape)
-        self.nb_fruits = np.zeros(self.GU.shape)
-        self.nature = np.full(self.GU.shape, Nature.VEGETATIVE)
+        self.nb_inflorescences = np.zeros(self.GU.shape, dtype=np.float32)
+        self.fruiting = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nb_fruits = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nature = np.full(self.GU.shape, Nature.VEGETATIVE, dtype=np.float32)
 
         probability_tables = self.get_probability_tables()
 

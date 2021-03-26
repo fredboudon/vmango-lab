@@ -106,7 +106,7 @@ def create_setup(
             shape = (len(graph.vs.indices),)
             for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and var.metadata['dims'] == (('GU',),)):
                 if f'{prc_name}__{var_name}' not in input_vars:
-                    input_vars[f'{prc_name}__{var_name}'] = np.empty(shape)
+                    input_vars[f'{prc_name}__{var_name}'] = np.empty(shape, dtype=np.float32)
 
     return xs.create_setup(
         model,
