@@ -16,6 +16,8 @@ class ArchDevVegBetween(ProbabilityTableProcess):
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     month_begin_veg_cycle = xs.foreign(topology.Topology, 'month_begin_veg_cycle')
+    is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
+    sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
 
     has_veg_children_within = xs.foreign(arch_dev_veg_within.ArchDevVegWithin, 'has_veg_children_within')
 
@@ -63,10 +65,14 @@ class ArchDevVegBetween(ProbabilityTableProcess):
         self.tbls_has_lateral_children_between = probability_tables['has_lateral_children_between']
         self.tbls_nb_lateral_children_between = probability_tables['nb_lateral_children_between']
 
+        self.run_step(-1, self.sim_start_date)
+
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
-        maybe_has_veg_children_between = (self.appeared == 1.) & (self.has_veg_children_within == 0.)
+        appeared = (self.appeared == 1.) if step >= 0 else (self.is_initially_terminal == 1.)
+
+        maybe_has_veg_children_between = appeared & (self.has_veg_children_within == 0.)
         step_year = step_start.astype('datetime64[D]').item().year
 
         if np.any(maybe_has_veg_children_between):
@@ -107,18 +113,18 @@ class ArchDevVegBetween(ProbabilityTableProcess):
                             cycle_months = tbl.columns.to_numpy()[np.nonzero(realization)][0].split('-')
                             cycle_month = int(self.rng.choice(cycle_months))
                             appearance_month = self.appearance_month[gu]
-                            # cycle = cycle_month // 100
+                            cycle = cycle_month // 100
                             month = cycle_month % 100
                             if month < self.month_begin_veg_cycle:
-                                year = step_year + 1
+                                year = step_year + cycle
                             if appearance_month > self.month_begin_veg_cycle:
                                 if month < self.month_begin_veg_cycle:
-                                    year = step_year + 2
+                                    year = step_year + cycle + 1
                                 else:
-                                    year = step_year + 1
+                                    year = step_year + cycle
                             else:
                                 if month < self.month_begin_veg_cycle:
-                                    year = step_year + 1
+                                    year = step_year + cycle
                                 else:
                                     year = step_year
                             self.burst_date_children_between[gu] = np.datetime64(datetime(

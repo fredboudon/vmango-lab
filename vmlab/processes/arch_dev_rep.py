@@ -19,6 +19,8 @@ class ArchDevRep(ProbabilityTableProcess):
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
     doy_begin_flowering = xs.foreign(topology.Topology, 'doy_begin_flowering')
+    is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
+    sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
 
     has_veg_children_within = xs.foreign(arch_dev_veg_within.ArchDevVegWithin, 'has_veg_children_within')
     has_mixed_inflo_children_between = xs.foreign(arch_dev_mix.ArchDevMix, 'has_mixed_inflo_children_between')
@@ -57,10 +59,14 @@ class ArchDevRep(ProbabilityTableProcess):
         self.tbls_fruiting = probability_tables['fruiting']
         self.tbls_nb_fruits = probability_tables['nb_fruits']
 
+        self.run_step(-1, self.sim_start_date)
+
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
-        maybe_flowering = (self.appeared == 1.) & (self.has_veg_children_within == 0.) & (self.has_mixed_inflo_children_between == 0.)
+        appeared = (self.appeared == 1.) if step >= 0 else (self.is_initially_terminal == 1.)
+
+        maybe_flowering = appeared & (self.has_veg_children_within == 0.) & (self.has_mixed_inflo_children_between == 0.)
 
         if np.any(maybe_flowering):
 

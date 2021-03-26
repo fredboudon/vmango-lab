@@ -1,17 +1,17 @@
 import xsimlab as xs
 import numpy as np
 
-from . import light_interception, carbon_demand, topology
-from ._base.parameter import BaseParameterizedProcess
+from . import light_interception, carbon_demand
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Photosythesis(BaseParameterizedProcess):
+class Photosythesis(ParameterizedProcess):
     """ Compute leaf photosythesis per GUs
         - photosythesis only for fully developed GUs (gu_stage >= 4.)
     """
 
-    GU = xs.foreign(topology.Topology, 'GU')
+    nb_gu = xs.global_ref('nb_gu')
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
 
@@ -79,13 +79,13 @@ class Photosythesis(BaseParameterizedProcess):
 
         super(Photosythesis, self).initialize()
 
-        self.Pmax = np.zeros(self.GU.shape)
-        self.P_rate_sunlit = np.zeros((self.GU.shape[0], 24))
-        self.P_rate_shaded = np.zeros((self.GU.shape[0], 24))
+        self.Pmax = np.zeros(self.nb_gu)
+        self.P_rate_sunlit = np.zeros((self.nb_gu, 24))
+        self.P_rate_shaded = np.zeros((self.nb_gu, 24))
 
-        self.photo_shaded = np.zeros(self.GU.shape)
-        self.photo_sunlit = np.zeros(self.GU.shape)
-        self.photo = np.zeros(self.GU.shape)
+        self.photo_shaded = np.zeros(self.nb_gu)
+        self.photo_sunlit = np.zeros(self.nb_gu)
+        self.photo = np.zeros(self.nb_gu)
 
     @xs.runtime(args=())
     def run_step(self):

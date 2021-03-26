@@ -22,14 +22,11 @@ class Appearance(BaseParameterizedProcess):
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
     flowered = xs.foreign(topology.Topology, 'flowered')
     seed = xs.foreign(topology.Topology, 'seed')
+    is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
 
     appeared = xs.variable(
         dims='GU',
         intent='out'
-    )
-    nb_leaf = xs.variable(
-        dims='GU',
-        intent='inout'
     )
     final_length_gu = xs.variable(
         dims=('GU'),
@@ -38,12 +35,12 @@ class Appearance(BaseParameterizedProcess):
     )
     nb_internode = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='appearance'
     )
     final_length_internodes = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='appearance',
         encoding={
             'object_codec': zarr.JSON()
@@ -51,7 +48,7 @@ class Appearance(BaseParameterizedProcess):
     )
     final_length_leaves = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='appearance',
         encoding={
             'object_codec': zarr.JSON()
@@ -59,7 +56,7 @@ class Appearance(BaseParameterizedProcess):
     )
     final_length_inflos = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='appearance',
         encoding={
             'object_codec': zarr.JSON()
@@ -144,13 +141,18 @@ class Appearance(BaseParameterizedProcess):
         )
 
         self.appeared = np.ones(self.GU.shape)
+        self.nb_internode = np.ones(self.GU.shape)
+        self.final_length_internodes = np.full(self.GU.shape, None)
+        self.final_length_leaves = np.full(self.GU.shape, None)
+        self.final_length_inflos = np.full(self.GU.shape, None)
+
+        self.run_step(-1)
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
 
         params = self.parameters
-
-        appeared = self.appeared_topo == 1.
+        appeared = (self.appeared_topo == 1.) if step >= 0 else np.full(self.GU.shape, True)
         flowered = self.flowered == 1.
 
         if np.any(appeared):
@@ -179,8 +181,6 @@ class Appearance(BaseParameterizedProcess):
             )
 
             # leaves
-
-            self.nb_leaf[appeared] = self.nb_internode[appeared]
 
             self.final_length_leaves[appeared] = self.get_final_length_leaves(
                 self.is_apical[appeared],

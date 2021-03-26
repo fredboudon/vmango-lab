@@ -3,24 +3,22 @@ import pandas as pd
 import numpy as np
 import pathlib
 
-from . import environment, topology
-from ._base.parameter import BaseParameterizedProcess
+from . import environment, growth
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class LightInterception(BaseParameterizedProcess):
+class LightInterception(ParameterizedProcess):
     """ Compute light interception for photosynthetically active radiation
     """
 
     sunlit_bs = None
 
+    nb_gu = xs.global_ref('nb_gu')
     GR = xs.foreign(environment.Environment, 'GR')
     hour = xs.foreign(environment.Environment, 'hour')
 
-    rng = xs.global_ref('rng')
-
-    GU = xs.foreign(topology.Topology, 'GU')
-    nb_leaves = xs.foreign(topology.Topology, 'nb_leaves')
+    nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
     LA = xs.variable(
         dims=('GU'),
@@ -76,10 +74,10 @@ class LightInterception(BaseParameterizedProcess):
             sep='\\s+',
             usecols=['q10', 'q25', 'q50', 'q75', 'q90']
         )
-        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, self.rng.integers(0, 5)].to_numpy(dtype=np.float32)
-        self.LA = np.zeros(self.GU.shape)
-        self.LA_sunlit = np.zeros(self.GU.shape)
-        self.LA_shaded = np.zeros(self.GU.shape)
+        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, 3].to_numpy(dtype=np.float32)
+        self.LA = np.zeros(self.nb_gu)
+        self.LA_sunlit = np.zeros(self.nb_gu)
+        self.LA_shaded = np.zeros(self.nb_gu)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -103,7 +101,7 @@ class LightInterception(BaseParameterizedProcess):
         self.PAR_shaded = k_3 * self.PAR
 
         # leaf area (eq. 11) :
-        self.LA = e_nleaf2LA_1 * self.nb_leaves ** e_nleaf2LA_2
+        self.LA = e_nleaf2LA_1 * self.nb_leaf ** e_nleaf2LA_2
 
         self.LA_sunlit = np.array([self.sunlit_bs * sunlit_ws * LA for LA in self.LA])
         self.LA_shaded = np.array([LA - LA_sunlit for LA, LA_sunlit in zip(self.LA, self.LA_sunlit)])

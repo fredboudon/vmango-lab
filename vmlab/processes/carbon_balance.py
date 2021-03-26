@@ -3,146 +3,34 @@ import numpy as np
 import warnings
 
 from . import (
-    environment,
+    growth,
     photosynthesis,
+    carbon_reserve,
     carbon_demand,
-    topology,
-    phenology
+    topology
 )
-from ._base.parameter import BaseParameterizedProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class CarbonBalance(BaseParameterizedProcess):
+class CarbonBalance(ParameterizedProcess):
     """
         - only for fully developed GUs (gu_stage >= 4.)
     """
 
-    TM_air = xs.foreign(environment.Environment, 'TM_air')
-    T_fruit = xs.foreign(environment.Environment, 'T_fruit')
-    GR = xs.foreign(environment.Environment, 'GR')
-
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
 
-    DM_fruit_max = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_max')
-    DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
 
-    dd_delta = xs.foreign(phenology.Phenology, 'dd_delta')
+    reserve_mob = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_mob')
+    reserve_nmob_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_leaf')
+    reserve_nmob_stem = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_stem')
 
     GU = xs.foreign(topology.Topology, 'GU')
-    nb_leaf = xs.foreign(topology.Topology, 'nb_leaf')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
+    nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
-    DM_structural_stem = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='dry mass of the structural part of stem',
-        attrs={
-            'unit': 'g DM'
-        }
-    )
-
-    DM_structural_leaf = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='dry mass of the structural part of leaves',
-        attrs={
-            'unit': 'g DM'
-        }
-    )
-
-    reserve_stem = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='carbon in stem reserves',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
-    reserve_leaf = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='carbon in leaf reserves',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
-    reserve_mob = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='carbon in leaf and stem mobile reserves',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
-    reserve_nmob_stem = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='carbon in stem "non-mobile" (not easily mobilized) reserves',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
-    reserve_nmob_leaf = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='carbon in leaf "non-mobile" (not easily mobilized) reserves',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
-    MR_stem = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily maintenance respiration demand of stem',
-        attrs={
-            'unit': 'g C day-1'
-        }
-    )
-
-    MR_leaf = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily maintenance respiration demand of leaves',
-        attrs={
-            'unit': 'g C day-1'
-        }
-    )
-
-    MR_fruit = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily maintenance respiration demand of fruits',
-        attrs={
-            'unit': 'g C day-1'
-        }
-    )
-
-    MR_repro = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily maintenance respiration demand of reproductive components (fruits)',
-        attrs={
-            'unit': 'g C day-1'
-        }
-    )
-
-    MR_veget = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='daily maintenance respiration demand of vegetative components (leaves and stem)',
-        attrs={
-            'unit': 'g C day-1'
-        }
-    )
-
-    assimilates = xs.variable(
+    carbon_supply = xs.variable(
         dims=('GU'),
         intent='out',
         description='carbon available as assimilates from leaf photosynthesis and mobile reserves',
@@ -187,15 +75,6 @@ class CarbonBalance(BaseParameterizedProcess):
         }
     )
 
-    reserve_leaf_max = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='maximal amount of carbon that can be stored in leaf reserves (threshold for reserve saturation)',
-        attrs={
-            'unit': 'g C'
-        }
-    )
-
     DM_fruit = xs.variable(
         dims=('GU'),
         intent='inout',
@@ -215,42 +94,67 @@ class CarbonBalance(BaseParameterizedProcess):
         }
     )
 
+    reserve_stem_delta = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        description='change in carbon in stem reserves',
+        attrs={
+            'unit': 'g C'
+        },
+        groups='carbon_balance'
+    )
+
+    reserve_leaf_delta = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        description='change in carbon in leaf reserves',
+        attrs={
+            'unit': 'g C'
+        },
+        groups='carbon_balance'
+    )
+
+    reserve_mob_delta = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        description='change in carbon in leaf and stem mobile reserves',
+        attrs={
+            'unit': 'g C'
+        },
+        groups='carbon_balance'
+    )
+
+    reserve_nmob_stem_delta = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        description='change in carbon in stem "non-mobile" (not easily mobilized) reserves',
+        attrs={
+            'unit': 'g C'
+        },
+        groups='carbon_balance'
+    )
+
+    reserve_nmob_leaf_delta = xs.variable(
+        dims=('GU'),
+        intent='inout',
+        description='change in carbon in leaf "non-mobile" (not easily mobilized) reserves',
+        attrs={
+            'unit': 'g C'
+        },
+        groups='carbon_balance'
+    )
+
     def initialize(self):
 
         super(CarbonBalance, self).initialize()
 
-        params = self.parameters
-
-        cc_stem = params.cc_stem
-        cc_leaf = params.cc_leaf
-        r_DM_stem_ini = params.r_DM_stem_ini
-        r_DM_leaf_ini = params.r_DM_leaf_ini
-        DM_stem = params.DM_stem_gu
-        DM_leaf_unit = params.DM_leaf_unit
-
-        # initial amount of carbon in leaf and stem reserves :
-        self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.nb_leaf) * r_DM_leaf_ini * cc_leaf
-        self.reserve_stem = np.ones(self.GU.shape) * DM_stem * r_DM_stem_ini * cc_stem
-
-        self.DM_structural_stem = np.zeros(self.GU.shape)
-        self.DM_structural_leaf = np.zeros(self.GU.shape)
-        self.reserve_mob = np.zeros(self.GU.shape)
-        self.reserve_nmob_stem = np.zeros(self.GU.shape)
-        self.reserve_nmob_leaf = np.zeros(self.GU.shape)
-        self.MR_stem = np.zeros(self.GU.shape)
-        self.MR_leaf = np.zeros(self.GU.shape)
-        self.MR_fruit = np.zeros(self.GU.shape)
-        self.MR_repro = np.zeros(self.GU.shape)
-        self.MR_veget = np.zeros(self.GU.shape)
-        self.assimilates = np.zeros(self.GU.shape)
+        self.carbon_supply = np.zeros(self.GU.shape)
         self.required_DM_fruit = np.zeros(self.GU.shape)
         self.remains_1 = np.zeros(self.GU.shape)
         self.remains_2 = np.zeros(self.GU.shape)
         self.remains_3 = np.zeros(self.GU.shape)
-        self.reserve_leaf_max = np.zeros(self.GU.shape)
         self.DM_fruit = np.zeros(self.GU.shape)
         self.DM_fruit_delta = np.zeros(self.GU.shape)
-        # self.D_fruit = np.zeros(self.GU.shape)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -322,22 +226,22 @@ class CarbonBalance(BaseParameterizedProcess):
         #    3- accumulation and replenishment of reserves in leaves and then in stem
 
         # pool of assimilates
-        self.assimilates = self.photo + self.reserve_mob
+        self.carbon_supply = self.photo + self.reserve_mob
 
         # 1- assimilates are used for maintenance respiration
         # Priority rules for maintenance respiration :
         #    1- vegetative components
         #    2- reproductive components
 
-        assimilates_gt_mr_vegt = self.assimilates >= self.MR_veget
-        mobilize_from_leaf = (self.assimilates + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
-        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & ~mobilize_from_leaf
+        assimilates_gt_mr_vegt = self.carbon_supply >= self.MR_veget
+        mobilize_from_leaf = (self.carbon_supply + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
+        mobilize_from_stem = (self.carbon_supply + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & ~mobilize_from_leaf
         gu_died = ~assimilates_gt_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
 
         # use of assimilates for maintenance respiration of vegetative components :
         self.remains_1 = np.where(
             assimilates_gt_mr_vegt,
-            self.remains_1 + self.assimilates - self.MR_veget,
+            self.remains_1 + self.carbon_supply - self.MR_veget,
             0.
         )
 
@@ -345,14 +249,14 @@ class CarbonBalance(BaseParameterizedProcess):
         # 1- mobilization of non-mobile reserves from leaves
         self.reserve_nmob_leaf = np.where(
             mobilize_from_leaf,
-            self.assimilates + self.reserve_nmob_leaf - self.MR_veget,
+            self.carbon_supply + self.reserve_nmob_leaf - self.MR_veget,
             self.reserve_nmob_leaf
         )
 
         # 2- mobilization of non-mobile reserves from stem
         self.reserve_nmob_stem = np.where(
             mobilize_from_stem,
-            self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
+            self.carbon_supply + self.reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
             self.reserve_nmob_stem
         )
 
@@ -413,17 +317,17 @@ class CarbonBalance(BaseParameterizedProcess):
         reserve_stem_provi = self.reserve_nmob_stem + np.minimum(self.remains_3, self.reserve_stem * r_mobile_stem)
         reserve_leaf_provi = self.reserve_nmob_leaf + np.maximum(0, self.remains_3 - self.reserve_stem * r_mobile_stem)
 
-        reserve_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
+        reserve_leaf_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
 
         self.reserve_leaf = np.where(
-            reserve_leaf_provi > reserve_max,
-            reserve_max,
+            reserve_leaf_provi > reserve_leaf_max,
+            reserve_leaf_max,
             reserve_leaf_provi
         )
 
         self.reserve_stem = np.where(
-            reserve_leaf_provi > reserve_max,
-            reserve_stem_provi + reserve_leaf_provi - reserve_max,
+            reserve_leaf_provi > reserve_leaf_max,
+            reserve_stem_provi + reserve_leaf_provi - reserve_leaf_max,
             reserve_stem_provi
         )
 

@@ -129,6 +129,7 @@ GU(idx):
     final_length_leaves = appearance[('appearance', 'final_length_leaves')][idx]
     final_length_gu = appearance[('appearance', 'final_length_gu')][idx]
     radius_gu = growth[('growth', 'radius_gu')][idx]
+    nb_leaf = growth[('growth', 'nb_leaf')][idx]
     length_leaves = growth[('growth', 'length_leaves')][idx]
     length_gu = growth[('growth', 'length_gu')][idx]
     gu_stage = phenology[('phenology', 'gu_stage')][idx]
@@ -146,21 +147,22 @@ GU(idx):
                 length_petiole = max(0.01, (1 - (i * posnorm)) * final_length_leaf / 4.)
             # internode
             nsproduce([F(final_length_internode * gu_growth_ratio, radius_gu), RollL(phyllotaxy)])
-            # leaf & petiole
-            nsproduce([SB()])
-            nsproduce([EndGC(), Elasticity(0.), Down(90), f(radius_gu), Up(90)])
-            nsproduce([Down(leaf_pheno_angle(gu_stage)), SetWidth(radius_petiole)])
-            nsproduce([SetWidth(radius_petiole), SetGuide(petioleCurve, length_petiole), F(length_petiole)])
-            nsproduce([RollToVert()])
-            if gu_stage >= 4.:
-                nsproduce([SetColor(leaf_pheno_colors[-1]), surface('finalleaf', final_length_leaf)])
-            else:
-                if gu_stage % 1. > 0:
-                    nsproduce([SetColor(color_interpolator(leaf_pheno_colors[int(gu_stage)], leaf_pheno_colors[int(gu_stage) + 1], gu_stage % 1.))])
+            if nb_leaf > 0.:
+                # leaf & petiole
+                nsproduce([SB()])
+                nsproduce([EndGC(), Elasticity(0.), Down(90), f(radius_gu), Up(90)])
+                nsproduce([Down(leaf_pheno_angle(gu_stage)), SetWidth(radius_petiole)])
+                nsproduce([SetWidth(radius_petiole), SetGuide(petioleCurve, length_petiole), F(length_petiole)])
+                nsproduce([RollToVert()])
+                if gu_stage >= 4.:
+                    nsproduce([SetColor(leaf_pheno_colors[-1]), surface('finalleaf', final_length_leaf)])
                 else:
-                    nsproduce([SetColor(leaf_pheno_colors[int(gu_stage)])])
-                nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
-            nsproduce([EB()])
+                    if gu_stage % 1. > 0:
+                        nsproduce([SetColor(color_interpolator(leaf_pheno_colors[int(gu_stage)], leaf_pheno_colors[int(gu_stage) + 1], gu_stage % 1.))])
+                    else:
+                        nsproduce([SetColor(leaf_pheno_colors[int(gu_stage)])])
+                    nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
+                nsproduce([EB()])
         nsproduce([Sphere(radius_gu)])
     inflo_stage = phenology[('phenology', 'inflo_stage')][idx]
     final_length_inflos = appearance[('appearance', 'final_length_inflos')][idx]

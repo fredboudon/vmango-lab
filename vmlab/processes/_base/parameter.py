@@ -35,8 +35,7 @@ class ParameterizedProcess:
     # must be called by the inheriting class
     def initialize(self):
         if self.parameter_file_path is None:
-            warnings.warn('Parameter file path not set')
-            self.parameters = DotDict()
+            raise ValueError('Parameter file path not set')
         else:
             with io.open(self.parameter_file_path) as param_file:
                 self.parameters = toml.loads(param_file.read(), _dict=DotDict)

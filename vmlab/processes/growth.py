@@ -33,7 +33,7 @@ class Growth(BaseParameterizedProcess):
 
     radius_gu = xs.variable(
         dims=('GU'),
-        intent='out',
+        intent='inout',
         groups='growth'
     )
     length_gu = xs.variable(
@@ -63,6 +63,12 @@ class Growth(BaseParameterizedProcess):
         intent='out',
         groups='growth'
     )
+    nb_leaf = xs.variable(
+        dims='GU',
+        intent='out',
+        groups='growth'
+    )
+    any_is_growing = xs.variable(intent='out', groups='growth')
 
     def get_length_inflos(self, final_length_inflos: typing.List[float], inflo_growth_tts, params):
         final_length_inflos = np.array(final_length_inflos)
@@ -83,6 +89,7 @@ class Growth(BaseParameterizedProcess):
         params = self.parameters
         radius_exponent_gu = params.radius_exponent_gu
         radius_coefficient_gu = params.radius_coefficient_gu
+        max_leafy_diameter_gu = params.max_leafy_diameter_gu
         params.t_ip_gu = self.rng.normal(params.t_ip_gu_mean, params.t_ip_gu_sd)
 
         # np.array of type list
@@ -94,12 +101,22 @@ class Growth(BaseParameterizedProcess):
         self.length_gu = self.final_length_gu.copy()
         self.length_leaves = self.final_length_leaves.copy()
         self.length_inflos = self.final_length_inflos.copy()
+        self.nb_leaf = np.where(
+            self.radius_gu * 2 >= max_leafy_diameter_gu,
+            0.,
+            self.nb_internode
+        )
+        self.any_is_growing = False
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
 
         gu_growing = (self.gu_stage > 0.) & (self.gu_stage < self.nb_gu_stage) & (self.appeared == 1.)
         inflo_growing = (self.inflo_stage > 0.) & (self.inflo_stage < self.nb_inflo_stage) & (self.appeared == 1.)
+        self.any_is_growing = np.any(gu_growing | inflo_growing)
+
+        if np.any(self.appeared):
+            self.nb_leaf[self.appeared == 1.] = self.nb_internode[self.appeared == 1.]
 
         params = self.parameters
 
@@ -132,3 +149,5 @@ class Growth(BaseParameterizedProcess):
                 self.inflo_growth_tts[inflo_growing],
                 params
             )
+
+        self.nb_leaf[self.radius_gu >= params.max_leafy_diameter_gu] = 0.

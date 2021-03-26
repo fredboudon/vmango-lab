@@ -13,6 +13,8 @@ class ArchDevMix(ProbabilityTableProcess):
     appeared = xs.foreign(topology.Topology, 'appeared')
     current_cycle = xs.foreign(topology.Topology, 'current_cycle')
     appearance_month = xs.foreign(topology.Topology, 'appearance_month')
+    is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
+    sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
 
     has_veg_children_within = xs.foreign(arch_dev_veg_within.ArchDevVegWithin, 'has_veg_children_within')
 
@@ -29,10 +31,12 @@ class ArchDevMix(ProbabilityTableProcess):
 
         self.tbls_has_mixed_inflo_children_between = probability_tables['has_mixed_inflo_children_between']
 
-    @xs.runtime(args=('step', 'step_start'))
-    def run_step(self, step, step_start):
+        self.run_step(-1)
 
-        appeared = self.appeared == 1.
+    @xs.runtime(args=('step'))
+    def run_step(self, step):
+
+        appeared = (self.appeared == 1.) if step >= 0 else (self.is_initially_terminal == 1.)
 
         if np.any(appeared & (self.has_veg_children_within == 0.)):
 

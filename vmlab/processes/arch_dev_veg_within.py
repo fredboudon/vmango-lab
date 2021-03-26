@@ -17,6 +17,8 @@ class ArchDevVegWithin(ProbabilityTableProcess):
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     ancestor_is_apical = xs.foreign(topology.Topology, 'ancestor_is_apical')
     ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
+    is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
+    sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
 
     tbls_has_veg_children_within = None
     tbls_has_apical_child_within = None
@@ -54,10 +56,12 @@ class ArchDevVegWithin(ProbabilityTableProcess):
         self.tbls_has_lateral_children_within = probability_tables['has_lateral_children_within']
         self.tbls_nb_lateral_children_within = probability_tables['nb_lateral_children_within']
 
+        self.run_step(-1, self.sim_start_date)
+
     @xs.runtime(args=('step', 'step_start'))
     def run_step(self, step, step_start):
 
-        appeared = self.appeared == 1.
+        appeared = (self.appeared == 1.) if step >= 0 else (self.is_initially_terminal == 1.)
         step_year = step_start.astype('datetime64[D]').item().year
 
         if np.any(appeared):

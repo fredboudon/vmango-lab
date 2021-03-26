@@ -1,7 +1,7 @@
 import xsimlab as xs
 import numpy as np
 
-from . import environment, topology, appearance
+from . import environment, topology
 from ._base.parameter import BaseParameterizedProcess
 
 
@@ -11,7 +11,6 @@ class Phenology(BaseParameterizedProcess):
     GU = xs.global_ref('GU')
     TM = xs.foreign(environment.Environment, 'TM')
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
-    nb_leaf = xs.foreign(appearance.Appearance, 'nb_leaf')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
     flowered = xs.foreign(topology.Topology, 'flowered')
 
@@ -58,37 +57,37 @@ class Phenology(BaseParameterizedProcess):
         groups='phenology',
         static=True
     )
-    bloom_date = xs.variable(
+    full_bloom_date = xs.variable(
         dims='GU',
-        intent='inout',
-        description='bloom date',
+        intent='out',
+        description='full bloom date',
         attrs={
             'unit': 'date'
         },
         static=True
     )
-    DAB = xs.variable(
+    DAFB = xs.variable(
         dims='GU',
         intent='out',
-        description='days after bloom',
+        description='days after full bloom',
         attrs={
-            'unit': 'd'
+            'unit': 'days'
         }
     )
-    dd_cum = xs.variable(
+    fruit_growth_tts = xs.variable(
         dims='GU',
         intent='out',
-        description='cumulated degree-days of the current day after bloom date',
+        description='cumulated degree-days of the current day after full bloom date',
         attrs={
-            'unit': 'dd'
+            'unit': 'degree-days'
         }
     )
-    dd_delta = xs.variable(
+    fruit_growth_tts_delta = xs.variable(
         dims='GU',
         intent='out',
-        description='daily variation in degree days',
+        description='daily change in degree-days',
         attrs={
-            'unit': 'dd day-1'
+            'unit': 'degree-days day-1'
         }
     )
 
@@ -120,10 +119,10 @@ class Phenology(BaseParameterizedProcess):
         self.inflo_pheno_tts = np.zeros(self.GU.shape)
         self.inflo_stage = np.full(self.GU.shape, float(self.nb_inflo_stage))
 
-        self.bloom_date = np.array(self.bloom_date, dtype='datetime64[D]')
-        self.DAB = np.zeros(self.GU.shape)
-        self.dd_delta = np.zeros(self.GU.shape)
-        self.dd_cum = np.zeros(self.GU.shape)
+        self.full_bloom_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
+        self.DAFB = np.zeros(self.GU.shape)
+        self.fruit_growth_tts = np.zeros(self.GU.shape)
+        self.fruit_growth_tts_delta = np.zeros(self.GU.shape)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
@@ -180,32 +179,31 @@ class Phenology(BaseParameterizedProcess):
         # leaves
 
         Tbase_leaf_growth = params.Tbase_leaf_growth
-        has_leaves = (self.nb_leaf > 0.)
 
-        self.leaf_growth_tts[~has_leaves] = 0.
-        self.leaf_growth_tts[has_leaves] += max(0, self.TM - Tbase_leaf_growth)
+        self.leaf_growth_tts[self.gu_stage < self.nb_gu_stage] += max(0, self.TM - Tbase_leaf_growth)
 
         # fruits
 
-        Tbase_fruit_growth = params.Tbase_fruit_growth
+        # Tbase_fruit_growth = params.Tbase_fruit_growth
 
-        has_inflo_or_fruit = (step_start >= self.bloom_date) & ((self.nb_fruit > 0) | (self.nb_inflo > 0))
+        # if inflo_stage reaches 2. we have full bloom date
+        # full_bloom_date
 
-        self.DAB = np.where(
-            has_inflo_or_fruit,
-            (step_start - self.bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
-            -1
-        )
-        self.dd_delta = np.where(
-            has_inflo_or_fruit,
-            max(0, self.TM - Tbase_fruit_growth),
-            0.
-        )
-        self.dd_cum = np.where(
-            has_inflo_or_fruit,
-            self.dd_cum + self.dd_delta,
-            0.
-        )
+        # self.DAFB = np.where(
+        #     has_inflo_or_fruit,
+        #     (step_start - self.bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
+        #     -1
+        # )
+        # self.dd_delta = np.where(
+        #     has_inflo_or_fruit,
+        #     max(0, self.TM - Tbase_fruit_growth),
+        #     0.
+        # )
+        # self.dd_cum = np.where(
+        #     has_inflo_or_fruit,
+        #     self.dd_cum + self.dd_delta,
+        #     0.
+        # )
 
     def finalize_step(self):
         pass
