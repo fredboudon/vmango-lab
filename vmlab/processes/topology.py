@@ -65,7 +65,7 @@ class Topology:
         self.appearance_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.parent_is_apical = np.full(self.GU.shape, 1.)
         self.ancestor = np.full(self.GU.shape, 0.)
-        self.parent_is_apical[1:] = self.is_apical[np.argwhere(self.adjacency)[:, 0]]
+        self.parent_is_apical[np.argwhere(self.adjacency)[:, 1]] = self.is_apical[np.argwhere(self.adjacency)[:, 0]]
 
         self.nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
         self.nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
