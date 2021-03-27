@@ -14,7 +14,7 @@ class Environment(BaseParameterizedProcess):
     weather_daily_df = None
     weather_hourly_df = None
 
-    T_air = xs.variable(
+    TM = xs.variable(
         dims=('hour'),
         intent='out',
         description='hourly temperature of the ambient atmosphere of the current day',
@@ -23,27 +23,9 @@ class Environment(BaseParameterizedProcess):
         }
     )
 
-    TM_air = xs.variable(
-        dims=('hour'),
-        intent='out',
-        description='hourly (effectively 24 x daily) temperature of the ambient atmosphere of the current day',
-        attrs={
-            'unit': '°C'
-        }
-    )
-
-    TM = xs.variable(
+    TM_day = xs.variable(
         intent='out',
         description='daily mean temperature of the ambient atmosphere of the current day',
-        attrs={
-            'unit': '°C'
-        }
-    )
-
-    T_fruit = xs.variable(
-        dims=('hour'),
-        intent='out',
-        description='temperature of the fruit of the current day',
         attrs={
             'unit': '°C'
         }
@@ -100,9 +82,7 @@ class Environment(BaseParameterizedProcess):
         hourly = self.weather_hourly_df[step_data]
 
         # SMARTIS data sometimes not complete. Need a strategy to handle missing data
-        self.T_air = np.resize(hourly['TM'].to_numpy(), 24)
-        self.TM_air = np.resize(hourly['TM'].to_numpy(), 24)
+        self.TM = np.resize(hourly['TM'].to_numpy(), 24)
         self.GR = np.resize(hourly['GR'].to_numpy(), 24)
         self.RH = np.resize(hourly['RH'].to_numpy(), 24)
-        self.T_fruit = self.T_air
-        self.TM = self.weather_daily_df['TM'][step_start]
+        self.TM_day = self.weather_daily_df['TM'][step_start]

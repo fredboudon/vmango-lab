@@ -9,7 +9,7 @@ from ._base.parameter import BaseParameterizedProcess
 class Phenology(BaseParameterizedProcess):
 
     GU = xs.global_ref('GU')
-    TM = xs.foreign(environment.Environment, 'TM')
+    TM_day = xs.foreign(environment.Environment, 'TM_day')
     nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
     flowered = xs.foreign(topology.Topology, 'flowered')
@@ -141,14 +141,14 @@ class Phenology(BaseParameterizedProcess):
         Tbase_gu_stage = params.Tbase_gu_stage
         Tthresh_gu_stage = params.Tthresh_gu_stage
 
-        self.gu_growth_tts[self.gu_stage < 4.] += max(0, self.TM - Tbase_gu_growth)
+        self.gu_growth_tts[self.gu_stage < 4.] += max(0, self.TM_day - Tbase_gu_growth)
 
         # from max(gu_stages) to min(gu_stages)
         for stage, thresh, base in zip(self.gu_stages, Tthresh_gu_stage, Tbase_gu_stage):
             in_stage = (self.gu_stage >= stage) & (self.gu_stage < stage + 1)
             if not np.any(in_stage):
                 continue
-            self.gu_pheno_tts[in_stage] += max(0, self.TM - base)
+            self.gu_pheno_tts[in_stage] += max(0, self.TM_day - base)
             share = self.gu_pheno_tts[in_stage] / thresh
             self.gu_stage[in_stage] = np.where(share > 1., stage + 1., stage + share)
             self.gu_pheno_tts[np.nonzero(in_stage)] = np.where(share > 1., 0., self.gu_pheno_tts[np.nonzero(in_stage)])
@@ -159,19 +159,19 @@ class Phenology(BaseParameterizedProcess):
         Tthresh_inflo_stage = params.Tthresh_inflo_stage
         Tbase_inflo_growth = params.Tbase_inflo_growth
 
-        has_inflos = (self.nb_inflo > 0.)
+        has_inflo = (self.nb_inflo > 0.)
 
-        self.inflo_growth_tts[~has_inflos] = 0.
-        self.inflo_growth_tts[has_inflos & (self.inflo_stage < 5.)] += max(0, self.TM - Tbase_inflo_growth)
+        self.inflo_growth_tts[~has_inflo] = 0.
+        self.inflo_growth_tts[has_inflo & (self.inflo_stage < 5.)] += max(0, self.TM_day - Tbase_inflo_growth)
 
         # from max(inflo_stages) to min(inflo_stages)
-        self.inflo_stage[~has_inflos] = 0.
-        self.inflo_pheno_tts[~has_inflos] = 0.
+        self.inflo_stage[~has_inflo] = 0.
+        self.inflo_pheno_tts[~has_inflo] = 0.
         for stage, thresh, base in zip(self.inflo_stages, Tthresh_inflo_stage, Tbase_inflo_stage):
-            in_stage = has_inflos & (self.inflo_stage >= stage) & (self.inflo_stage < stage + 1)
+            in_stage = has_inflo & (self.inflo_stage >= stage) & (self.inflo_stage < stage + 1)
             if not np.any(in_stage):
                 continue
-            self.inflo_pheno_tts[in_stage] += max(0, self.TM - base)
+            self.inflo_pheno_tts[in_stage] += max(0, self.TM_day - base)
             share = self.inflo_pheno_tts[in_stage] / thresh
             self.inflo_stage[in_stage] = np.where(share > 1., stage + 1., stage + share)
             self.inflo_pheno_tts[np.nonzero(in_stage)] = np.where(share > 1., 0., self.inflo_pheno_tts[np.nonzero(in_stage)])
@@ -180,30 +180,37 @@ class Phenology(BaseParameterizedProcess):
 
         Tbase_leaf_growth = params.Tbase_leaf_growth
 
-        self.leaf_growth_tts[self.gu_stage < self.nb_gu_stage] += max(0, self.TM - Tbase_leaf_growth)
+        self.leaf_growth_tts[self.gu_stage < self.nb_gu_stage] += max(0, self.TM_day - Tbase_leaf_growth)
 
         # fruits
 
-        # Tbase_fruit_growth = params.Tbase_fruit_growth
+        has_fruit = (self.nb_fruit > 0.)
 
-        # if inflo_stage reaches 2. we have full bloom date
-        # full_bloom_date
+        Tbase_fruit_growth = params.Tbase_fruit_growth
 
-        # self.DAFB = np.where(
-        #     has_inflo_or_fruit,
-        #     (step_start - self.bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
-        #     -1
-        # )
-        # self.dd_delta = np.where(
-        #     has_inflo_or_fruit,
-        #     max(0, self.TM - Tbase_fruit_growth),
-        #     0.
-        # )
-        # self.dd_cum = np.where(
-        #     has_inflo_or_fruit,
-        #     self.dd_cum + self.dd_delta,
-        #     0.
-        # )
+        self.full_bloom_date = np.where(
+            has_inflo & (self.full_bloom_date == np.datetime64('NAT')) & (self.inflo_stage >= 2.),
+            step_start,
+            self.full_bloom_date
+        )
+
+        self.DAFB = np.where(
+            has_inflo | has_fruit & (self.full_bloom_date != np.datetime64('NAT')),
+            (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
+            0.
+        )
+
+        self.fruit_growth_tts_delta = np.where(
+            has_fruit & (self.DAFB > 0),
+            max(0, self.TM_day - Tbase_fruit_growth),
+            0.
+        )
+
+        self.fruit_growth_tts = np.where(
+            has_fruit & (self.DAFB > 0),
+            self.fruit_growth_tts + self.fruit_growth_tts_delta,
+            0.
+        )
 
     def finalize_step(self):
         pass

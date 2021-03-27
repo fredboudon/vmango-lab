@@ -7,7 +7,8 @@ from . import (
     photosynthesis,
     carbon_reserve,
     carbon_demand,
-    topology
+    topology,
+    phenology
 )
 from ._base.parameter import ParameterizedProcess
 
@@ -19,12 +20,15 @@ class CarbonBalance(ParameterizedProcess):
     """
 
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
+    full_bloom_date = xs.foreign(phenology.Phenology, 'full_bloom_date')
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
 
     reserve_mob = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_mob')
     reserve_nmob_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_leaf')
     reserve_nmob_stem = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_stem')
+
+    DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
 
     GU = xs.foreign(topology.Topology, 'GU')
     nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
@@ -82,16 +86,17 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g DM'
         },
-        global_name='DM_fruit'
+        groups='carbon_balance'
     )
 
     DM_fruit_delta = xs.variable(
         dims=('GU'),
-        intent='out',
+        intent='inout',
         description='change in fruit dry mass for average fruit of growth unit',
         attrs={
             'unit': 'g DM'
-        }
+        },
+        groups='carbon_balance'
     )
 
     reserve_stem_delta = xs.variable(
@@ -156,68 +161,27 @@ class CarbonBalance(ParameterizedProcess):
         self.DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
         self.DM_fruit_delta = np.zeros(self.GU.shape, dtype=np.float32)
 
-    @xs.runtime(args=())
-    def run_step(self):
+    @xs.runtime(args=('step_start'))
+    def run_step(self, step_start):
+
+        self.remains_1[:] = 0.
+        self.remains_2[:] = 0.
+        self.remains_3[:] = 0.
 
         params = self.parameters
 
-        r_DM_stem_ini = params.r_DM_stem_ini
-        r_DM_leaf_ini = params.r_DM_leaf_ini
-        DM_stem = params.DM_stem_gu
-        DM_leaf_unit = params.DM_leaf_unit
-        r_mobile_leaf = params.r_mobile_leaf
         r_mobile_stem = params.r_mobile_stem
-        MRR_stem = params.MRR_stem
-        MRR_leaf = params.MRR_leaf
-        MRR_fruit = params.MRR_fruit
-        Q10_stem = params.Q10_stem
-        Q10_leaf = params.Q10_leaf
-        Q10_fruit = params.Q10_fruit
-        Tref = params.Tref
-        cc_stem = params.cc_stem
         cc_leaf = params.cc_leaf
         r_storage_leaf_max = params.r_storage_leaf_max
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
         # RGR_fruit_ini = params.RGR_fruit_ini
 
-        # intitialize Fruit DM only if DM_fruit is still 0 and LFratio > 0
-        # use actual nb_fruit (not pot. nb_fruit)
-        self.DM_fruit = np.array([DM_fruit_0 if LFratio > 0 and DM_fruit == 0 else 0. if LFratio == 0 else DM_fruit
-                                  for DM_fruit_0, DM_fruit, LFratio in zip(self.DM_fruit_0, self.DM_fruit, self.LFratio)])
-
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
-
-        # dry mass of stem and leaf structure
-        self.DM_structural_stem = np.ones(self.GU.shape) * DM_stem * (1 - r_DM_stem_ini)
-        self.DM_structural_leaf = DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini)
-
-        # carbon demand for fruit growth (eq.5-6-7) :
-        # self.D_fruit = np.array([dd_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / DM_fruit_max))
-        #                          if DM_fruit_max > 0 else 0. for dd_delta, DM_fruit, DM_fruit_max in zip(self.dd_delta, self.DM_fruit, self.DM_fruit_max)])
-
-        # CARBON AVAILABLE FROM RESERVE MOBILIZATION
-
-        # mobile amount of reserves (eq.8-9)
-        self.reserve_mob = (r_mobile_leaf * self.reserve_leaf) + (r_mobile_stem * self.reserve_stem)
-
-        # non-mobile amount of reserves
-        self.reserve_nmob_leaf = self.reserve_leaf * (1 - r_mobile_leaf)
-        self.reserve_nmob_stem = self.reserve_stem * (1 - r_mobile_stem)
-
-        # MAINTENANCE RESPIRATION (eq.4)
-
-        # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
-        self.MR_stem = np.sum((MRR_stem * (Q10_stem ** ((self.TM_air - Tref) / 10)) * (self.DM_structural_stem + (self.reserve_stem / cc_stem)) / 24))
-        self.MR_leaf = np.sum((self.GR > 0) * MRR_leaf * (Q10_leaf ** ((self.TM_air - Tref) / 10)) * (self.DM_structural_leaf + self.reserve_leaf / cc_leaf))
-        self.MR_fruit = np.array([(MRR_fruit * (Q10_fruit ** ((self.T_fruit - Tref) / 10)) * DM_fruit / 24).sum() * nb_fruit
-                                 for DM_fruit, nb_fruit in zip(self.DM_fruit, self.nb_fruit)])
-
-        # daily maintenance respiration for reproductive and vegetative components
-        self.MR_repro = self.MR_fruit
-        self.MR_veget = self.MR_stem + self.MR_leaf
+        self.DM_fruit = np.where(
+            self.full_bloom_date == step_start,
+            self.DM_fruit_0,
+            self.DM_fruit
+        )
 
         # CARBON ALLOCATION
         # Allocation of carbon according to organ demand and priority rules :

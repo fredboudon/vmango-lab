@@ -174,60 +174,61 @@ GU(idx):
         rank = inflo_stage % 1.
         nsproduce([EndGC(), Tropism(0, 0, -1)])
         for i, final_length_inflo, length_inflo in zip(range(len(length_inflos)), final_length_inflos, length_inflos):
-            length_inflo = float(length_inflo)
-            final_length_inflo = float(final_length_inflo)
-            nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
-            internode_length = float(length_inflo / nb_axes)
-            if idx in inflo_phyloangles:
-                if i in inflo_phyloangles[idx]:
-                    phyloangles = inflo_phyloangles[idx][i]
+            if length_inflo > 1e-3:
+                length_inflo = float(length_inflo)
+                final_length_inflo = float(final_length_inflo)
+                nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
+                internode_length = float(length_inflo / nb_axes)
+                if idx in inflo_phyloangles:
+                    if i in inflo_phyloangles[idx]:
+                        phyloangles = inflo_phyloangles[idx][i]
+                    else:
+                        phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
+                        inflo_phyloangles[idx][i] = phyloangles
                 else:
+                    inflo_phyloangles[idx] = {}
                     phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
                     inflo_phyloangles[idx][i] = phyloangles
-            else:
-                inflo_phyloangles[idx] = {}
-                phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
-                inflo_phyloangles[idx][i] = phyloangles
-            total_phyloangles = float(sum(phyloangles))
-            if stage < 1:
-                bract_level = max(0, (2 * (rank - 0.5)))
-            nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
-            nsproduce([EndGC(), Tropism(0, 0, -1)])
-            if stage >= 4.:
-                if stage == 4.:
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
-                else:
-                    nsproduce([SetColor(inflo_pheno_color[5])])
-                nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
-            else:
-                nsproduce([SetWidth(radius_inflo)])
-                nsproduce([f(0.3)])
-                if stage >= 3:
-                    elasticity = 0.005 + 0.035 * rank
-                else:
-                    elasticity = 0.005 * stage / 3.
-                nsproduce([Elasticity(elasticity)])
-                for k in range(0, nb_axes):
-                    pos = k / float(nb_axes)
-                    if stage > 2:
-                        cpos = pos
+                total_phyloangles = float(sum(phyloangles))
+                # if stage < 1:
+                #     bract_level = max(0, (2 * (rank - 0.5)))
+                nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
+                nsproduce([EndGC(), Tropism(0, 0, -1)])
+                if stage >= 4.:
+                    if stage == 4.:
+                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
                     else:
-                        cpos = (1 - pos)
-                    iradius = radius_inflo * (2 - pos) / 2.
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_color_interpolator(rank, cpos)))])
-                    nsproduce([F(internode_length, iradius), RollR(phyloangles[k])])
-                    axis_length = (length_inflo * (final_length_inflo * 0.687 - 3.97) / final_length_inflo) * (1 - pos)
-                    if stage >= 1:
-                        down = 5. + 40.
+                        nsproduce([SetColor(inflo_pheno_color[5])])
+                    nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
+                else:
+                    nsproduce([SetWidth(radius_inflo)])
+                    nsproduce([f(0.3)])
+                    if stage >= 3:
+                        elasticity = 0.005 + 0.035 * rank
                     else:
-                        down = 5. + 40. * rank
-                    nsproduce([SB(), Down(90), f(iradius), Up(90), Down(down), Tropism(0, 0, 1), Elasticity(0.01)])
-                    if stage < 1 and pos > bract_level:
-                        bract_length = length_inflo * 0.1 + axis_length * 1.5
-                        nsproduce([SB(), Down(0), StartGC(), Sweep(bract_axis, bract_section, bract_length, bract_length / 10., bract_length / 5., bract_width), EB()])
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], rank)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
-                    nsproduce([EB()])
-            nsproduce([EB()])
+                        elasticity = 0.005 * stage / 3.
+                    nsproduce([Elasticity(elasticity)])
+                    for k in range(0, nb_axes):
+                        pos = k / float(nb_axes)
+                        if stage > 2:
+                            cpos = pos
+                        else:
+                            cpos = (1 - pos)
+                        iradius = radius_inflo * (2 - pos) / 2.
+                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_color_interpolator(rank, cpos)))])
+                        nsproduce([F(internode_length, iradius), RollR(phyloangles[k])])
+                        axis_length = (length_inflo * (final_length_inflo * 0.687 - 3.97) / final_length_inflo) * (1 - pos)
+                        if stage >= 1:
+                            down = 5. + 40.
+                        else:
+                            down = 5. + 40. * rank
+                        nsproduce([SB(), Down(90), f(iradius), Up(90), Down(down), Tropism(0, 0, 1), Elasticity(0.01)])
+                        # if stage < 1 and pos > bract_level:
+                        #     bract_length = length_inflo * 0.1 + axis_length * 1.5
+                        #     nsproduce([SB(), Down(0), StartGC(), Sweep(bract_axis, bract_section, bract_length, bract_length / 10., bract_length / 5., bract_width), EB()])
+                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], rank)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
+                        nsproduce([EB()])
+                nsproduce([EB()])
 
 
 endlsystem

@@ -18,10 +18,10 @@ from ._base.parameter import ParameterizedProcess
 @xs.process
 class FruitQuality(ParameterizedProcess):
 
-    T_air = xs.foreign(environment.Environment, 'T_air')
+    TM = xs.foreign(environment.Environment, 'TM')
     GR = xs.foreign(environment.Environment, 'GR')
     RH = xs.foreign(environment.Environment, 'RH')
-    TM_air = xs.foreign(environment.Environment, 'TM_air')
+    TM_day = xs.foreign(environment.Environment, 'TM_day')
 
     fruit_growth_tts_delta = xs.foreign(phenology.Phenology, 'fruit_growth_tts_delta')
 

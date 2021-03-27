@@ -4,7 +4,8 @@ import numpy as np
 from . import (
     environment,
     carbon_reserve,
-    phenology
+    phenology,
+    topology
 )
 from ._base.parameter import ParameterizedProcess
 
@@ -25,10 +26,16 @@ class CarbonDemand(ParameterizedProcess):
     seed = xs.global_ref('seed')
     nb_gu = xs.global_ref('nb_gu')
 
-    TM_air = xs.foreign(environment.Environment, 'TM_air')
-    T_fruit = xs.foreign(environment.Environment, 'T_fruit')
+    carbon_balance = xs.group_dict('carbon_balance')
+
+    nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
+
+    TM = xs.foreign(environment.Environment, 'TM')
+    TM_day = xs.foreign(environment.Environment, 'TM_day')
+    GR = xs.foreign(environment.Environment, 'GR')
 
     fruit_growth_tts_delta = xs.foreign(phenology.Phenology, 'fruit_growth_tts_delta')
+    full_bloom_date = xs.foreign(phenology.Phenology, 'full_bloom_date')
 
     DM_structural_stem = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_stem')
     DM_structural_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_leaf')
@@ -134,17 +141,43 @@ class CarbonDemand(ParameterizedProcess):
         self.MR_repro = np.zeros(self.nb_gu, dtype=np.float32)
         self.MR_veget = np.zeros(self.nb_gu, dtype=np.float32)
 
-    @xs.runtime(args=())
-    def run_step(self):
+    @xs.runtime(args=('step_start'))
+    def run_step(self, step_start):
 
         params = self.parameters
 
         RGR_fruit_ini = params.RGR_fruit_ini
         cc_fruit = params.cc_fruit
+        cc_stem = params.cc_stem
+        cc_leaf = params.cc_leaf
         GRC_fruit = params.GRC_fruit
+        MRR_stem = params.MRR_stem
+        MRR_leaf = params.MRR_leaf
+        MRR_fruit = params.MRR_fruit
+        Q10_stem = params.Q10_stem
+        Q10_leaf = params.Q10_leaf
+        Q10_fruit = params.Q10_fruit
+        Tref = params.Tref
 
-        self.D_fruit = np.array([fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / DM_fruit_max)) * nb_fruits
-                                 if DM_fruit_max > 0 else 0. for fruit_growth_tts_delta, DM_fruit, DM_fruit_max, nb_fruits in zip(self.fruit_growth_tts_delta, self.DM_fruit, self.DM_fruit_max, self.nb_fruits)])
+        DM_fruit = np.where(
+            self.full_bloom_date == step_start,
+            self.DM_fruit_0,
+            self.carbon_balance[('carbon_balance', 'DM_fruit')]
+        )
+
+        # carbon demand for fruit growth (eq.5-6-7) :
+        self.D_fruit = self.fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / self.DM_fruit_max)) * self.nb_fruit
+
+        # MAINTENANCE RESPIRATION (eq.4)
+
+        # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
+        self.MR_stem = MRR_stem * (Q10_stem ** ((self.TM_day - Tref) / 10)) * self.DM_structural_stem + (self.reserve_stem / cc_stem)
+        self.MR_leaf = np.sum(self.GR > 0) / 24. * MRR_leaf * (Q10_leaf ** ((self.TM_day - Tref) / 10)) * self.DM_structural_leaf + (self.reserve_leaf / cc_leaf)
+        self.MR_fruit = np.sum(MRR_fruit * (Q10_fruit ** ((self.TM - Tref) / 10)) * np.vstack(DM_fruit) / 24, axis=1) * self.nb_fruit
+
+        # daily maintenance respiration for reproductive and vegetative components
+        self.MR_repro = self.MR_fruit
+        self.MR_veget = self.MR_stem + self.MR_leaf
 
     def finalize_step(self):
         pass
