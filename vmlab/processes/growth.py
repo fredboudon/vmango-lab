@@ -4,11 +4,11 @@ import zarr
 import typing
 
 from . import topology, phenology, appearance
-from ._base.parameter import BaseParameterizedProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Growth(BaseParameterizedProcess):
+class Growth(ParameterizedProcess):
 
     GU = xs.global_ref('GU')
     rng = None

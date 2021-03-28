@@ -3,9 +3,9 @@ import numpy as np
 
 from . import (
     environment,
+    carbon_allocation,
     carbon_reserve,
-    phenology,
-    topology
+    phenology
 )
 from ._base.parameter import ParameterizedProcess
 
@@ -26,16 +26,16 @@ class CarbonDemand(ParameterizedProcess):
     seed = xs.global_ref('seed')
     nb_gu = xs.global_ref('nb_gu')
 
-    carbon_balance = xs.group_dict('carbon_balance')
+    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
-    nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
+    carbon_balance = xs.group_dict('carbon_balance')
 
     TM = xs.foreign(environment.Environment, 'TM')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
     GR = xs.foreign(environment.Environment, 'GR')
 
     fruit_growth_tts_delta = xs.foreign(phenology.Phenology, 'fruit_growth_tts_delta')
-    full_bloom_date = xs.foreign(phenology.Phenology, 'full_bloom_date')
+    nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
 
     DM_structural_stem = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_stem')
     DM_structural_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_leaf')
@@ -131,8 +131,8 @@ class CarbonDemand(ParameterizedProcess):
         e_fruitDM02max_1 = params.e_fruitDM02max_1
         e_fruitDM02max_2 = params.e_fruitDM02max_2
 
-        self.DM_fruit_0 = weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2)
-        self.DM_fruit_max = e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2
+        self.DM_fruit_0 = np.float32(weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2))
+        self.DM_fruit_max = np.float32(e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2)
 
         self.D_fruit = np.zeros(self.nb_gu, dtype=np.float32)
         self.MR_stem = np.zeros(self.nb_gu, dtype=np.float32)
@@ -159,25 +159,37 @@ class CarbonDemand(ParameterizedProcess):
         Q10_fruit = params.Q10_fruit
         Tref = params.Tref
 
+        is_active = np.flatnonzero(self.is_photo_active == 1.)
+
         DM_fruit = np.where(
-            self.full_bloom_date == step_start,
+            (self.nb_fruit > 0) & (self.carbon_balance[('carbon_balance', 'DM_fruit')] == 0.),
             self.DM_fruit_0,
             self.carbon_balance[('carbon_balance', 'DM_fruit')]
         )
 
+        print(self.fruit_growth_tts_delta)
+        print(DM_fruit)
+        print(self.DM_fruit_max)
+
         # carbon demand for fruit growth (eq.5-6-7) :
+        # problem if Tbase_fruit_growth <=  self.TM_day at day of full_bloom_date
         self.D_fruit = self.fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / self.DM_fruit_max)) * self.nb_fruit
 
         # MAINTENANCE RESPIRATION (eq.4)
 
+        self.MR_stem[:] = 0.
+        self.MR_leaf[:] = 0.
+        self.MR_repro[:] = 0
+        self.MR_veget[:] = 0
+
         # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
-        self.MR_stem = MRR_stem * (Q10_stem ** ((self.TM_day - Tref) / 10)) * self.DM_structural_stem + (self.reserve_stem / cc_stem)
-        self.MR_leaf = np.sum(self.GR > 0) / 24. * MRR_leaf * (Q10_leaf ** ((self.TM_day - Tref) / 10)) * self.DM_structural_leaf + (self.reserve_leaf / cc_leaf)
+        self.MR_stem[is_active] = MRR_stem * (Q10_stem ** ((self.TM_day - Tref) / 10)) * self.DM_structural_stem[is_active] + (self.reserve_stem[is_active] / cc_stem)
+        self.MR_leaf[is_active] = np.sum(self.GR > 0) / 24. * MRR_leaf * (Q10_leaf ** ((self.TM_day - Tref) / 10)) * self.DM_structural_leaf[is_active] + (self.reserve_leaf[is_active] / cc_leaf)
         self.MR_fruit = np.sum(MRR_fruit * (Q10_fruit ** ((self.TM - Tref) / 10)) * np.vstack(DM_fruit) / 24, axis=1) * self.nb_fruit
 
         # daily maintenance respiration for reproductive and vegetative components
-        self.MR_repro = self.MR_fruit
-        self.MR_veget = self.MR_stem + self.MR_leaf
+        self.MR_repro[is_active] = self.MR_fruit[is_active]
+        self.MR_veget[is_active] = self.MR_stem[is_active] + self.MR_leaf[is_active]
 
     def finalize_step(self):
         pass

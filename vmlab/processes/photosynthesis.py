@@ -1,7 +1,12 @@
 import xsimlab as xs
 import numpy as np
 
-from . import light_interception, carbon_demand
+from . import (
+    growth,
+    light_interception,
+    carbon_demand,
+    carbon_allocation
+)
 from ._base.parameter import ParameterizedProcess
 
 
@@ -14,6 +19,9 @@ class Photosythesis(ParameterizedProcess):
     nb_gu = xs.global_ref('nb_gu')
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
+    nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
+    is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
+    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
@@ -100,18 +108,33 @@ class Photosythesis(ParameterizedProcess):
         Pmax_min = params.Pmax_min
         k = params.k
 
-        # light-saturated leaf photosynthesis (eq.1)
-        self.Pmax = np.array([np.minimum(np.maximum((p_1 * (D_fruit / LA) * p_2) / (p_1 * (D_fruit / LA) + p_2), Pmax_min), Pmax_max)
-                              if LA > 0 else 0. for LA, D_fruit in zip(self.LA, self.D_fruit)])
+        if np.any(self.is_photo_active == 1.):
 
-        # photosynthetic rate per unit leaf area (eq.2)
-        self.P_rate_sunlit = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
-        self.P_rate_shaded = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR_shaded / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
+            is_active = np.flatnonzero(self.is_photo_active == 1.)
 
-        # carbon assimilation by leaf photosynthesis (eq.3)
-        self.photo_shaded = np.array([photo_shaded.sum() for photo_shaded in (self.P_rate_shaded * self.LA_shaded * k)])
-        self.photo_sunlit = np.array([photo_sunlit.sum() for photo_sunlit in (self.P_rate_sunlit * self.LA_sunlit * k)])
-        self.photo = self.photo_shaded + self.photo_sunlit
+            print(self.is_in_distance_to_fruit)
+            print(self.D_fruit)
+            print(self.is_photo_active)
+
+            D_fruit_avg = np.average(self.is_in_distance_to_fruit * np.vstack(self.D_fruit[self.D_fruit > 0] / np.sum(self.is_in_distance_to_fruit, axis=1)), axis=0)
+
+            # light-saturated leaf photosynthesis (eq.1)
+            self.Pmax[:] = 0.
+            self.Pmax[is_active] = np.minimum(np.maximum((p_1 * (D_fruit_avg[is_active] / self.LA[is_active]) * p_2) / (p_1 * (D_fruit_avg[is_active] / self.LA[is_active]) + p_2), Pmax_min), Pmax_max)
+
+            # photosynthetic rate per unit leaf area (eq.2)
+            self.P_rate_sunlit[:] = 0.
+            self.P_rate_shaded[:] = 0.
+            self.P_rate_sunlit[is_active] = np.maximum(0., (np.vstack(self.Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / np.vstack(self.Pmax + p_3)))) - p_3)[is_active]
+            self.P_rate_shaded[is_active] = np.maximum(0., (np.vstack(self.Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR_shaded / np.vstack(self.Pmax + p_3)))) - p_3)[is_active]
+
+            # carbon assimilation by leaf photosynthesis (eq.3)
+            self.photo_shaded[:] = 0.
+            self.photo_sunlit[:] = 0.
+            self.photo[:] = 0.
+            self.photo_shaded[is_active] = np.sum(self.P_rate_shaded[is_active] * self.LA_shaded[is_active] * k, axis=1)
+            self.photo_sunlit[is_active] = np.sum(self.P_rate_sunlit[is_active] * self.LA_sunlit[is_active] * k, axis=1)
+            self.photo[is_active] = self.photo_shaded[is_active] + self.photo_sunlit[is_active]
 
     def finalize_step(self):
         pass

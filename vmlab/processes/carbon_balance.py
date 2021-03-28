@@ -5,6 +5,7 @@ import warnings
 from . import (
     growth,
     photosynthesis,
+    carbon_allocation,
     carbon_reserve,
     carbon_demand,
     topology,
@@ -20,18 +21,28 @@ class CarbonBalance(ParameterizedProcess):
     """
 
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
+
     full_bloom_date = xs.foreign(phenology.Phenology, 'full_bloom_date')
+    nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
+
+    is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
+    allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
+    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
+    MR_repro = xs.foreign(carbon_demand.CarbonDemand, 'MR_repro')
+    MR_veget = xs.foreign(carbon_demand.CarbonDemand, 'MR_veget')
 
+    reserve_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_leaf')
+    reserve_stem = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_stem')
     reserve_mob = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_mob')
     reserve_nmob_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_leaf')
     reserve_nmob_stem = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_stem')
+    DM_structural_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_leaf')
 
     DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
 
     GU = xs.foreign(topology.Topology, 'GU')
-    nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
     carbon_supply = xs.variable(
@@ -119,16 +130,6 @@ class CarbonBalance(ParameterizedProcess):
         groups='carbon_balance'
     )
 
-    reserve_mob_delta = xs.variable(
-        dims=('GU'),
-        intent='inout',
-        description='change in carbon in leaf and stem mobile reserves',
-        attrs={
-            'unit': 'g C'
-        },
-        groups='carbon_balance'
-    )
-
     reserve_nmob_stem_delta = xs.variable(
         dims=('GU'),
         intent='inout',
@@ -160,6 +161,10 @@ class CarbonBalance(ParameterizedProcess):
         self.remains_3 = np.zeros(self.GU.shape, dtype=np.float32)
         self.DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
         self.DM_fruit_delta = np.zeros(self.GU.shape, dtype=np.float32)
+        self.reserve_leaf_delta = np.zeros(self.GU.shape, dtype=np.float32)
+        self.reserve_stem_delta = np.zeros(self.GU.shape, dtype=np.float32)
+        self.reserve_nmob_leaf_delta = np.zeros(self.GU.shape, dtype=np.float32)
+        self.reserve_nmob_stem_delta = np.zeros(self.GU.shape, dtype=np.float32)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
@@ -183,120 +188,127 @@ class CarbonBalance(ParameterizedProcess):
             self.DM_fruit
         )
 
-        # CARBON ALLOCATION
-        # Allocation of carbon according to organ demand and priority rules :
-        #    1- maintenance of the system
-        #    2- reproductive growth
-        #    3- accumulation and replenishment of reserves in leaves and then in stem
+        if np.any(self.is_photo_active == 1.):
 
-        # pool of assimilates
-        self.carbon_supply = self.photo + self.reserve_mob
+            # CARBON ALLOCATION
+            # Allocation of carbon according to organ demand and priority rules :
+            #    1- maintenance of the system
+            #    2- reproductive growth
+            #    3- accumulation and replenishment of reserves in leaves and then in stem
 
-        # 1- assimilates are used for maintenance respiration
-        # Priority rules for maintenance respiration :
-        #    1- vegetative components
-        #    2- reproductive components
+            # pool of assimilates
+            self.carbon_supply = self.photo + self.reserve_mob
 
-        assimilates_gt_mr_vegt = self.carbon_supply >= self.MR_veget
-        mobilize_from_leaf = (self.carbon_supply + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
-        mobilize_from_stem = (self.carbon_supply + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & ~mobilize_from_leaf
-        gu_died = ~assimilates_gt_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
+            # 1- assimilates are used for maintenance respiration
+            # Priority rules for maintenance respiration :
+            #    1- vegetative components
+            #    2- reproductive components
 
-        # use of assimilates for maintenance respiration of vegetative components :
-        self.remains_1 = np.where(
-            assimilates_gt_mr_vegt,
-            self.remains_1 + self.carbon_supply - self.MR_veget,
-            0.
-        )
+            assimilates_gte_mr_vegt = self.carbon_supply >= self.MR_veget
+            mobilize_from_leaf = (self.carbon_supply + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gte_mr_vegt
+            mobilize_from_stem = (self.carbon_supply + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gte_mr_vegt & ~mobilize_from_leaf
+            gu_died = ~assimilates_gte_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
 
-        # mobilization of non-mobile reserves if maintenance respiration is not satified by assimilates :
-        # 1- mobilization of non-mobile reserves from leaves
-        self.reserve_nmob_leaf = np.where(
-            mobilize_from_leaf,
-            self.carbon_supply + self.reserve_nmob_leaf - self.MR_veget,
-            self.reserve_nmob_leaf
-        )
+            # # use of assimilates for maintenance respiration of vegetative components :
+            self.remains_1 = np.where(
+                assimilates_gte_mr_vegt,
+                self.remains_1 + self.carbon_supply - self.MR_veget,
+                0.
+            )
 
-        # 2- mobilization of non-mobile reserves from stem
-        self.reserve_nmob_stem = np.where(
-            mobilize_from_stem,
-            self.carbon_supply + self.reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
-            self.reserve_nmob_stem
-        )
-
-        if np.any(gu_died):
-            # TODO: What to do with variables?
-            warnings.warn('Vegetative part of the system dies ...')
-            self.reserve_nmob_leaf = np.where(
-                gu_died,
-                0.,
+            # mobilization of non-mobile reserves if maintenance respiration is not satified by assimilates :
+            # 1- mobilization of non-mobile reserves from leaves
+            reserve_nmob_leaf = np.where(
+                mobilize_from_leaf,
+                self.carbon_supply + self.reserve_nmob_leaf - self.MR_veget,
                 self.reserve_nmob_leaf
             )
-            self.reserve_nmob_stem = np.where(
-                gu_died,
-                0.,
+
+            # 2- mobilization of non-mobile reserves from stem
+            reserve_nmob_stem = np.where(
+                mobilize_from_stem,
+                self.carbon_supply + reserve_nmob_leaf + self.reserve_nmob_stem - self.MR_veget,
                 self.reserve_nmob_stem
             )
 
-        # use of remaining assimilates for maintenance respiration of reproductive components :
-        remaining_assimilates_lt_mr_repro = self.remains_1 < self.MR_repro
+            if np.any(gu_died):
+                # TODO: What to do with variables?
+                warnings.warn('Vegetative part of the system dies ...')
+                reserve_nmob_leaf = np.where(
+                    gu_died,
+                    0.,
+                    reserve_nmob_leaf
+                )
+                reserve_nmob_stem = np.where(
+                    gu_died,
+                    0.,
+                    reserve_nmob_stem
+                )
 
-        # mobilization of fruit reserves if maintenance respiration is not satified by remaining assimilates :
-        self.required_DM_fruit = np.where(
-            remaining_assimilates_lt_mr_repro,
-            (self.MR_repro - self.remains_1) / cc_fruit,
-            0
-        )
-        mobilize_from_fruit = remaining_assimilates_lt_mr_repro & (self.required_DM_fruit < self.DM_fruit * self.nb_fruit)
-        self.DM_fruit = np.where(
-            mobilize_from_fruit,
-            self.DM_fruit - self.required_DM_fruit / self.nb_fruit,
-            self.DM_fruit
-        )
+            # use of remaining assimilates for maintenance respiration of reproductive components :
+            remaining_assimilates_lt_mr_repro = self.remains_1 < self.MR_repro
 
-        fruit_died = ~remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
-
-        if not np.any(fruit_died):
-            # TODO: What to do with variables?
-            # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
-            warnings.warn('Reproductive part of the system dies ...')
+            # mobilization of fruit reserves if maintenance respiration is not satified by remaining assimilates :
+            self.required_DM_fruit = np.where(
+                remaining_assimilates_lt_mr_repro,
+                (self.MR_repro - self.remains_1) / cc_fruit,
+                0
+            )
+            mobilize_from_fruit = remaining_assimilates_lt_mr_repro & (self.required_DM_fruit < self.DM_fruit * self.nb_fruit)
             self.DM_fruit = np.where(
-                fruit_died,
-                0.,
+                mobilize_from_fruit & (self.nb_fruit > 0.),
+                self.DM_fruit - self.required_DM_fruit / self.nb_fruit,
                 self.DM_fruit
             )
 
-        self.remains_2 = np.maximum(0, self.remains_1 - self.MR_repro)
+            fruit_died = ~remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
 
-        # 2- remaining assimilates are used for fruit growth
+            if not np.any(fruit_died):
+                # TODO: What to do with variables?
+                # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
+                warnings.warn('Reproductive part of the system dies ...')
+                self.DM_fruit = np.where(
+                    fruit_died,
+                    0.,
+                    self.DM_fruit
+                )
 
-        self.remains_3 = self.remains_2 - np.minimum(self.D_fruit, self.remains_2)
+            self.remains_2 = np.maximum(0, self.remains_1 - self.MR_repro)
 
-        # 3- remaining assimilates are accumulated as reserves in leaves and stem
-        # Priority rules for reserve storage :
-        #    1- replenishment of mobile reserves of the stem
-        #    2- storage of all remaining assimilates in leaf reserves up to a maximum threshold
-        #    3- storage of all remaining assimilates in stem reserves
+            # 2- remaining assimilates are used for fruit growth
 
-        reserve_stem_provi = self.reserve_nmob_stem + np.minimum(self.remains_3, self.reserve_stem * r_mobile_stem)
-        reserve_leaf_provi = self.reserve_nmob_leaf + np.maximum(0, self.remains_3 - self.reserve_stem * r_mobile_stem)
+            self.remains_3 = self.remains_2 - np.minimum(self.D_fruit, self.remains_2)
 
-        reserve_leaf_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
+            # 3- remaining assimilates are accumulated as reserves in leaves and stem
+            # Priority rules for reserve storage :
+            #    1- replenishment of mobile reserves of the stem
+            #    2- storage of all remaining assimilates in leaf reserves up to a maximum threshold
+            #    3- storage of all remaining assimilates in stem reserves
 
-        self.reserve_leaf = np.where(
-            reserve_leaf_provi > reserve_leaf_max,
-            reserve_leaf_max,
-            reserve_leaf_provi
-        )
+            reserve_stem_provi = reserve_nmob_stem + np.minimum(self.remains_3, self.reserve_stem * r_mobile_stem)
+            reserve_leaf_provi = reserve_nmob_leaf + np.maximum(0, self.remains_3 - self.reserve_stem * r_mobile_stem)
 
-        self.reserve_stem = np.where(
-            reserve_leaf_provi > reserve_leaf_max,
-            reserve_stem_provi + reserve_leaf_provi - reserve_leaf_max,
-            reserve_stem_provi
-        )
+            reserve_leaf_max = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf * cc_leaf
 
-        self.DM_fruit_delta = np.minimum(self.D_fruit, self.remains_2) / (cc_fruit + GRC_fruit) / self.nb_fruit
-        self.DM_fruit = self.DM_fruit + self.DM_fruit_delta
+            reserve_leaf = np.where(
+                reserve_leaf_provi > reserve_leaf_max,
+                reserve_leaf_max,
+                reserve_leaf_provi
+            )
+
+            reserve_stem = np.where(
+                reserve_leaf_provi > reserve_leaf_max,
+                reserve_stem_provi + reserve_leaf_provi - reserve_leaf_max,
+                reserve_stem_provi
+            )
+
+            self.reserve_leaf_delta = reserve_leaf - self.reserve_leaf
+            self.reserve_stem_delta = reserve_stem - self.reserve_stem
+            self.reserve_nmob_leaf_delta = reserve_nmob_leaf - self.reserve_nmob_leaf
+            self.reserve_nmob_stem_delta = reserve_nmob_stem - self.reserve_nmob_stem
+
+            self.DM_fruit_delta = np.minimum(self.D_fruit, self.remains_2) / (cc_fruit + GRC_fruit) / self.nb_fruit
+            self.DM_fruit = self.DM_fruit + self.DM_fruit_delta
 
     def finalize_step(self):
         pass

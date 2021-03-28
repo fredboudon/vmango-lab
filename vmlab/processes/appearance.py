@@ -4,7 +4,10 @@ import openalea.plantgl.all as pgl
 import math
 import zarr
 
-from . import topology
+from . import (
+    topology,
+    phenology
+)
 from ._base.parameter import BaseParameterizedProcess
 
 
@@ -18,9 +21,9 @@ class Appearance(BaseParameterizedProcess):
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     parent_is_apical = xs.foreign(topology.Topology, 'parent_is_apical')
-    nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
-    flowered = xs.foreign(topology.Topology, 'flowered')
+    nb_inflo = xs.foreign(phenology.Phenology, 'nb_inflo')
+    flowered = xs.foreign(phenology.Phenology, 'flowered')
     seed = xs.foreign(topology.Topology, 'seed')
     is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
 

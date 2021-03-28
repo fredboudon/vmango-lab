@@ -1,18 +1,16 @@
 import xsimlab as xs
 import numpy as np
 
-from . import environment, topology
-from ._base.parameter import BaseParameterizedProcess
+from . import environment
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Phenology(BaseParameterizedProcess):
+class Phenology(ParameterizedProcess):
 
     GU = xs.global_ref('GU')
+    archdev = xs.group_dict('arch_dev')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
-    nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
-    nb_fruit = xs.foreign(topology.Topology, 'nb_fruit')
-    flowered = xs.foreign(topology.Topology, 'flowered')
 
     gu_stages = []
     inflo_stages = []
@@ -90,6 +88,9 @@ class Phenology(BaseParameterizedProcess):
             'unit': 'degree-days day-1'
         }
     )
+    flowered = xs.variable(dims='GU', intent='out')
+    nb_inflo = xs.variable(dims='GU', intent='out')
+    nb_fruit = xs.variable(dims='GU', intent='out')
 
     def initialize(self):
 
@@ -124,6 +125,10 @@ class Phenology(BaseParameterizedProcess):
         self.fruit_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruit_growth_tts_delta = np.zeros(self.GU.shape, dtype=np.float32)
 
+        self.nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
+        self.flowered = np.zeros(self.GU.shape, dtype=np.float32)
+
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
 
@@ -131,6 +136,10 @@ class Phenology(BaseParameterizedProcess):
         self.gu_stage[np.isnan(self.gu_stage)] = 0.
         self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
         self.leaf_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
+        self.flowered[:] = 0.
+
+        self.flowered[self.archdev[('arch_dev', 'pot_flowering_date')] == step_start] = 1.
+        self.nb_inflo[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_inflo')][self.flowered == 1.]
 
         params = self.parameters
         Tbase_leaf_growth = params.Tbase_leaf_growth
@@ -184,33 +193,36 @@ class Phenology(BaseParameterizedProcess):
 
         # fruits
 
-        has_fruit = (self.nb_fruit > 0.)
-
         Tbase_fruit_growth = params.Tbase_fruit_growth
 
         self.full_bloom_date = np.where(
-            has_inflo & (self.full_bloom_date == np.datetime64('NAT')) & (self.inflo_stage >= 2.),
+            has_inflo & np.isnat(self.full_bloom_date) & (self.inflo_stage >= 2.),
             step_start,
             self.full_bloom_date
         )
 
+        full_bloom_date = self.full_bloom_date == step_start
+        self.nb_fruit[full_bloom_date] = self.archdev[('arch_dev', 'pot_nb_fruit')][full_bloom_date]
+
+        has_fruit = (self.nb_fruit > 0.)
+
         self.DAFB = np.where(
-            has_inflo | has_fruit & (self.full_bloom_date != np.datetime64('NAT')),
+            has_inflo | has_fruit & ~np.isnat(self.full_bloom_date),
             (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
             0.
-        )
+        ).astype(np.float32)
 
         self.fruit_growth_tts_delta = np.where(
-            has_fruit & (self.DAFB > 0),
+            has_fruit,
             max(0, self.TM_day - Tbase_fruit_growth),
             0.
-        )
+        ).astype(np.float32)
 
         self.fruit_growth_tts = np.where(
-            has_fruit & (self.DAFB > 0),
+            has_fruit,
             self.fruit_growth_tts + self.fruit_growth_tts_delta,
             0.
-        )
+        ).astype(np.float32)
 
     def finalize_step(self):
         pass

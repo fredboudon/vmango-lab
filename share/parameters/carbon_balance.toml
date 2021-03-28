@@ -1,3 +1,7 @@
 RGR_fruit_ini = 0.0105          # initial relative growth rate of fruit [dd-1]
-cc_fruit = 0.4239               # carbon content of fruit dry matter [g C g-1 DM]
 GRC_fruit = 0.04                # growth respiration coefficient of fruit [g C g-1 DM]
+r_mobile_stem = 0.0164          # mobile fraction of carbon reserves in stem [dimensionless]
+r_mobile_leaf = 0.0162          # mobile fraction of carbon reserves in leaf [dimensionless]
+r_storage_leaf_max = 0.3        # specific parameter for leaf reserve storage calculation [dimensionless]
+cc_leaf = 0.4051                # carbon content of leaf dry matter [g C g-1 DM]
+cc_fruit = 0.4239               # carbon content of fruit dry matter [g C g-1 DM]

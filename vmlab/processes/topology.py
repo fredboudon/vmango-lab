@@ -35,12 +35,9 @@ class Topology:
     distance = xs.variable(dims=('GU', 'GU'), intent='out')
     bursted = xs.variable(dims='GU', intent='out')
     appeared = xs.variable(dims='GU', intent='out')
-    flowered = xs.variable(dims='GU', intent='out')
     nb_descendants = xs.variable(dims='GU', intent='out')
     ancestor = xs.variable(dims='GU', intent='out')
     parent_is_apical = xs.variable(dims='GU', intent='out')
-    nb_inflo = xs.variable(dims='GU', intent='out')
-    nb_fruit = xs.variable(dims='GU', intent='out')
 
     is_initially_terminal = xs.variable(dims='GU', intent='out')
 
@@ -67,12 +64,8 @@ class Topology:
         self.ancestor = np.full(self.GU.shape, 0., dtype=np.float32)
         self.parent_is_apical[np.argwhere(self.adjacency)[:, 1]] = self.is_apical[np.argwhere(self.adjacency)[:, 0]]
 
-        self.nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
-        self.nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
-
         self.bursted = np.zeros(self.GU.shape, dtype=np.float32)
         self.appeared = np.zeros(self.GU.shape, dtype=np.float32)
-        self.flowered = np.zeros(self.GU.shape, dtype=np.float32)
 
         self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('topology.lpy')), {
             'process': self,
@@ -92,13 +85,8 @@ class Topology:
 
         self.bursted[:] = 0.
         self.appeared[:] = 0.
-        self.flowered[:] = 0.
 
-        # make boolean. these are just helpers and do not need to appear in sim. output
         self.bursted[self.archdev[('arch_dev', 'pot_burst_date')] == step_start] = 1.
-        self.flowered[self.archdev[('arch_dev', 'pot_flowering_date')] == step_start] = 1.
-        self.nb_inflo[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_inflo')][self.flowered == 1.]
-        self.nb_fruit[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_fruit')][self.flowered == 1.]
 
         day = step_start.astype('datetime64[D]').item()
         self.current_cycle = self.current_cycle + 1 if day.month == self.month_begin_veg_cycle and day.day == 1 else self.current_cycle

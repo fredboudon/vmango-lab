@@ -1,7 +1,11 @@
 import xsimlab as xs
 import numpy as np
 
-from . import growth
+from . import (
+    topology,
+    growth,
+    carbon_allocation
+)
 from ._base.parameter import ParameterizedProcess
 
 
@@ -11,9 +15,12 @@ class CarbonReserve(ParameterizedProcess):
     """
 
     carbon_balance = xs.group_dict('carbon_balance')
+    appeared = xs.foreign(topology.Topology, 'appeared')
 
     nb_gu = xs.global_ref('nb_gu')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
+
+    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
     DM_structural_stem = xs.variable(
         dims=('GU'),
@@ -105,8 +112,8 @@ class CarbonReserve(ParameterizedProcess):
         DM_stem_gu = params.DM_stem_gu
         DM_leaf_unit = params.DM_leaf_unit
 
-        self.DM_structural_leaf = np.float32(DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini))
-        self.reserve_leaf = np.float32(DM_leaf_unit * self.nb_leaf * r_DM_leaf_ini * cc_leaf)
+        self.DM_structural_leaf = np.full(self.nb_gu, DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini), dtype=np.float32)
+        self.reserve_leaf = np.full(self.nb_gu, DM_leaf_unit * self.nb_leaf * r_DM_leaf_ini * cc_leaf, dtype=np.float32)
 
         self.DM_structural_stem = np.full(self.nb_gu, DM_stem_gu * (1 - r_DM_stem_ini), dtype=np.float32)
         self.reserve_stem = np.full(self.nb_gu, DM_stem_gu * r_DM_stem_ini * cc_stem, dtype=np.float32)
@@ -120,7 +127,37 @@ class CarbonReserve(ParameterizedProcess):
 
     @xs.runtime(args=())
     def run_step(self):
-        pass
+
+        params = self.parameters
+        cc_leaf = params.cc_leaf
+        cc_stem = params.cc_stem
+        r_DM_leaf_ini = params.r_DM_leaf_ini
+        r_DM_stem_ini = params.r_DM_stem_ini
+        r_mobile_leaf = params.r_mobile_leaf
+        r_mobile_stem = params.r_mobile_stem
+        r_storage_leaf_max = params.r_storage_leaf_max
+        DM_stem_gu = params.DM_stem_gu
+        DM_leaf_unit = params.DM_leaf_unit
+
+        is_active = np.flatnonzero(self.is_photo_active == 1.)
+
+        if np.any(self.appeared):
+            appeared = np.flatnonzero(self.appeared == 1.)
+            self.DM_structural_leaf[appeared] = DM_leaf_unit * self.nb_leaf[appeared] * (1 - r_DM_leaf_ini)
+            self.DM_structural_stem[appeared] = DM_stem_gu * (1 - r_DM_stem_ini)
+            self.reserve_leaf[appeared] = DM_leaf_unit * self.nb_leaf[appeared] * r_DM_leaf_ini * cc_leaf
+            self.reserve_stem[appeared] = DM_stem_gu * r_DM_stem_ini * cc_stem
+            self.reserve_mob[appeared] = (r_mobile_leaf * self.reserve_leaf[appeared]) + (r_mobile_stem * self.reserve_stem[appeared])
+            self.reserve_nmob_leaf[appeared] = self.reserve_leaf[appeared] * (1 - r_mobile_leaf)
+            self.reserve_nmob_stem[appeared] = self.reserve_stem[appeared] * (1 - r_mobile_stem)
+            self.reserve_leaf_max[appeared] = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf[appeared] * cc_leaf
+
+        self.reserve_leaf[is_active] += self.carbon_balance[('carbon_balance', 'reserve_leaf_delta')][is_active]
+        self.reserve_stem[is_active] += self.carbon_balance[('carbon_balance', 'reserve_stem_delta')][is_active]
+        self.reserve_nmob_leaf[is_active] += self.carbon_balance[('carbon_balance', 'reserve_nmob_leaf_delta')][is_active]
+        self.reserve_nmob_stem[is_active] += self.carbon_balance[('carbon_balance', 'reserve_nmob_stem_delta')][is_active]
+
+        self.reserve_mob[is_active] = ((r_mobile_leaf * self.reserve_leaf[is_active]) + (r_mobile_stem * self.reserve_stem[is_active]))
 
     def finalize_step(self):
         pass

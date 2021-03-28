@@ -3,7 +3,10 @@ import xsimlab as xs
 import numpy as np
 import openalea.lpy as lpy
 
-from . import topology
+from . import (
+    topology,
+    phenology
+)
 
 
 @xs.process
@@ -12,9 +15,9 @@ class Geometry:
     lsystem = None
 
     lstring = xs.foreign(topology.Topology, 'lstring')
-    nb_inflo = xs.foreign(topology.Topology, 'nb_inflo')
     seed = xs.foreign(topology.Topology, 'seed')
 
+    nb_inflo = xs.foreign(phenology.Phenology, 'nb_inflo')
     phenology = xs.group_dict('phenology')
     growth = xs.group_dict('growth')
     appearance = xs.group_dict('appearance')
