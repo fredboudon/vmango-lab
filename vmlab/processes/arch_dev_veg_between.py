@@ -112,21 +112,18 @@ class ArchDevVegBetween(ProbabilityTableProcess):
                         if np.any(realization):
                             cycle_months = tbl.columns.to_numpy()[np.nonzero(realization)][0].split('-')
                             cycle_month = int(self.rng.choice(cycle_months))
-                            appearance_month = self.appearance_month[gu]
                             cycle = cycle_month // 100
                             month = cycle_month % 100
-                            if month < self.month_begin_veg_cycle:
-                                year = step_year + cycle
-                            if appearance_month > self.month_begin_veg_cycle:
-                                if month < self.month_begin_veg_cycle:
-                                    year = step_year + cycle + 1
-                                else:
-                                    year = step_year + cycle
-                            else:
-                                if month < self.month_begin_veg_cycle:
-                                    year = step_year + cycle
-                                else:
+                            if cycle == 1:
+                                if month > self.month_begin_veg_cycle:
                                     year = step_year
+                                else:
+                                    year = step_year + 1
+                            else:
+                                if month > self.month_begin_veg_cycle:
+                                    year = step_year + 1
+                                else:
+                                    year = step_year + 2
                             self.burst_date_children_between[gu] = np.datetime64(datetime(
                                 year,
                                 month,

@@ -194,6 +194,7 @@ class Phenology(ParameterizedProcess):
         # fruits
 
         Tbase_fruit_growth = params.Tbase_fruit_growth
+        Tthresh_fruit_stage = params.Tthresh_fruit_stage
 
         self.full_bloom_date = np.where(
             has_inflo & np.isnat(self.full_bloom_date) & (self.inflo_stage >= 2.),
@@ -201,26 +202,27 @@ class Phenology(ParameterizedProcess):
             self.full_bloom_date
         )
 
-        full_bloom_date = self.full_bloom_date == step_start
-        self.nb_fruit[full_bloom_date] = self.archdev[('arch_dev', 'pot_nb_fruit')][full_bloom_date]
-
-        has_fruit = (self.nb_fruit > 0.)
-
         self.DAFB = np.where(
-            has_inflo | has_fruit & ~np.isnat(self.full_bloom_date),
+            has_inflo & ~np.isnat(self.full_bloom_date),
             (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
             0.
         ).astype(np.float32)
 
         self.fruit_growth_tts_delta = np.where(
-            has_fruit,
+            self.DAFB > 0,
             max(0, self.TM_day - Tbase_fruit_growth),
             0.
         ).astype(np.float32)
 
         self.fruit_growth_tts = np.where(
-            has_fruit,
+            self.DAFB > 0,
             self.fruit_growth_tts + self.fruit_growth_tts_delta,
+            0.
+        ).astype(np.float32)
+
+        self.nb_fruit = np.where(
+            self.fruit_growth_tts > Tthresh_fruit_stage,
+            self.archdev[('arch_dev', 'pot_nb_fruit')],
             0.
         ).astype(np.float32)
 

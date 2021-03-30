@@ -94,17 +94,32 @@ def create_setup(
         input_vars['topology__sim_start_date'] = start_date
 
     output_vars_ = {}
+    if type(output_vars) == dict:
+        for name, item in output_vars.items():
+            if type(item) == dict:
+                for var_name, clock in item.items():
+                    output_vars_[f'{name}__{var_name}'] = clock
+            else:
+                output_vars_[name] = item
+
     for prc_name in model:
-        output_vars_[prc_name] = {}
+        for var_name in xs.filter_variables(model[prc_name], var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
+            if type(output_vars) == dict:  # must be exported because of growing index
+                if f'{prc_name}__{var_name}' not in output_vars:
+                    output_vars[f'{prc_name}__{var_name}'] = None
+
+    for prc_name in model:
         prc = model[prc_name]
         for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
-            output_vars_[prc_name][var_name] = None
+            if f'{prc_name}__{var_name}' not in output_vars_:
+                output_vars_[f'{prc_name}__{var_name}'] = None
         for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
-            output_vars_[prc_name][var_name] = output_vars if type(output_vars) is str else None  # str must be clock name
+            if f'{prc_name}__{var_name}' not in output_vars_:
+                output_vars_[f'{prc_name}__{var_name}'] = output_vars if type(output_vars) is str else None  # str must be clock name
         if graph is not None:
             # make simlab happy by passing initial 'inout' values (needlessly)
             shape = (len(graph.vs.indices),)
-            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and var.metadata['dims'] == (('GU',),)):
+            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
                 if f'{prc_name}__{var_name}' not in input_vars:
                     input_vars[f'{prc_name}__{var_name}'] = np.empty(shape, dtype=np.float32)
 

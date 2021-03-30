@@ -1,11 +1,13 @@
 import xsimlab as xs
 import numpy as np
+import warnings
 
 from . import (
     growth,
     light_interception,
     carbon_demand,
-    carbon_allocation
+    carbon_allocation,
+    phenology
 )
 from ._base.parameter import ParameterizedProcess
 
@@ -20,6 +22,7 @@ class Photosythesis(ParameterizedProcess):
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
+    nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
     is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
@@ -83,6 +86,15 @@ class Photosythesis(ParameterizedProcess):
         }
     )
 
+    D_fruit_avg = xs.variable(
+        dims=('GU'),
+        intent='out',
+        description='average daily carbon demand for fruit growth',
+        attrs={
+            'unit': 'g C day-1'
+        }
+    )
+
     def initialize(self):
 
         super(Photosythesis, self).initialize()
@@ -94,9 +106,10 @@ class Photosythesis(ParameterizedProcess):
         self.photo_shaded = np.zeros(self.nb_gu, dtype=np.float32)
         self.photo_sunlit = np.zeros(self.nb_gu, dtype=np.float32)
         self.photo = np.zeros(self.nb_gu, dtype=np.float32)
+        self.D_fruit_avg = np.zeros(self.nb_gu, dtype=np.float32)
 
-    @xs.runtime(args=())
-    def run_step(self):
+    @xs.runtime(args=('step'))
+    def run_step(self, step):
 
         params = self.parameters
 
@@ -111,16 +124,17 @@ class Photosythesis(ParameterizedProcess):
         if np.any(self.is_photo_active == 1.):
 
             is_active = np.flatnonzero(self.is_photo_active == 1.)
+            is_in_distance_to_fruit = self.is_in_distance_to_fruit.astype(np.float32)
+            is_in_distance_to_fruit[is_in_distance_to_fruit == 0.] = np.nan
 
-            print(self.is_in_distance_to_fruit)
-            print(self.D_fruit)
-            print(self.is_photo_active)
-
-            D_fruit_avg = np.average(self.is_in_distance_to_fruit * np.vstack(self.D_fruit[self.D_fruit > 0] / np.sum(self.is_in_distance_to_fruit, axis=1)), axis=0)
+            with warnings.catch_warnings():
+                # https://stackoverflow.com/questions/29688168/mean-nanmean-and-warning-mean-of-empty-slice
+                warnings.simplefilter('ignore', category=RuntimeWarning)
+                self.D_fruit_avg = np.nanmean(is_in_distance_to_fruit * np.vstack(self.D_fruit[self.nb_fruit > 0.]), axis=0)
 
             # light-saturated leaf photosynthesis (eq.1)
             self.Pmax[:] = 0.
-            self.Pmax[is_active] = np.minimum(np.maximum((p_1 * (D_fruit_avg[is_active] / self.LA[is_active]) * p_2) / (p_1 * (D_fruit_avg[is_active] / self.LA[is_active]) + p_2), Pmax_min), Pmax_max)
+            self.Pmax[is_active] = np.minimum(np.maximum((p_1 * (self.D_fruit_avg[is_active] / self.LA[is_active]) * p_2) / (p_1 * (self.D_fruit_avg[is_active] / self.LA[is_active]) + p_2), Pmax_min), Pmax_max)
 
             # photosynthetic rate per unit leaf area (eq.2)
             self.P_rate_sunlit[:] = 0.

@@ -151,7 +151,7 @@ class ProbabilityTableProcess(ParameterizedProcess):
     def get_poisson(self, tbl, gu_indices):
         indices = self.get_indices(tbl, gu_indices)
         lam = tbl.loc[indices.tolist()].values.flatten()
-        return np.round(np.where(lam == 0., 0., self.rng.poisson(lam, lam.shape) + 1.), 0)
+        return np.where(lam == 0., 0., self.rng.poisson(lam, lam.shape) + 1.)
 
     def get_probability_tables(self):
 

@@ -19,6 +19,7 @@ class ArchDevVegWithin(ProbabilityTableProcess):
     ancestor_nature = xs.foreign(topology.Topology, 'ancestor_nature')
     is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
     sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
+    month_begin_veg_cycle = xs.foreign(topology.Topology, 'month_begin_veg_cycle')
 
     tbls_has_veg_children_within = None
     tbls_has_apical_child_within = None
@@ -97,12 +98,27 @@ class ArchDevVegWithin(ProbabilityTableProcess):
                 if self.current_cycle in self.tbls_burst_date_children_within:
                     tbl = self.tbls_burst_date_children_within[self.current_cycle]
                     for gu in gu_indices:
-                        realization = self.get_multinomial(tbl, gu)
-                        if np.any(realization):
-                            month = (tbl.columns.to_numpy()[np.nonzero(realization)]).astype(np.int)[0]
-                            appearance_month = self.appearance_month[gu]
-                            year = step_year if month > appearance_month else step_year + 1
-                            self.burst_month_children_within[gu] = month
-                            self.burst_date_children_within[gu] = np.datetime64(
-                                datetime(year, month, 1)
-                            )
+                        valid = False
+                        realized = np.full(tbl.columns.to_numpy().shape, False)
+                        while (not valid):
+                            realization = self.get_multinomial(tbl, gu)
+                            if np.any(realization):
+                                realized[realization > 0.] = True
+                                appearance_month = self.appearance_month[gu]
+                                month = (tbl.columns.to_numpy()[np.nonzero(realization)]).astype(np.int)[0]
+                                year = step_year + 1 if month < self.month_begin_veg_cycle and appearance_month >= self.month_begin_veg_cycle else step_year
+                                valid = (
+                                    (year == step_year and month > appearance_month and (
+                                            (month > self.month_begin_veg_cycle and appearance_month >= self.month_begin_veg_cycle) or
+                                            (month < self.month_begin_veg_cycle and appearance_month < self.month_begin_veg_cycle)
+                                        )) or
+                                    (year > step_year and month < appearance_month and month < self.month_begin_veg_cycle)
+                                )
+                                self.burst_month_children_within[gu] = month
+                                self.burst_date_children_within[gu] = np.datetime64(
+                                    datetime(year, month, 1)
+                                )
+                                if np.all(realized):
+                                    break
+                            else:
+                                break

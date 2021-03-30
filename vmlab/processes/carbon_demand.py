@@ -141,8 +141,8 @@ class CarbonDemand(ParameterizedProcess):
         self.MR_repro = np.zeros(self.nb_gu, dtype=np.float32)
         self.MR_veget = np.zeros(self.nb_gu, dtype=np.float32)
 
-    @xs.runtime(args=('step_start'))
-    def run_step(self, step_start):
+    @xs.runtime(args=('step', 'step_start'))
+    def run_step(self, step, step_start):
 
         params = self.parameters
 
@@ -160,36 +160,35 @@ class CarbonDemand(ParameterizedProcess):
         Tref = params.Tref
 
         is_active = np.flatnonzero(self.is_photo_active == 1.)
-
-        DM_fruit = np.where(
-            (self.nb_fruit > 0) & (self.carbon_balance[('carbon_balance', 'DM_fruit')] == 0.),
-            self.DM_fruit_0,
-            self.carbon_balance[('carbon_balance', 'DM_fruit')]
-        )
-
-        print(self.fruit_growth_tts_delta)
-        print(DM_fruit)
-        print(self.DM_fruit_max)
-
-        # carbon demand for fruit growth (eq.5-6-7) :
-        # problem if Tbase_fruit_growth <=  self.TM_day at day of full_bloom_date
-        self.D_fruit = self.fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / self.DM_fruit_max)) * self.nb_fruit
-
-        # MAINTENANCE RESPIRATION (eq.4)
+        has_fruit = np.flatnonzero(self.nb_fruit > 0)
 
         self.MR_stem[:] = 0.
+        self.MR_fruit[:] = 0.
         self.MR_leaf[:] = 0.
-        self.MR_repro[:] = 0
-        self.MR_veget[:] = 0
+        self.MR_repro[:] = 0.
+        self.MR_veget[:] = 0.
 
-        # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
-        self.MR_stem[is_active] = MRR_stem * (Q10_stem ** ((self.TM_day - Tref) / 10)) * self.DM_structural_stem[is_active] + (self.reserve_stem[is_active] / cc_stem)
-        self.MR_leaf[is_active] = np.sum(self.GR > 0) / 24. * MRR_leaf * (Q10_leaf ** ((self.TM_day - Tref) / 10)) * self.DM_structural_leaf[is_active] + (self.reserve_leaf[is_active] / cc_leaf)
-        self.MR_fruit = np.sum(MRR_fruit * (Q10_fruit ** ((self.TM - Tref) / 10)) * np.vstack(DM_fruit) / 24, axis=1) * self.nb_fruit
+        if np.any(self.is_photo_active == 1.):
 
-        # daily maintenance respiration for reproductive and vegetative components
-        self.MR_repro[is_active] = self.MR_fruit[is_active]
-        self.MR_veget[is_active] = self.MR_stem[is_active] + self.MR_leaf[is_active]
+            DM_fruit = np.where(
+                (self.nb_fruit > 0.) & (self.carbon_balance[('carbon_balance', 'DM_fruit')] == 0.),
+                self.DM_fruit_0,
+                self.carbon_balance[('carbon_balance', 'DM_fruit')]
+            )
+
+            # carbon demand for fruit growth (eq.5-6-7) :
+            # maybe problem if Tbase_fruit_growth <=  self.TM_day at day of full_bloom_date
+            self.D_fruit = self.fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / self.DM_fruit_max)) * self.nb_fruit
+
+            # MAINTENANCE RESPIRATION (eq.4)
+            # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
+            self.MR_stem[is_active] = np.sum(MRR_stem / 24 * (Q10_stem ** ((self.TM - Tref) / 10.)) * np.vstack(self.DM_structural_stem[is_active] + (self.reserve_stem[is_active] / cc_stem)), axis=1)
+            self.MR_leaf[is_active] = np.sum((self.GR > 0.) * MRR_leaf * (Q10_leaf ** ((self.TM - Tref) / 10)) * np.vstack(self.DM_structural_leaf[is_active] + (self.reserve_leaf[is_active] / cc_leaf)), axis=1)
+            self.MR_fruit[has_fruit] = np.sum(MRR_fruit / 24 * (Q10_fruit ** ((self.TM - Tref) / 10.)) * np.vstack(DM_fruit[has_fruit] * self.nb_fruit[has_fruit]), axis=1)
+
+            # daily maintenance respiration for reproductive and vegetative components
+            self.MR_repro[has_fruit] = self.MR_fruit[has_fruit]
+            self.MR_veget[is_active] = self.MR_stem[is_active] + self.MR_leaf[is_active]
 
     def finalize_step(self):
         pass
