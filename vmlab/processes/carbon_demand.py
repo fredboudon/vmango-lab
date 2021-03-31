@@ -167,6 +167,7 @@ class CarbonDemand(ParameterizedProcess):
         self.MR_leaf[:] = 0.
         self.MR_repro[:] = 0.
         self.MR_veget[:] = 0.
+        self.D_fruit[:] = 0.
 
         if np.any(self.is_photo_active == 1.):
 

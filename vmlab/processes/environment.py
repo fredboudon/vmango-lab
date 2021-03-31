@@ -57,18 +57,19 @@ class Environment(BaseParameterizedProcess):
 
         weather_file_path = pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.weather_file_path)
 
-        smartis = pd.read_csv(
+        self.weather_hourly_df = pd.read_csv(
             weather_file_path,
             sep=';',
             parse_dates=['Jour'],
             dayfirst=True,
             usecols=['Jour', 'tm', 'glot', 'um']
-        )
-
-        self.weather_hourly_df = smartis.rename(
+        ).rename(
             columns={'Jour': 'DATETIME', 'tm': 'TM', 'glot': 'GR', 'um': 'RH'},
             inplace=False
         ).set_index('DATETIME', inplace=False).astype(np.float32)
+
+        # smartis may have nans
+        self.weather_hourly_df.fillna(inplace=True, method='backfill')
 
         self.weather_daily_df = pd.DataFrame({
             'TM': self.weather_hourly_df['TM'].groupby(pd.Grouper(freq="1D")).mean()
@@ -86,3 +87,5 @@ class Environment(BaseParameterizedProcess):
         self.GR = np.resize(hourly['GR'].to_numpy(), 24)
         self.RH = np.resize(hourly['RH'].to_numpy(), 24)
         self.TM_day = self.weather_daily_df['TM'][step_start]
+
+        assert not (np.any(np.isnan(self.TM)) or np.any(np.isnan(self.GR)) or np.any(np.isnan(self.RH)))

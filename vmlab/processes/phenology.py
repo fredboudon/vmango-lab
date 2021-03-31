@@ -11,6 +11,7 @@ class Phenology(ParameterizedProcess):
     GU = xs.global_ref('GU')
     archdev = xs.group_dict('arch_dev')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
+    ripeness_index = xs.global_ref('ripeness_index')
 
     gu_stages = []
     inflo_stages = []
@@ -88,9 +89,9 @@ class Phenology(ParameterizedProcess):
             'unit': 'degree-days day-1'
         }
     )
-    flowered = xs.variable(dims='GU', intent='out')
-    nb_inflo = xs.variable(dims='GU', intent='out')
-    nb_fruit = xs.variable(dims='GU', intent='out')
+    flowered = xs.variable(dims='GU', intent='out', groups='phenology')
+    nb_inflo = xs.variable(dims='GU', intent='out', groups='phenology')
+    nb_fruit = xs.variable(dims='GU', intent='out', groups='phenology')
 
     def initialize(self):
 
@@ -203,25 +204,25 @@ class Phenology(ParameterizedProcess):
         )
 
         self.DAFB = np.where(
-            has_inflo & ~np.isnat(self.full_bloom_date),
+            has_inflo & ~np.isnat(self.full_bloom_date) & (self.ripeness_index < 1.) & (self.archdev[('arch_dev', 'pot_nb_fruit')] > 0),
             (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
             0.
         ).astype(np.float32)
 
         self.fruit_growth_tts_delta = np.where(
-            self.DAFB > 0,
+            (self.DAFB > 0) & (self.ripeness_index < 1.),
             max(0, self.TM_day - Tbase_fruit_growth),
             0.
         ).astype(np.float32)
 
         self.fruit_growth_tts = np.where(
-            self.DAFB > 0,
+            (self.DAFB > 0) & (self.ripeness_index < 1.),
             self.fruit_growth_tts + self.fruit_growth_tts_delta,
             0.
         ).astype(np.float32)
 
         self.nb_fruit = np.where(
-            self.fruit_growth_tts > Tthresh_fruit_stage,
+            (self.fruit_growth_tts > Tthresh_fruit_stage) & (self.ripeness_index < 1.),
             self.archdev[('arch_dev', 'pot_nb_fruit')],
             0.
         ).astype(np.float32)

@@ -165,9 +165,10 @@ GU(idx):
                     nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
                 nsproduce([EB()])
         nsproduce([Sphere(radius_gu)])
+    nb_fruit = float(phenology[('phenology', 'nb_fruit')][idx])
     inflo_stage = float(phenology[('phenology', 'inflo_stage')][idx])
     final_length_inflos = appearance[('appearance', 'final_length_inflos')][idx]
-    if inflo_stage > 0:
+    if (inflo_stage > 0 and inflo_stage < 5) or nb_fruit > 0.:
         length_inflos = growth[('growth', 'length_inflos')][idx]
         radius_inflo = float(growth[('growth', 'radius_inflo')][idx])
         stage = int(inflo_stage // 1.)

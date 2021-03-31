@@ -4,8 +4,7 @@ import numpy as np
 import openalea.lpy as lpy
 
 from . import (
-    topology,
-    phenology
+    topology
 )
 
 
@@ -17,11 +16,9 @@ class Geometry:
     lstring = xs.foreign(topology.Topology, 'lstring')
     seed = xs.foreign(topology.Topology, 'seed')
 
-    nb_inflo = xs.foreign(phenology.Phenology, 'nb_inflo')
     phenology = xs.group_dict('phenology')
     growth = xs.group_dict('growth')
     appearance = xs.group_dict('appearance')
-    fruit = xs.group_dict('fruit')
 
     scene = xs.any_object()
     interpretation_freq = xs.variable(intent='in', static=True, default=-1)

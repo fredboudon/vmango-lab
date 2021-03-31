@@ -188,6 +188,12 @@ class CarbonBalance(ParameterizedProcess):
             self.DM_fruit
         )
 
+        self.DM_fruit[self.nb_fruit == 0.] = 0.
+        self.reserve_leaf_delta[:] = 0.
+        self.reserve_stem_delta[:] = 0.
+        self.reserve_nmob_leaf_delta[:] = 0.
+        self.reserve_nmob_stem_delta[:] = 0.
+
         if np.any(self.is_photo_active == 1.):
 
             reserve_leaf = self.reserve_leaf.copy()
@@ -213,8 +219,8 @@ class CarbonBalance(ParameterizedProcess):
             #    2- reproductive components
 
             assimilates_gte_mr_vegt = self.carbon_supply[active] >= self.MR_veget[active]
-            mobilize_from_leaf = (self.carbon_supply[active] + self.reserve_nmob_leaf[active] >= self.MR_veget[active]) & ~assimilates_gte_mr_vegt
-            mobilize_from_stem = (self.carbon_supply[active] + self.reserve_nmob_leaf[active] + self.reserve_nmob_stem[active] >= self.MR_veget[active]) & ~assimilates_gte_mr_vegt & ~mobilize_from_leaf
+            mobilize_from_leaf = ((self.carbon_supply[active] + self.reserve_nmob_leaf[active]) >= self.MR_veget[active]) & ~assimilates_gte_mr_vegt
+            mobilize_from_stem = ((self.carbon_supply[active] + self.reserve_nmob_leaf[active] + self.reserve_nmob_stem[active]) >= self.MR_veget[active]) & ~assimilates_gte_mr_vegt & ~mobilize_from_leaf
             gu_died = ~assimilates_gte_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
 
             # # use of assimilates for maintenance respiration of vegetative components :
@@ -242,16 +248,16 @@ class CarbonBalance(ParameterizedProcess):
             if np.any(gu_died):
                 # TODO: What to do with variables?
                 warnings.warn('Vegetative part of the system dies ...')
-                reserve_nmob_leaf[active] = np.where(
-                    gu_died,
-                    0.,
-                    reserve_nmob_leaf[active]
-                )
-                reserve_nmob_stem[active] = np.where(
-                    gu_died,
-                    0.,
-                    reserve_nmob_stem[active]
-                )
+                # reserve_nmob_leaf[active] = np.where(
+                #     gu_died,
+                #     0.,
+                #     reserve_nmob_leaf[active]
+                # )
+                # reserve_nmob_stem[active] = np.where(
+                #     gu_died,
+                #     0.,
+                #     reserve_nmob_stem[active]
+                # )
 
             # use of remaining assimilates for maintenance respiration of reproductive components :
             remaining_assimilates_lt_mr_repro = np.dot(self.allocation_share, self.remains_1) < self.MR_repro[fruiting]
@@ -270,17 +276,17 @@ class CarbonBalance(ParameterizedProcess):
                 self.DM_fruit[fruiting]
             )
 
-            fruit_died = ~remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
+            fruit_died = remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
 
-            if not np.any(fruit_died):
+            if np.any(fruit_died):
                 # TODO: What to do with variables?
                 # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
                 warnings.warn('Reproductive part of the system dies ...')
-                self.DM_fruit[fruiting] = np.where(
-                    fruit_died,
-                    0.,
-                    self.DM_fruit[fruiting]
-                )
+                # self.DM_fruit[fruiting] = np.where(
+                #     fruit_died,
+                #     0.,
+                #     self.DM_fruit[fruiting]
+                # )
 
             self.remains_2[active] = np.maximum(0, self.remains_1[active] - self.MR_repro[active])
 

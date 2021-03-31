@@ -1,6 +1,5 @@
 import xsimlab as xs
 import numpy as np
-import warnings
 
 from . import (
     growth,
@@ -25,6 +24,7 @@ class Photosythesis(ParameterizedProcess):
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
     is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
+    allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
@@ -124,13 +124,11 @@ class Photosythesis(ParameterizedProcess):
         if np.any(self.is_photo_active == 1.):
 
             is_active = np.flatnonzero(self.is_photo_active == 1.)
-            is_in_distance_to_fruit = self.is_in_distance_to_fruit.astype(np.float32)
-            is_in_distance_to_fruit[is_in_distance_to_fruit == 0.] = np.nan
+            is_fruiting = np.flatnonzero(self.nb_fruit > 0.)
 
-            with warnings.catch_warnings():
-                # https://stackoverflow.com/questions/29688168/mean-nanmean-and-warning-mean-of-empty-slice
-                warnings.simplefilter('ignore', category=RuntimeWarning)
-                self.D_fruit_avg = np.nanmean(is_in_distance_to_fruit * np.vstack(self.D_fruit[self.nb_fruit > 0.]), axis=0)
+            D_fruit_share = (self.is_in_distance_to_fruit * self.LA / np.vstack(np.nansum(self.is_in_distance_to_fruit * self.LA, axis=1))) * np.vstack(self.D_fruit[is_fruiting])
+            # self.D_fruit_avg[np.nansum(D_fruit_share, axis=0) > 0.] = np.nanmean(D_fruit_share[:, np.nansum(D_fruit_share, axis=0) > 0.], axis=0)
+            self.D_fruit_avg = np.nansum(D_fruit_share, axis=0)
 
             # light-saturated leaf photosynthesis (eq.1)
             self.Pmax[:] = 0.

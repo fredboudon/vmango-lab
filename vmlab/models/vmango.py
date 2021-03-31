@@ -18,7 +18,8 @@ from ..processes import (
     carbon_reserve,
     carbon_demand,
     carbon_balance,
-    fruit_quality
+    fruit_quality,
+    harvest
 )
 
 
@@ -40,5 +41,6 @@ vmango = xs.Model({
     'carbon_reserve': carbon_reserve.CarbonReserve,
     'carbon_demand': carbon_demand.CarbonDemand,
     'carbon_balance': carbon_balance.CarbonBalance,
-    'fruit_quality': fruit_quality.FruitQuality
+    'fruit_quality': fruit_quality.FruitQuality,
+    'harvest': harvest.Harvest
 })
