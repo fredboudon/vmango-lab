@@ -17,12 +17,12 @@ class DotDict(dict):
 
 def get_topology_inputs_from_df(topology_prc, df, cycle):
     input_topo = {}
-    required_attrs = ['id', 'parent_id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical']
+    required_attrs = ['id', 'parent_id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']
     assert len(set(df.columns) & set(required_attrs)) == len(required_attrs)
 
     df = df[df['cycle'] <= cycle]
     edges = df[['id', 'parent_id']][pd.notna(df['parent_id'])]
-    vertices = df[['id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical']]
+    vertices = df[['id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']]
 
     graph = ig.Graph.DictList(
         vertices=vertices.to_dict('records'),
@@ -37,6 +37,7 @@ def get_topology_inputs_from_df(topology_prc, df, cycle):
         if var_name in graph.vs.attribute_names():
             input_topo[f'topology__{var_name}'] = np.array(graph.vs.get_attribute_values(var_name), dtype=np.float32)
     input_topo['topology__adjacency'] = np.array(graph.get_adjacency().data, dtype=np.float32)
+    input_topo['arch_dev_rep__nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
 
     return input_topo, graph
 
@@ -47,7 +48,7 @@ def create_setup(
     end_date,
     current_cycle,
     clocks={},
-    initial_tree_df=None,
+    tree=None,
     input_vars=None,
     output_vars=None,
     fill_default=True,
@@ -77,16 +78,16 @@ def create_setup(
                             input_vars[f'{prc_name}__parameter_file_path'] = str(path)
                         else:
                             warnings.warn(f'Input file "{path}" does not exist')
-            if 'initial_tree' in setup and initial_tree_df is None:
+            if 'initial_tree' in setup and tree is None:
                 if not setup['initial_tree']:
                     raise ValueError('No iniyial tree provided')
                 else:
                     path = dir_path.joinpath(setup['initial_tree'])
-                    initial_tree_df = pd.read_csv(path).astype(np.float32)
+                    tree = pd.read_csv(path).astype(np.float32)
 
     graph = None
     if 'topology' in model:
-        input_topo, graph = get_topology_inputs_from_df(model['topology'], initial_tree_df, current_cycle)
+        input_topo, graph = get_topology_inputs_from_df(model['topology'], tree, current_cycle)
         input_vars.update(input_topo)
         input_vars['topology__current_cycle'] = current_cycle
         # work-around for main_clock not available at initialization.

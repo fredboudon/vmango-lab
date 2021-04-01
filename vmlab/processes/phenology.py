@@ -11,7 +11,7 @@ class Phenology(ParameterizedProcess):
     GU = xs.global_ref('GU')
     archdev = xs.group_dict('arch_dev')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
-    ripeness_index = xs.global_ref('ripeness_index')
+    harvest = xs.group_dict('harvest')
 
     gu_stages = []
     inflo_stages = []
@@ -89,6 +89,14 @@ class Phenology(ParameterizedProcess):
             'unit': 'degree-days day-1'
         }
     )
+    fruited = xs.variable(
+        dims='GU',
+        intent='out',
+        description='fruit appeared today',
+        attrs={
+            'unit': '-'
+        }
+    )
     flowered = xs.variable(dims='GU', intent='out', groups='phenology')
     nb_inflo = xs.variable(dims='GU', intent='out', groups='phenology')
     nb_fruit = xs.variable(dims='GU', intent='out', groups='phenology')
@@ -129,6 +137,7 @@ class Phenology(ParameterizedProcess):
         self.nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
         self.nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
         self.flowered = np.zeros(self.GU.shape, dtype=np.float32)
+        self.fruited = np.zeros(self.GU.shape, dtype=np.float32)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
@@ -138,6 +147,7 @@ class Phenology(ParameterizedProcess):
         self.gu_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
         self.leaf_growth_tts[np.isnan(self.gu_growth_tts)] = 0.
         self.flowered[:] = 0.
+        self.fruited[:] = 0.
 
         self.flowered[self.archdev[('arch_dev', 'pot_flowering_date')] == step_start] = 1.
         self.nb_inflo[self.flowered == 1.] = self.archdev[('arch_dev', 'pot_nb_inflo')][self.flowered == 1.]
@@ -194,38 +204,46 @@ class Phenology(ParameterizedProcess):
 
         # fruits
 
-        Tbase_fruit_growth = params.Tbase_fruit_growth
-        Tthresh_fruit_stage = params.Tthresh_fruit_stage
+        if np.any((self.inflo_stage < self.nb_inflo_stage) | (self.nb_fruit > 0.)):
 
-        self.full_bloom_date = np.where(
-            has_inflo & np.isnat(self.full_bloom_date) & (self.inflo_stage >= 2.),
-            step_start,
-            self.full_bloom_date
-        )
+            Tbase_fruit_growth = params.Tbase_fruit_growth
+            Tthresh_fruit_stage = params.Tthresh_fruit_stage
 
-        self.DAFB = np.where(
-            has_inflo & ~np.isnat(self.full_bloom_date) & (self.ripeness_index < 1.) & (self.archdev[('arch_dev', 'pot_nb_fruit')] > 0),
-            (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
-            0.
-        ).astype(np.float32)
+            self.full_bloom_date = np.where(
+                has_inflo & np.isnat(self.full_bloom_date) & (self.inflo_stage >= 2.),
+                step_start,
+                self.full_bloom_date
+            )
 
-        self.fruit_growth_tts_delta = np.where(
-            (self.DAFB > 0) & (self.ripeness_index < 1.),
-            max(0, self.TM_day - Tbase_fruit_growth),
-            0.
-        ).astype(np.float32)
+            self.DAFB = np.where(
+                has_inflo & ~np.isnat(self.full_bloom_date) & (self.harvest[('harvest', 'ripeness_index')] < 1.) & (self.archdev[('arch_dev', 'pot_nb_fruit')] > 0),
+                (step_start - self.full_bloom_date).astype('timedelta64[D]') / np.timedelta64(1, 'D'),
+                0.
+            ).astype(np.float32)
 
-        self.fruit_growth_tts = np.where(
-            (self.DAFB > 0) & (self.ripeness_index < 1.),
-            self.fruit_growth_tts + self.fruit_growth_tts_delta,
-            0.
-        ).astype(np.float32)
+            self.fruit_growth_tts_delta = np.where(
+                (self.DAFB > 0) & (self.harvest[('harvest', 'ripeness_index')] < 1.),
+                max(0, self.TM_day - Tbase_fruit_growth),
+                0.
+            ).astype(np.float32)
 
-        self.nb_fruit = np.where(
-            (self.fruit_growth_tts > Tthresh_fruit_stage) & (self.ripeness_index < 1.),
-            self.archdev[('arch_dev', 'pot_nb_fruit')],
-            0.
-        ).astype(np.float32)
+            self.fruit_growth_tts = np.where(
+                (self.DAFB > 0) & (self.harvest[('harvest', 'ripeness_index')] < 1.),
+                self.fruit_growth_tts + self.fruit_growth_tts_delta,
+                0.
+            ).astype(np.float32)
+
+            self.fruited[
+                (self.fruit_growth_tts >= Tthresh_fruit_stage) &
+                (self.nb_fruit == 0) &
+                (self.archdev[('arch_dev', 'pot_nb_fruit')] > 0)
+            ] = 1.
+
+            self.nb_fruit[np.flatnonzero(self.fruited)] = self.archdev[('arch_dev', 'pot_nb_fruit')][
+                np.flatnonzero(self.fruited)
+            ]
+
+            self.nb_fruit[np.flatnonzero(self.harvest[('harvest', 'harvested')])] = 0.
 
     def finalize_step(self):
         pass

@@ -19,6 +19,7 @@ class Geometry:
     phenology = xs.group_dict('phenology')
     growth = xs.group_dict('growth')
     appearance = xs.group_dict('appearance')
+    photosynthesis = xs.group_dict('photosynthesis')
 
     scene = xs.any_object()
     interpretation_freq = xs.variable(intent='in', static=True, default=-1)

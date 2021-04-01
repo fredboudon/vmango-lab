@@ -37,7 +37,7 @@ class ArchDevRep(ProbabilityTableProcess):
     nb_inflorescences = xs.variable(dims='GU', intent='out')
     fruiting = xs.variable(dims='GU', intent='out')
     nb_fruits = xs.variable(dims='GU', intent='out')
-    nature = xs.variable(dims='GU', intent='out')
+    nature = xs.variable(dims='GU', intent='inout')
 
     def initialize(self):
 
@@ -49,7 +49,6 @@ class ArchDevRep(ProbabilityTableProcess):
         self.nb_inflorescences = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruiting = np.zeros(self.GU.shape, dtype=np.float32)
         self.nb_fruits = np.zeros(self.GU.shape, dtype=np.float32)
-        self.nature = np.full(self.GU.shape, Nature.VEGETATIVE, dtype=np.float32)
 
         probability_tables = self.get_probability_tables()
 

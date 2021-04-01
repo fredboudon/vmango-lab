@@ -6,7 +6,8 @@ from ._base.parameter import ParameterizedProcess
 from . import (
     topology,
     growth,
-    phenology
+    phenology,
+    harvest
 )
 
 
@@ -14,10 +15,13 @@ from . import (
 class CarbonAllocation(ParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
+    appeared = xs.foreign(topology.Topology, 'appeared')
     adjacency = xs.foreign(topology.Topology, 'adjacency')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     gu_stage = xs.foreign(phenology.Phenology, 'gu_stage')
+    fruited = xs.foreign(phenology.Phenology, 'fruited')
+    harvested = xs.foreign(harvest.Harvest, 'harvested')
 
     distance_to_fruit = xs.any_object()
     is_in_distance_to_fruit = xs.any_object()
@@ -43,11 +47,12 @@ class CarbonAllocation(ParameterizedProcess):
 
         if np.any(is_fruting):
 
-            self.distance_to_fruit = csgraph.shortest_path(
-                self.adjacency,
-                indices=np.flatnonzero(is_fruting),
-                directed=False
-            ).astype(np.float32)
+            if np.any((self.appeared == 1.) | (self.fruited == 1.) | (self.harvested == 1.)):
+                self.distance_to_fruit = csgraph.shortest_path(
+                    self.adjacency,
+                    indices=np.flatnonzero(is_fruting),
+                    directed=False
+                ).astype(np.float32)
 
             self.distance_to_fruit[self.distance_to_fruit > max_distance_to_fruit] = np.inf
             self.distance_to_fruit[:, np.flatnonzero(~is_leafy)] = np.inf

@@ -22,8 +22,8 @@ class CarbonBalance(ParameterizedProcess):
 
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
 
-    full_bloom_date = xs.foreign(phenology.Phenology, 'full_bloom_date')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
+    fruited = xs.foreign(phenology.Phenology, 'fruited')
 
     is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
     allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
@@ -182,12 +182,7 @@ class CarbonBalance(ParameterizedProcess):
         GRC_fruit = params.GRC_fruit
         # RGR_fruit_ini = params.RGR_fruit_ini
 
-        self.DM_fruit = np.where(
-            (self.full_bloom_date == step_start) & (self.nb_fruit > 0.),
-            self.DM_fruit_0,
-            self.DM_fruit
-        )
-
+        self.DM_fruit[np.flatnonzero(self.fruited)] = self.DM_fruit_0
         self.DM_fruit[self.nb_fruit == 0.] = 0.
         self.reserve_leaf_delta[:] = 0.
         self.reserve_stem_delta[:] = 0.

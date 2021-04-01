@@ -36,6 +36,7 @@ class CarbonDemand(ParameterizedProcess):
 
     fruit_growth_tts_delta = xs.foreign(phenology.Phenology, 'fruit_growth_tts_delta')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
+    fruited = xs.foreign(phenology.Phenology, 'fruited')
 
     DM_structural_stem = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_stem')
     DM_structural_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_leaf')
@@ -169,13 +170,13 @@ class CarbonDemand(ParameterizedProcess):
         self.MR_veget[:] = 0.
         self.D_fruit[:] = 0.
 
-        if np.any(self.is_photo_active == 1.):
+        DM_fruit = np.where(
+            self.fruited,
+            self.DM_fruit_0,
+            self.carbon_balance[('carbon_balance', 'DM_fruit')]
+        )
 
-            DM_fruit = np.where(
-                (self.nb_fruit > 0.) & (self.carbon_balance[('carbon_balance', 'DM_fruit')] == 0.),
-                self.DM_fruit_0,
-                self.carbon_balance[('carbon_balance', 'DM_fruit')]
-            )
+        if np.any(self.is_photo_active == 1.):
 
             # carbon demand for fruit growth (eq.5-6-7) :
             # maybe problem if Tbase_fruit_growth <=  self.TM_day at day of full_bloom_date

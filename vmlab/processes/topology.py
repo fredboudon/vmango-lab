@@ -21,8 +21,8 @@ class Topology:
     lstring = xs.any_object()
 
     current_cycle = xs.variable(intent='inout')
-    month_begin_veg_cycle = xs.variable(intent='in', static=True)
-    doy_begin_flowering = xs.variable(intent='in', static=True)
+    month_begin_veg_cycle = xs.variable(default=7, intent='in', static=True)
+    doy_begin_flowering = xs.variable(default=214, intent='in', static=True)
 
     adjacency = xs.variable(dims=('GU', 'GU'), intent='inout')
     ancestor_is_apical = xs.variable(dims='GU', intent='inout')
