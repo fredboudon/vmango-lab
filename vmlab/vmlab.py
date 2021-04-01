@@ -1,4 +1,8 @@
 import xsimlab as xs
+from xsimlab.variable import VarIntent
+import pandas as pd
+import numpy as np
+import igraph as ig
 import io
 import toml
 import warnings
@@ -11,141 +15,120 @@ class DotDict(dict):
         self.__dict__ = self
 
 
+def get_topology_inputs_from_df(topology_prc, df, cycle):
+    input_topo = {}
+    required_attrs = ['id', 'parent_id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']
+    assert len(set(df.columns) & set(required_attrs)) == len(required_attrs)
+
+    df = df[df['cycle'] <= cycle]
+    edges = df[['id', 'parent_id']][pd.notna(df['parent_id'])]
+    vertices = df[['id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']]
+
+    graph = ig.Graph.DictList(
+        vertices=vertices.to_dict('records'),
+        edges=edges.to_dict('records'),
+        vertex_name_attr='id',
+        edge_foreign_keys=('parent_id', 'id'),
+        directed=True
+    )
+    assert graph.is_dag()
+
+    for var_name in xs.filter_variables(topology_prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT):
+        if var_name in graph.vs.attribute_names():
+            input_topo[f'topology__{var_name}'] = np.array(graph.vs.get_attribute_values(var_name), dtype=np.float32)
+    input_topo['topology__adjacency'] = np.array(graph.get_adjacency().data, dtype=np.float32)
+    input_topo['arch_dev_rep__nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
+
+    return input_topo, graph
+
+
 def create_setup(
-    model=None,
-    clocks=None,
-    main_clock=None,
+    model,
+    start_date,
+    end_date,
+    current_cycle,
+    clocks={},
+    tree=None,
     input_vars=None,
     output_vars=None,
     fill_default=True,
     setup_toml=None
 ):
-    """Create a specific setup for model runs.
-
-    This convenient function creates a new :class:`xarray.Dataset`
-    object with everything needed to run a model (i.e., input values,
-    time steps, output variables to save at given times) as data
-    variables, coordinates and attributes.
-
-    Parameters
-    ----------
-    model : :class:`xsimlab.Model` object, optional
-        Create a simulation setup for this model. If None, tries to get model
-        from context.
-    clocks : dict, optional
-        Used to create one or several clock coordinates. Dictionary
-        values are anything that can be easily converted to
-        :class:`xarray.IndexVariable` objects (e.g., a 1-d
-        :class:`numpy.ndarray` or a :class:`pandas.Index`).
-    main_clock : str or dict, optional
-        Name of the clock coordinate (dimension) to use as master clock.
-        If not set, the name is inferred from ``clocks`` (only if
-        one coordinate is given and if Dataset has no master clock
-        defined yet).
-        A dictionary can also be given with one of several of these keys:
-
-        - ``dim`` : name of the master clock dimension/coordinate
-        - ``units`` : units of all clock coordinate labels
-        - ``calendar`` : a unique calendar for all (time) clock coordinates
-    input_vars : dict, optional
-        Dictionary with values given for model inputs. Entries of the
-        dictionary may look like:
-
-        - ``'foo': {'bar': value, ...}`` or
-        - ``('foo', 'bar'): value`` or
-        - ``'foo__bar': value``
-
-        where ``foo`` is the name of a existing process in the model and
-        ``bar`` is the name of an (input) variable declared in that process.
-
-        Values are anything that can be easily converted to
-        :class:`xarray.Variable` objects, e.g., single values, array-like,
-        ``(dims, data, attrs)`` tuples or xarray objects.
-        For array-like values with no dimension labels, xarray-simlab will look
-        in ``model`` variables metadata for labels matching the number
-        of dimensions of those arrays.
-    output_vars : dict, optional
-        Dictionary with model variable names to save as simulation output
-        (time-dependent or time-independent). Entries of the dictionary look
-        similar than for ``input_vars`` (see here above), except that here
-        ``value`` must correspond to the dimension of a clock coordinate
-        (i.e., new output values will be saved at each time given by the
-        coordinate labels) or ``None`` (i.e., all variables will be exported).
-    fill_default : bool, optional
-        If True (default), automatically fill the dataset with all model
-        inputs missing in ``input_vars`` and their default value (if any).
-
-    Returns
-    -------
-    dataset : :class:`xarray.Dataset`
-        A new Dataset object with model inputs as data variables or coordinates
-        (depending on their given value) and clock coordinates.
-        The names of the input variables also include the name of their process
-        (i.e., 'foo__bar').
-
-    Notes
-    -----
-    Output variable names are added in Dataset as specific attributes
-    (global and/or clock coordinate attributes).
-
-    Shamelessly copied from xs.create_setup. But we export all if output_vars=None
-    """
 
     input_vars = {
         **({} if input_vars is None else input_vars)
     }
 
-    if main_clock is None and len(clocks.keys()):
-        main_clock = list(clocks.keys())[0]
+    main_clock = 'day'
+    clocks = {} if clocks is None else clocks
+    clocks[main_clock] = pd.date_range(start=start_date, end=end_date, freq='1d')
 
     # set toml file path as process input from 'parameters' section in setup_toml
     if setup_toml is not None:
         with io.open(setup_toml) as setup_file:
             setup = toml.loads(setup_file.read())
+            dir_path = pathlib.Path(setup_toml).parent
             if 'parameters' in setup:
-                dir_path = pathlib.Path(setup_toml).parent
                 for prc_name, rel_file_path in setup['parameters'].items():
                     path = dir_path.joinpath(rel_file_path)
-                    if not path.exists():
-                        warnings.warn(f'Input file "{path}" does not exist')
-                    elif prc_name in model:
-                        # process 'prc_name' must inherit from BaseParameterizedProcess or
-                        # declare a parameter_file_path 'in' variable and handle it
-                        input_vars[f'{prc_name}__parameter_file_path'] = str(path)
-                    else:
-                        warnings.warn(f'Process "{prc_name}" does not exist')
+                    if prc_name in model:
+                        if path.exists():
+                            # process 'prc_name' must inherit from ParameterizedProcess or
+                            # declare a parameter_file_path 'in' variable and handle it
+                            input_vars[f'{prc_name}__parameter_file_path'] = str(path)
+                        else:
+                            warnings.warn(f'Input file "{path}" does not exist')
+            if 'initial_tree' in setup and tree is None:
+                if not setup['initial_tree']:
+                    raise ValueError('No iniyial tree provided')
+                else:
+                    path = dir_path.joinpath(setup['initial_tree'])
+                    tree = pd.read_csv(path).astype(np.float32)
 
-    # set toml file path as process input from 'probability_tables' section in setup_toml
-    if setup_toml is not None:
-        with io.open(setup_toml) as setup_file:
-            setup = toml.loads(setup_file.read())
-            if 'probability_tables' in setup:
-                dir_path = pathlib.Path(setup_toml).parent
-                for prc_name, rel_dir_path in setup['probability_tables'].items():
-                    path = dir_path.joinpath(rel_dir_path)
-                    if not path.exists():
-                        warnings.warn(f'Input dir "{path}" does not exist')
-                    elif prc_name in model:
-                        # process 'prc_name' must inherit from BaseProbabilityTableProcess
-                        input_vars[f'{prc_name}__table_dir_path'] = str(path)
-                    else:
-                        warnings.warn(f'Process "{prc_name}" does not exist')
+    graph = None
+    if 'topology' in model:
+        input_topo, graph = get_topology_inputs_from_df(model['topology'], tree, current_cycle)
+        input_vars.update(input_topo)
+        input_vars['topology__current_cycle'] = current_cycle
+        # work-around for main_clock not available at initialization.
+        # set the start date variable
+        input_vars['topology__sim_start_date'] = start_date
 
-    if output_vars is None:
-        output_vars = {}
-        for prc_name in model:
-            output_vars[prc_name] = {}
-            prc = model[prc_name]
-            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
-                output_vars[prc_name][var_name] = None
-            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
-                output_vars[prc_name][var_name] = main_clock
+    output_vars_ = {}
+    if type(output_vars) == dict:
+        for name, item in output_vars.items():
+            if type(item) == dict:
+                for var_name, clock in item.items():
+                    output_vars_[f'{name}__{var_name}'] = clock
+            else:
+                output_vars_[name] = item
+
+    for prc_name in model:
+        for var_name in xs.filter_variables(model[prc_name], var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
+            if type(output_vars) == dict:  # must be exported because of growing index
+                if f'{prc_name}__{var_name}' not in output_vars:
+                    output_vars[f'{prc_name}__{var_name}'] = None
+
+    for prc_name in model:
+        prc = model[prc_name]
+        for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['static']):
+            if f'{prc_name}__{var_name}' not in output_vars_:
+                output_vars_[f'{prc_name}__{var_name}'] = None
+        for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
+            if f'{prc_name}__{var_name}' not in output_vars_:
+                output_vars_[f'{prc_name}__{var_name}'] = output_vars if type(output_vars) is str else None  # str must be clock name
+        if graph is not None:
+            # make simlab happy by passing initial 'inout' values (needlessly)
+            shape = (len(graph.vs.indices),)
+            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
+                if f'{prc_name}__{var_name}' not in input_vars:
+                    input_vars[f'{prc_name}__{var_name}'] = np.empty(shape, dtype=np.float32)
 
     return xs.create_setup(
         model,
         clocks,
         main_clock,
         input_vars,
-        output_vars,
+        output_vars_,
         fill_default
     )

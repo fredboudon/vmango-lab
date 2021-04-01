@@ -1,0 +1,13 @@
+r_DM_stem_ini = 0.1             # initial dry mass fraction of reserves in stem [dimensionless]
+r_DM_leaf_ini = 0.074           # initial dry mass fraction of reserves in leaf [dimensionless]
+
+DM_stem_gu = 6.0                # stem dry mass (for a single gu) [g DM]
+DM_leaf_unit = 0.8              # leaf dry mass (for a single leaf) [g DM]
+
+r_mobile_stem = 0.0164          # mobile fraction of carbon reserves in stem [dimensionless]
+r_mobile_leaf = 0.0162          # mobile fraction of carbon reserves in leaf [dimensionless]
+
+cc_stem = 0.4387                # carbon content of stem dry matter [g C g-1 DM]
+cc_leaf = 0.4051                # carbon content of leaf dry matter [g C g-1 DM]
+
+r_storage_leaf_max = 0.3        # specific parameter for leaf reserve storage calculation [dimensionless]

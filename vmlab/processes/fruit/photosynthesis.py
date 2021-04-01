@@ -94,12 +94,12 @@ class Photosythesis(BaseParameterizedProcess):
         p_3 = params.p_3
         p_4 = params.p_4
         Pmax_max = params.Pmax_max
+        Pmax_min = params.Pmax_min
         k = params.k
 
         # light-saturated leaf photosynthesis (eq.1)
-        self.Pmax = np.array([np.minimum((p_1 * (D_fruit / LA) * p_2) / (p_1 * (D_fruit / LA) + p_2), Pmax_max)
+        self.Pmax = np.array([np.minimum(np.maximum((p_1 * (D_fruit / LA) * p_2) / (p_1 * (D_fruit / LA) + p_2), Pmax_min), Pmax_max)
                               if LA > 0 else 0. for LA, D_fruit in zip(self.LA, self.D_fruit)])
-
         # photosynthetic rate per unit leaf area (eq.2)
         self.P_rate_sunlit = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])
         self.P_rate_shaded = np.array([np.maximum(0., ((Pmax + p_3) * (1 - np.exp(-p_4 * self.PAR_shaded / (Pmax + p_3)))) - p_3) for Pmax in self.Pmax])

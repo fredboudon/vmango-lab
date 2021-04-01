@@ -1,3 +1,31 @@
-Tbase_gu = 9.2
-Tbase_leaf = 10.73
-Tbase_fruit = 16                # base temperature for degree-days calculation [°C]
+Tbase_leaf_growth = 10.73
+Tbase_inflo_growth = 11.12
+Tbase_fruit_growth = 16.0                # base temperature for degree-days calculation [°C]
+Tbase_gu_growth = 9.2
+Tthresh_fruit_stage = 352.72
+Tbase_gu_stage = [
+    13.37766,
+    13.37766,
+    13.37766,
+    9.784431
+]
+Tthresh_gu_stage = [
+    38.50,
+    47.61,
+    47.39,
+    316.376
+]
+Tbase_inflo_stage = [
+    11.10,
+    8.67,
+    15.11,
+    16.0,
+    16.0
+]
+Tthresh_inflo_stage = [
+    70.56,
+    133.32,
+    230.42,
+    352.72,
+    500.0
+]

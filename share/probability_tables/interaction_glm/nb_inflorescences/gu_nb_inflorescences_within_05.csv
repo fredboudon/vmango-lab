@@ -1,4 +1,4 @@
-"Burst_Month","Position_A","probability","number"
+"Burst_Month","Position_A","lambda","number"
 "8-9-10-11","0",1.12535172916556e-08,38
 "1","0",0.210526315789483,19
 "2","0",0.0129449838187718,309

@@ -16,6 +16,8 @@ from ._base.parameter import BaseParameterizedProcess
 @xs.process
 class CarbonBalance(BaseParameterizedProcess):
 
+    LFratio_previous = None
+
     TM_air = xs.foreign(environment.Environment, 'TM_air')
     T_fruit = xs.foreign(environment.Environment, 'T_fruit')
     GR = xs.foreign(environment.Environment, 'GR')
@@ -220,14 +222,11 @@ class CarbonBalance(BaseParameterizedProcess):
         params = self.parameters
 
         cc_stem = params.cc_stem
-        cc_leaf = params.cc_leaf
         r_DM_stem_ini = params.r_DM_stem_ini
-        r_DM_leaf_ini = params.r_DM_leaf_ini
         DM_stem = params.DM_stem
-        DM_leaf_unit = params.DM_leaf_unit
 
         # initial amount of carbon in leaf and stem reserves :
-        self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
+        # self.reserve_leaf = np.ones(self.GU.shape) * (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf
         self.reserve_stem = np.ones(self.GU.shape) * DM_stem * r_DM_stem_ini * cc_stem
 
         self.DM_structural_stem = np.zeros(self.GU.shape)
@@ -249,6 +248,8 @@ class CarbonBalance(BaseParameterizedProcess):
         self.DM_fruit = np.zeros(self.GU.shape)
         self.DM_fruit_delta = np.zeros(self.GU.shape)
         # self.D_fruit = np.zeros(self.GU.shape)
+
+        self.LFratio_previous = self.LFratio.copy()
 
     @xs.runtime(args=())
     def run_step(self):
@@ -273,15 +274,28 @@ class CarbonBalance(BaseParameterizedProcess):
         r_storage_leaf_max = params.r_storage_leaf_max
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
+        r_DM_leaf_ini = params.r_DM_leaf_ini
+        cc_leaf = params.cc_leaf
+        DM_leaf_unit = params.DM_leaf_unit
         # RGR_fruit_ini = params.RGR_fruit_ini
 
         # intitialize Fruit DM only if DM_fruit is still 0 and LFratio > 0
         self.DM_fruit = np.array([DM_fruit_0 if LFratio > 0 and DM_fruit == 0 else 0. if LFratio == 0 else DM_fruit
                                   for DM_fruit_0, DM_fruit, LFratio in zip(self.DM_fruit_0, self.DM_fruit, self.LFratio)])
 
-        self.remains_1 = np.zeros(self.GU.shape)
-        self.remains_2 = np.zeros(self.GU.shape)
-        self.remains_3 = np.zeros(self.GU.shape)
+        # initial amount of carbon in leaf and stem reserves : if LFratio is > 0
+        if np.any(self.LFratio_previous == 0.):
+            self.reserve_leaf = np.where(
+                (self.LFratio_previous == 0.) & (self.LFratio > 0.),
+                (DM_leaf_unit * self.LFratio) * r_DM_leaf_ini * cc_leaf,
+                0
+            )
+
+        self.LFratio_previous = self.LFratio.copy()
+
+        self.remains_1[:] = 0.
+        self.remains_2[:] = 0.
+        self.remains_3[:] = 0.
 
         # dry mass of stem and leaf structure
         self.DM_structural_stem = np.ones(self.GU.shape) * DM_stem * (1 - r_DM_stem_ini)
@@ -330,16 +344,14 @@ class CarbonBalance(BaseParameterizedProcess):
 
         assimilates_gt_mr_vegt = self.assimilates >= self.MR_veget
         mobilize_from_leaf = (self.assimilates + self.reserve_nmob_leaf >= self.MR_veget) & ~assimilates_gt_mr_vegt
-        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & mobilize_from_leaf
-
-        # print(assimilates_gt_mr_vegt, mobilize_from_leaf, mobilize_from_stem)
-        # print(self.remains_1, self.photo, self.reserve_mob, self.MR_veget)
+        mobilize_from_stem = (self.assimilates + self.reserve_nmob_leaf + self.reserve_nmob_stem >= self.MR_veget) & ~assimilates_gt_mr_vegt & ~mobilize_from_leaf
+        gu_died = ~assimilates_gt_mr_vegt & ~mobilize_from_leaf & ~mobilize_from_stem
 
         # use of assimilates for maintenance respiration of vegetative components :
         self.remains_1 = np.where(
             assimilates_gt_mr_vegt,
             self.remains_1 + self.assimilates - self.MR_veget,
-            0
+            0.
         )
 
         # mobilization of non-mobile reserves if maintenance respiration is not satified by assimilates :
@@ -347,7 +359,7 @@ class CarbonBalance(BaseParameterizedProcess):
         self.reserve_nmob_leaf = np.where(
             mobilize_from_leaf,
             self.assimilates + self.reserve_nmob_leaf - self.MR_veget,
-            0
+            self.reserve_nmob_leaf
         )
 
         # 2- mobilization of non-mobile reserves from stem
@@ -357,9 +369,19 @@ class CarbonBalance(BaseParameterizedProcess):
             self.reserve_nmob_stem
         )
 
-        if not np.all(assimilates_gt_mr_vegt + mobilize_from_leaf + mobilize_from_stem):
+        if np.any(gu_died):
             # TODO: What to do with variables?
             warnings.warn('Vegetative part of the system dies ...')
+            self.reserve_nmob_leaf = np.where(
+                gu_died,
+                0.,
+                self.reserve_nmob_leaf
+            )
+            self.reserve_nmob_stem = np.where(
+                gu_died,
+                0.,
+                self.reserve_nmob_stem
+            )
 
         # use of remaining assimilates for maintenance respiration of reproductive components :
         remaining_assimilates_lt_mr_repro = self.remains_1 < self.MR_repro
@@ -377,10 +399,17 @@ class CarbonBalance(BaseParameterizedProcess):
             self.DM_fruit
         )
 
-        if not np.all(~remaining_assimilates_lt_mr_repro + mobilize_from_fruit):
+        fruit_died = ~remaining_assimilates_lt_mr_repro & ~mobilize_from_fruit
+
+        if not np.any(fruit_died):
             # TODO: What to do with variables?
             # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
             warnings.warn('Reproductive part of the system dies ...')
+            self.DM_fruit = np.where(
+                fruit_died,
+                0.,
+                self.DM_fruit
+            )
 
         self.remains_2 = np.maximum(0, self.remains_1 - self.MR_repro)
 

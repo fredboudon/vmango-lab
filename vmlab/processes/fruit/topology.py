@@ -22,7 +22,7 @@ class Topology:
 
     def initialize(self):
 
-        self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
+        self.GU = np.array([f'Branch{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
         self.adjacency = np.array(self.adjacency)
         self.nb_leaves = np.array(self.nb_leaves)
 
