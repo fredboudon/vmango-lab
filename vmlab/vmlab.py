@@ -7,6 +7,8 @@ import io
 import toml
 import warnings
 import pathlib
+import IPython
+import pgljupyter
 
 
 class DotDict(dict):
@@ -15,14 +17,34 @@ class DotDict(dict):
         self.__dict__ = self
 
 
-def get_topology_inputs_from_df(topology_prc, df, cycle):
-    input_topo = {}
-    required_attrs = ['id', 'parent_id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']
+def get_inputs_from_df(model, df, cycle):
+    topology_prc = model['topology']
+    inputs = {}
+    required_attrs = [
+        'id',
+        'parent_id',
+        'cycle',
+        'is_apical',
+        'appearance_month',
+        'ancestor_nature',
+        'ancestor_is_apical',
+        'nature'
+    ]
+    # all optinal attrs are related to arch dev
+    optional_attrs = list(set([
+        'burst_date',
+        'flowering_date',
+        'has_apical_child',
+        'nb_lateral_children',
+        'nb_inflo',
+        'nb_fruit'
+    ]) & set(df.columns))
+
     assert len(set(df.columns) & set(required_attrs)) == len(required_attrs)
 
     df = df[df['cycle'] <= cycle]
     edges = df[['id', 'parent_id']][pd.notna(df['parent_id'])]
-    vertices = df[['id', 'cycle', 'is_apical', 'appearance_month', 'ancestor_nature', 'ancestor_is_apical', 'nature']]
+    vertices = df[required_attrs + optional_attrs]
 
     graph = ig.Graph.DictList(
         vertices=vertices.to_dict('records'),
@@ -35,11 +57,19 @@ def get_topology_inputs_from_df(topology_prc, df, cycle):
 
     for var_name in xs.filter_variables(topology_prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT):
         if var_name in graph.vs.attribute_names():
-            input_topo[f'topology__{var_name}'] = np.array(graph.vs.get_attribute_values(var_name), dtype=np.float32)
-    input_topo['topology__adjacency'] = np.array(graph.get_adjacency().data, dtype=np.float32)
-    input_topo['arch_dev_rep__nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
+            inputs[f'topology__{var_name}'] = np.array(graph.vs.get_attribute_values(var_name), dtype=np.float32)
+    inputs['topology__adjacency'] = np.array(graph.get_adjacency().data, dtype=np.float32)
+    if 'arch_dev_rep' in model:
+        inputs['arch_dev_rep__nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
+    if 'arch_dev' in model:
+        inputs['arch_dev__pot_nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
+        for attr in optional_attrs:
+            if attr == 'burst_date' or attr == 'flowering_date':
+                inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[D]')
+            else:
+                inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
 
-    return input_topo, graph
+    return inputs, graph
 
 
 def create_setup(
@@ -87,8 +117,8 @@ def create_setup(
 
     graph = None
     if 'topology' in model:
-        input_topo, graph = get_topology_inputs_from_df(model['topology'], tree, current_cycle)
-        input_vars.update(input_topo)
+        inputs, graph = get_inputs_from_df(model, tree, current_cycle)
+        input_vars.update(inputs)
         input_vars['topology__current_cycle'] = current_cycle
         # work-around for main_clock not available at initialization.
         # set the start date variable
@@ -122,7 +152,7 @@ def create_setup(
             shape = (len(graph.vs.indices),)
             for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
                 if f'{prc_name}__{var_name}' not in input_vars:
-                    input_vars[f'{prc_name}__{var_name}'] = np.empty(shape, dtype=np.float32)
+                    input_vars[f'{prc_name}__{var_name}'] = np.full(shape, np.nan, dtype=np.float32)
 
     return xs.create_setup(
         model,
@@ -132,3 +162,20 @@ def create_setup(
         output_vars_,
         fill_default
     )
+
+
+def run(dataset, model, progress=True, geometry=False):
+    hooks = [xs.monitoring.ProgressBar()] if progress else []
+    if geometry:
+        sw = pgljupyter.SceneWidget(size_world=2.5)
+        IPython.display.display(sw)
+
+        @xs.runtime_hook(stage='run_step')
+        def hook(model, context, state):
+            scene = state[('geometry', 'scene')]
+            if scene != sw.scenes[0]['scene']:
+                sw.set_scenes(scene, scales=[1/100])
+
+        hooks.append(hook)
+
+    return dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks)
