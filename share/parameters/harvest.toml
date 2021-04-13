@@ -1,1 +1,2 @@
 Tthresh_fruit_ripe = 1400
+sucrose_thresh_fruit_ripe = 0.04       # threshold sucrose content in the flesh beyond which fruit is assumed ripe [g g-1 FM]
