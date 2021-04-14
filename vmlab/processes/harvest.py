@@ -55,7 +55,33 @@ class Harvest(ParameterizedProcess):
     @xs.runtime(args=())
     def run_step(self):
         self.harvested[:] = 0.
+        growing = self.fruit_growth_tts > 0.
         Tthresh_fruit_ripe = self.parameters.Tthresh_fruit_ripe
-        self.ripeness_index[self.fruit_growth_tts > 0.] = np.minimum(1.0, self.fruit_growth_tts[self.fruit_growth_tts > 0.] / Tthresh_fruit_ripe)
+        self.ripeness_index[growing] = np.minimum(1.0, self.fruit_growth_tts[growing] / Tthresh_fruit_ripe)
+        self.harvested[(self.nb_fruit_harvested == 0) & (self.ripeness_index == 1.)] = 1.
+        self.nb_fruit_harvested[self.harvested == 1.] = self.nb_fruit[self.harvested == 1.]
+
+
+@xs.process
+class HarvestByQuality(Harvest):
+    """Decide when fruit is ripe based of fruit quality
+    """
+
+    fruit_quality = xs.group_dict('fruit_quality')
+
+    def initialize(self):
+        super(HarvestByQuality, self).initialize()
+
+    @xs.runtime(args=())
+    def run_step(self):
+        sucrose = self.fruit_quality[('fruit_quality', 'sucrose')]
+        self.harvested[:] = 0.
+        growing = self.fruit_growth_tts > 0.
+        sucrose_thresh_fruit_ripe = self.parameters.sucrose_thresh_fruit_ripe
+        self.ripeness_index[growing] = np.where(
+            self.ripeness_index[growing] < (sucrose[growing] / sucrose_thresh_fruit_ripe),
+            np.minimum(1., sucrose[growing] / sucrose_thresh_fruit_ripe),
+            self.ripeness_index[growing]
+        )
         self.harvested[(self.nb_fruit_harvested == 0) & (self.ripeness_index == 1.)] = 1.
         self.nb_fruit_harvested[self.harvested == 1.] = self.nb_fruit[self.harvested == 1.]

@@ -1,8 +1,6 @@
 import xsimlab as xs
 import numpy as np
 
-from vmlab.enums import Nature
-
 from . import (
     topology,
     arch_dev_veg_within,
@@ -13,6 +11,10 @@ from . import (
 
 @xs.process
 class ArchDev:
+    """Arch Dev process only depending on input (deterministic)
+    """
+
+    GU = xs.foreign(topology.Topology, 'GU')
 
     pot_burst_date = xs.variable(dims='GU', intent='inout', groups='arch_dev')
     pot_flowering_date = xs.variable(dims='GU', intent='inout', groups='arch_dev')
@@ -22,7 +24,25 @@ class ArchDev:
     pot_nb_inflo = xs.variable(dims='GU', intent='inout', groups='arch_dev')
     pot_nb_fruit = xs.variable(dims='GU', intent='inout', groups='arch_dev')
 
-    GU = xs.foreign(topology.Topology, 'GU')
+    def initialize(self):
+        self.pot_burst_date = np.array(self.pot_burst_date, dtype='datetime64[D]')
+        self.pot_flowering_date = np.array(self.pot_flowering_date, dtype='datetime64[D]')
+        self.pot_nature = np.array(self.pot_nature, dtype=np.float32)
+        self.pot_has_apical_child = np.array(self.pot_has_apical_child, dtype=np.float32)
+        self.pot_nb_lateral_children = np.array(self.pot_nb_lateral_children, dtype=np.float32)
+        self.pot_nb_inflo = np.array(self.pot_nb_inflo, dtype=np.float32)
+        self.pot_nb_fruit = np.array(self.pot_nb_fruit, dtype=np.float32)
+
+    @xs.runtime(args=())
+    def run_step(self):
+        pass
+
+
+@xs.process
+class ArchDevStochastic(ArchDev):
+    """Arch Dev process that depends on all stochastic arch dev processes
+    """
+
     appeared = xs.foreign(topology.Topology, 'appeared')
     is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
     sim_start_date = xs.foreign(topology.Topology, 'sim_start_date')
@@ -43,15 +63,7 @@ class ArchDev:
     nb_lateral_children_between = xs.foreign(arch_dev_veg_between.ArchDevVegBetween, 'nb_lateral_children_between')
 
     def initialize(self):
-
-        self.pot_burst_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
-        self.pot_flowering_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
-        self.pot_nature = np.full(self.GU.shape, Nature.VEGETATIVE, dtype=np.float32)
-        self.pot_has_apical_child = np.zeros(self.GU.shape, dtype=np.float32)
-        self.pot_nb_lateral_children = np.zeros(self.GU.shape, dtype=np.float32)
-        self.pot_nb_inflo = np.zeros(self.GU.shape, dtype=np.float32)
-        self.pot_nb_fruit = np.zeros(self.GU.shape, dtype=np.float32)
-
+        super(ArchDevStochastic, self).initialize()
         self.run_step(-1)
 
     @xs.runtime(args=('step'))

@@ -150,4 +150,4 @@ class Growth(ParameterizedProcess):
                 params
             )
 
-        self.nb_leaf[self.radius_gu >= params.max_leafy_diameter_gu] = 0.
+        self.nb_leaf[self.radius_gu >= params.max_leafy_diameter_gu / 2.] = 0.

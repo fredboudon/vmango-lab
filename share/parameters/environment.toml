@@ -1,4 +1,1 @@
-seed = 0
-
-weather_hourly_file_path = '../environment/weather_hourly_stpierre_2002.csv'
-weather_daily_file_path = '../environment/weather_daily_stpierre_2002.csv'
+weather_file_path = '../environment/smartis_lingne_paradis_01.2002_01.2008.csv'

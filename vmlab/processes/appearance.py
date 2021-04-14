@@ -8,11 +8,11 @@ from . import (
     topology,
     phenology
 )
-from ._base.parameter import BaseParameterizedProcess
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Appearance(BaseParameterizedProcess):
+class Appearance(ParameterizedProcess):
 
     rng = None
 

@@ -3,7 +3,7 @@ title = 'vmango'
 initial_tree = '../trees/tree_B10_cycle_030405.csv'
 
 [parameters]
-environment = '../parameters/environment_vmango.toml'
+environment = '../parameters/environment.toml'
 phenology = '../parameters/phenology.toml'
 growth = '../parameters/growth.toml'
 appearance = '../parameters/growth.toml'
