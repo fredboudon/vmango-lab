@@ -8,6 +8,9 @@ from ._base.parameter import ParameterizedProcess
 
 @xs.process
 class Environment(ParameterizedProcess):
+    """
+    Reads SMARTIS weather data https://smartis.re/METEOR from csv
+    """
 
     hour = xs.index(dims=('hour'))
 

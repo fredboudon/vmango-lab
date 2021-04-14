@@ -108,12 +108,11 @@ def create_setup(
                             input_vars[f'{prc_name}__parameter_file_path'] = str(path)
                         else:
                             warnings.warn(f'Input file "{path}" does not exist')
-            if 'initial_tree' in setup and tree is None:
-                if not setup['initial_tree']:
-                    raise ValueError('No iniyial tree provided')
-                else:
-                    path = dir_path.joinpath(setup['initial_tree'])
-                    tree = pd.read_csv(path).astype(np.float32)
+            if 'initial_tree' not in setup and tree is None:
+                raise ValueError('No initial tree provided')
+            elif 'initial_tree' in setup:
+                path = dir_path.joinpath(setup['initial_tree'])
+                tree = pd.read_csv(path).astype(np.float32)
 
     graph = None
     if 'topology' in model:
@@ -164,8 +163,8 @@ def create_setup(
     )
 
 
-def run(dataset, model, progress=True, geometry=False):
-    hooks = [xs.monitoring.ProgressBar()] if progress else []
+def run(dataset, model, progress=True, geometry=False, hooks=[]):
+    hooks = [xs.monitoring.ProgressBar()] + hooks if progress else hooks
     if geometry:
         sw = pgljupyter.SceneWidget(size_world=2.5)
         IPython.display.display(sw)
