@@ -378,15 +378,9 @@ class FruitQuality(ParameterizedProcess):
             self.turgor_pressure_fruit[fruiting] = numerator / denominator
 
             self.turgor_pressure_fruit[fruiting] = np.where(
-                (ALf > 0) & (self.turgor_pressure_fruit[fruiting] < Y),
-                water_potential_stem + self.osmotic_pressure_fruit[fruiting] - (self.transpiration_fruit[fruiting] - DM_fleshpeel_delta * density_W / density_DM) / ALf,
-                ~(ALf > 0) * self.turgor_pressure_fruit[fruiting]
-            )
-
-            self.turgor_pressure_fruit[fruiting] = np.where(
-                self.turgor_pressure_fruit[fruiting] < Y_0,
-                0.,
-                self.turgor_pressure_fruit[fruiting]
+                self.turgor_pressure_fruit[fruiting] < Y,
+                np.maximum(Y_0, water_potential_stem + self.osmotic_pressure_fruit[fruiting] - (self.transpiration_fruit[fruiting] - DM_fleshpeel_delta * density_W / density_DM) / ALf),
+                np.maximum(Y_0, self.turgor_pressure_fruit[fruiting])
             )
 
             # -- water potential in the fruit (eq.5) :
