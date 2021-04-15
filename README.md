@@ -2,6 +2,8 @@
 
 A simulation and analysis tool for mango tree architecture.
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/jvail/vmango-lab/main)
+
 ## Install
 
 ```
