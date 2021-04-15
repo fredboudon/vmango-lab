@@ -63,11 +63,6 @@ class CarbonAllocation(ParameterizedProcess):
             self.allocation_share = np.zeros(self.is_in_distance_to_fruit.shape, dtype=np.float32)
             self.allocation_share[:, sum_is_in_distance_to_fruit > 0] = self.is_in_distance_to_fruit[:, sum_is_in_distance_to_fruit > 0] / sum_is_in_distance_to_fruit[sum_is_in_distance_to_fruit > 0]
             self.allocation_share[np.isnan(self.allocation_share)] = 0.
-            # self.allocation_share = np.where(
-            #     np.sum(self.is_in_distance_to_fruit, axis=0) > 0,
-            #     self.is_in_distance_to_fruit / np.sum(self.is_in_distance_to_fruit, axis=0),
-            #     0.
-            # ).astype(np.float32)
             self.is_photo_active = ((np.nansum(self.is_in_distance_to_fruit, axis=0) > 0) & is_leafy).astype(np.float32)
         else:
             self.distance_to_fruit = np.array([], dtype=np.float32)
