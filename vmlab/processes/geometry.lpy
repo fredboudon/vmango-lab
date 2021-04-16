@@ -1,4 +1,3 @@
-import numpy as np
 from math import exp
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
