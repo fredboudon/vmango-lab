@@ -147,9 +147,3 @@ class Photosythesis(ParameterizedProcess):
             self.photo_shaded[is_active] = np.sum(self.P_rate_shaded[is_active] * self.LA_shaded[is_active] * k, axis=1)
             self.photo_sunlit[is_active] = np.sum(self.P_rate_sunlit[is_active] * self.LA_sunlit[is_active] * k, axis=1)
             self.photo[is_active] = self.photo_shaded[is_active] + self.photo_sunlit[is_active]
-
-    def finalize_step(self):
-        pass
-
-    def finalize(self):
-        pass

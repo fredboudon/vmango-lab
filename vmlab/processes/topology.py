@@ -9,7 +9,6 @@ import pathlib
 class Topology:
 
     archdev = xs.group_dict('arch_dev')
-    # numpy random generator
     seed = xs.variable(default=0, static=True, global_name='seed')
     sim_start_date = xs.variable(intent='inout', static=True)
 
@@ -58,7 +57,6 @@ class Topology:
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
         self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
 
-        # TODO: initialize properly
         self.appearance_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
         self.parent_is_apical = np.full(self.GU.shape, 1., dtype=np.float32)
         self.ancestor = np.full(self.GU.shape, 0., dtype=np.float32)

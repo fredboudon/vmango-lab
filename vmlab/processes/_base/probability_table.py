@@ -9,6 +9,8 @@ from vmlab.enums import Nature
 
 @xs.process
 class ProbabilityTableProcess(ParameterizedProcess):
+    """ Base class for probability table processes
+    """
 
     # new factor names (values in dict) must match variable names in process
     _factors = {

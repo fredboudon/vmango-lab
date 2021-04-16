@@ -180,7 +180,6 @@ class CarbonBalance(ParameterizedProcess):
         r_storage_leaf_max = params.r_storage_leaf_max
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
-        # RGR_fruit_ini = params.RGR_fruit_ini
 
         self.DM_fruit[np.flatnonzero(self.fruited)] = self.DM_fruit_0
         self.DM_fruit[self.nb_fruit == 0.] = 0.
@@ -243,16 +242,6 @@ class CarbonBalance(ParameterizedProcess):
             if np.any(gu_died):
                 # TODO: What to do with variables?
                 warnings.warn('Vegetative part of the system dies ...')
-                # reserve_nmob_leaf[active] = np.where(
-                #     gu_died,
-                #     0.,
-                #     reserve_nmob_leaf[active]
-                # )
-                # reserve_nmob_stem[active] = np.where(
-                #     gu_died,
-                #     0.,
-                #     reserve_nmob_stem[active]
-                # )
 
             # use of remaining assimilates for maintenance respiration of reproductive components :
             remaining_assimilates_lt_mr_repro = np.dot(self.allocation_share, self.remains_1) < self.MR_repro[fruiting]
@@ -277,11 +266,6 @@ class CarbonBalance(ParameterizedProcess):
                 # TODO: What to do with variables?
                 # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
                 warnings.warn('Reproductive part of the system dies ...')
-                # self.DM_fruit[fruiting] = np.where(
-                #     fruit_died,
-                #     0.,
-                #     self.DM_fruit[fruiting]
-                # )
 
             self.remains_2[active] = np.maximum(0, self.remains_1[active] - self.MR_repro[active])
 

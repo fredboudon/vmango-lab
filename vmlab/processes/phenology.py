@@ -244,9 +244,3 @@ class Phenology(ParameterizedProcess):
             ]
 
             self.nb_fruit[np.flatnonzero(self.harvest[('harvest', 'harvested')])] = 0.
-
-    def finalize_step(self):
-        pass
-
-    def finalize(self):
-        pass

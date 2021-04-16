@@ -3,8 +3,9 @@ from math import exp
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
 
-# TODO: add no fruitmodel detection
-colorcache = {}
+color_cache = {}
+inflo_phyloangles_cache = {}
+
 phyllotaxy = 144.
 branching_angle = 60.
 young_stem_color = 6
@@ -22,7 +23,6 @@ inflo_pheno_color = [c + inflo_base_color for c in [0, 0, 1, 1, 2, 3]]
 flower_base_color = 25
 flower_pheno_color = list(range(flower_base_color, flower_base_color + 6))
 fruit_color = 32
-inflo_phyloangles = {}
 
 
 def inflo_color_interpolator(x, coef):
@@ -32,13 +32,13 @@ def inflo_color_interpolator(x, coef):
 def color_interpolator(i, j, r):
     quantif = (1 / 360)
     rindex = int(r // quantif)
-    if not (i, j, rindex) in colorcache:
+    if not (i, j, rindex) in color_cache:
         mat1 = execContext().turtle.getMaterial(i)
         mat2 = execContext().turtle.getMaterial(j)
         imat = Material.interpolate(mat1, mat2, rindex * quantif)
-        colorcache[(i, j, rindex)] = imat
+        color_cache[(i, j, rindex)] = imat
         return imat
-    return colorcache[(i, j, rindex)]
+    return color_cache[(i, j, rindex)]
 
 
 def retrieveCurves(globals):
@@ -114,6 +114,117 @@ leaf_symbol = SymbolManager(
 execContext().turtle.setSurface('finalleaf', leaf_symbol())
 
 
+def plot_gu(
+    gu_stage,
+    length_gu,
+    final_length_gu,
+    radius_gu,
+    final_length_internodes,
+    nb_leaf,
+    length_leaves,
+    final_length_leaves
+):
+    stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
+    gu_growth_ratio = length_gu / final_length_gu
+    nsproduce([EndGC(), SetColor(stem_color), StartGC()])
+    nsproduce([SetWidth(radius_gu)])
+    posnorm = 1. / max(1., len(final_length_internodes) - 1.)
+    for i, final_length_internode, length_leaf, final_length_leaf in zip(range(len(final_length_internodes)), final_length_internodes, length_leaves, final_length_leaves):
+        radius_petiole = leafwidth(0) * leafwidthgrowth(min(gu_growth_ratio, 1))
+        if gu_stage >= 4.:
+            length_petiole = (1.1 - (i * posnorm)) * final_length_leaf / 4.
+        else:
+            length_petiole = max(0.01, (1 - (i * posnorm)) * final_length_leaf / 4.)
+        # internode
+        nsproduce([F(final_length_internode * gu_growth_ratio, radius_gu), RollL(phyllotaxy)])
+        if nb_leaf > 0.:
+            # leaf & petiole
+            nsproduce([SB()])
+            nsproduce([EndGC(), Elasticity(0.), Down(90), f(radius_gu), Up(90)])
+            nsproduce([Down(leaf_pheno_angle(gu_stage)), SetWidth(radius_petiole)])
+            nsproduce([SetWidth(radius_petiole), SetGuide(petioleCurve, length_petiole), F(length_petiole)])
+            nsproduce([RollToVert()])
+            if gu_stage >= 4.:
+                nsproduce([SetColor(leaf_pheno_colors[-1]), surface('finalleaf', final_length_leaf)])
+            else:
+                if gu_stage % 1. > 0:
+                    nsproduce([SetColor(color_interpolator(leaf_pheno_colors[int(gu_stage)], leaf_pheno_colors[int(gu_stage) + 1], gu_stage % 1.))])
+                else:
+                    nsproduce([SetColor(leaf_pheno_colors[int(gu_stage)])])
+                nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
+            nsproduce([EB()])
+    nsproduce([Sphere(radius_gu)])
+
+
+def plot_inflo(
+    idx,
+    inflo_stage,
+    nb_fruit,
+    final_length_inflos,
+    length_inflos,
+    radius_inflo
+):
+    stage = int(inflo_stage // 1.)
+    rank = inflo_stage % 1.
+    nsproduce([EndGC(), Tropism(0, 0, -1)])
+    for i, final_length_inflo, length_inflo in zip(range(len(length_inflos)), final_length_inflos, length_inflos):
+        if length_inflo > 1e-3:
+            length_inflo = float(length_inflo)
+            final_length_inflo = float(final_length_inflo)
+            nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
+            internode_length = float(length_inflo / nb_axes)
+            if idx in inflo_phyloangles_cache:
+                if i in inflo_phyloangles_cache[idx]:
+                    phyloangles = inflo_phyloangles_cache[idx][i]
+                else:
+                    phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
+                    inflo_phyloangles_cache[idx][i] = phyloangles
+            else:
+                inflo_phyloangles_cache[idx] = {}
+                phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
+                inflo_phyloangles_cache[idx][i] = phyloangles
+            total_phyloangles = float(sum(phyloangles))
+            # if stage < 1:
+            #     bract_level = max(0, (2 * (rank - 0.5)))
+            nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
+            nsproduce([EndGC(), Tropism(0, 0, -1)])
+            if stage >= 4.:
+                if stage == 4.:
+                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
+                else:
+                    nsproduce([SetColor(inflo_pheno_color[5])])
+                nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
+            else:
+                nsproduce([SetWidth(radius_inflo)])
+                nsproduce([f(0.3)])
+                if stage >= 3:
+                    elasticity = 0.005 + 0.035 * rank
+                else:
+                    elasticity = 0.005 * stage / 3.
+                nsproduce([Elasticity(elasticity)])
+                for k in range(0, nb_axes):
+                    pos = k / float(nb_axes)
+                    if stage > 2:
+                        cpos = pos
+                    else:
+                        cpos = (1 - pos)
+                    iradius = radius_inflo * (2 - pos) / 2.
+                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_color_interpolator(rank, cpos)))])
+                    nsproduce([F(internode_length, iradius), RollR(phyloangles[k])])
+                    axis_length = (length_inflo * (final_length_inflo * 0.687 - 3.97) / final_length_inflo) * (1 - pos)
+                    if stage >= 1:
+                        down = 5. + 40.
+                    else:
+                        down = 5. + 40. * rank
+                    nsproduce([SB(), Down(90), f(iradius), Up(90), Down(down), Tropism(0, 0, 1), Elasticity(0.01)])
+                    # if stage < 1 and pos > bract_level:
+                    #     bract_length = length_inflo * 0.1 + axis_length * 1.5
+                    #     nsproduce([SB(), Down(0), StartGC(), Sweep(bract_axis, bract_section, bract_length, bract_length / 10., bract_length / 5., bract_width), EB()])
+                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], rank)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
+                    nsproduce([EB()])
+            nsproduce([EB()])
+
+
 module GU(idx)
 
 production:
@@ -134,294 +245,30 @@ GU(idx):
     length_leaves = growth[('growth', 'length_leaves')][idx]
     length_gu = float(growth[('growth', 'length_gu')][idx])
     gu_stage = float(phenology[('phenology', 'gu_stage')][idx])
-    stem_color = color_interpolator(young_stem_color, old_stem_color, min(1., gu_stage / 4.))
-    gu_growth_ratio = length_gu / final_length_gu
     if length_gu > 1e-3:
-        nsproduce([EndGC(), SetColor(stem_color), StartGC()])
-        nsproduce([SetWidth(radius_gu)])
-        posnorm = 1. / max(1., len(final_length_internodes) - 1.)
-        for i, final_length_internode, length_leaf, final_length_leaf in zip(range(len(final_length_internodes)), final_length_internodes, length_leaves, final_length_leaves):
-            radius_petiole = leafwidth(0) * leafwidthgrowth(min(gu_growth_ratio, 1))
-            if gu_stage >= 4.:
-                length_petiole = (1.1 - (i * posnorm)) * final_length_leaf / 4.
-            else:
-                length_petiole = max(0.01, (1 - (i * posnorm)) * final_length_leaf / 4.)
-            # internode
-            nsproduce([F(final_length_internode * gu_growth_ratio, radius_gu), RollL(phyllotaxy)])
-            if nb_leaf > 0.:
-                # leaf & petiole
-                nsproduce([SB()])
-                nsproduce([EndGC(), Elasticity(0.), Down(90), f(radius_gu), Up(90)])
-                nsproduce([Down(leaf_pheno_angle(gu_stage)), SetWidth(radius_petiole)])
-                nsproduce([SetWidth(radius_petiole), SetGuide(petioleCurve, length_petiole), F(length_petiole)])
-                nsproduce([RollToVert()])
-                if gu_stage >= 4.:
-                    nsproduce([SetColor(leaf_pheno_colors[-1]), surface('finalleaf', final_length_leaf)])
-                else:
-                    if gu_stage % 1. > 0:
-                        nsproduce([SetColor(color_interpolator(leaf_pheno_colors[int(gu_stage)], leaf_pheno_colors[int(gu_stage) + 1], gu_stage % 1.))])
-                    else:
-                        nsproduce([SetColor(leaf_pheno_colors[int(gu_stage)])])
-                    nsproduce([PglShape(leaf_symbol(gu_stage), length_leaf)])
-                nsproduce([EB()])
-        nsproduce([Sphere(radius_gu)])
+        plot_gu(
+            gu_stage,
+            length_gu,
+            final_length_gu,
+            radius_gu,
+            final_length_internodes,
+            nb_leaf,
+            length_leaves,
+            final_length_leaves
+        )
     nb_fruit = float(phenology[('phenology', 'nb_fruit')][idx])
     inflo_stage = float(phenology[('phenology', 'inflo_stage')][idx])
     final_length_inflos = appearance[('appearance', 'final_length_inflos')][idx]
     if (inflo_stage > 0. and inflo_stage < 5.) or nb_fruit > 0.:
         length_inflos = growth[('growth', 'length_inflos')][idx]
         radius_inflo = float(growth[('growth', 'radius_inflo')][idx])
-        stage = int(inflo_stage // 1.)
-        rank = inflo_stage % 1.
-        nsproduce([EndGC(), Tropism(0, 0, -1)])
-        for i, final_length_inflo, length_inflo in zip(range(len(length_inflos)), final_length_inflos, length_inflos):
-            if length_inflo > 1e-3:
-                length_inflo = float(length_inflo)
-                final_length_inflo = float(final_length_inflo)
-                nb_axes = int(inflo_nb_axes_length_ratio[0] * final_length_inflo + inflo_nb_axes_length_ratio[1])
-                internode_length = float(length_inflo / nb_axes)
-                if idx in inflo_phyloangles:
-                    if i in inflo_phyloangles[idx]:
-                        phyloangles = inflo_phyloangles[idx][i]
-                    else:
-                        phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
-                        inflo_phyloangles[idx][i] = phyloangles
-                else:
-                    inflo_phyloangles[idx] = {}
-                    phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
-                    inflo_phyloangles[idx][i] = phyloangles
-                total_phyloangles = float(sum(phyloangles))
-                # if stage < 1:
-                #     bract_level = max(0, (2 * (rank - 0.5)))
-                nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
-                nsproduce([EndGC(), Tropism(0, 0, -1)])
-                if stage >= 4.:
-                    if stage == 4.:
-                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
-                    else:
-                        nsproduce([SetColor(inflo_pheno_color[5])])
-                    nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
-                else:
-                    nsproduce([SetWidth(radius_inflo)])
-                    nsproduce([f(0.3)])
-                    if stage >= 3:
-                        elasticity = 0.005 + 0.035 * rank
-                    else:
-                        elasticity = 0.005 * stage / 3.
-                    nsproduce([Elasticity(elasticity)])
-                    for k in range(0, nb_axes):
-                        pos = k / float(nb_axes)
-                        if stage > 2:
-                            cpos = pos
-                        else:
-                            cpos = (1 - pos)
-                        iradius = radius_inflo * (2 - pos) / 2.
-                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_color_interpolator(rank, cpos)))])
-                        nsproduce([F(internode_length, iradius), RollR(phyloangles[k])])
-                        axis_length = (length_inflo * (final_length_inflo * 0.687 - 3.97) / final_length_inflo) * (1 - pos)
-                        if stage >= 1:
-                            down = 5. + 40.
-                        else:
-                            down = 5. + 40. * rank
-                        nsproduce([SB(), Down(90), f(iradius), Up(90), Down(down), Tropism(0, 0, 1), Elasticity(0.01)])
-                        # if stage < 1 and pos > bract_level:
-                        #     bract_length = length_inflo * 0.1 + axis_length * 1.5
-                        #     nsproduce([SB(), Down(0), StartGC(), Sweep(bract_axis, bract_section, bract_length, bract_length / 10., bract_length / 5., bract_width), EB()])
-                        nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], rank)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
-                        nsproduce([EB()])
-                nsproduce([EB()])
-
+        plot_inflo(
+            idx,
+            inflo_stage,
+            nb_fruit,
+            final_length_inflos,
+            length_inflos,
+            radius_inflo
+        )
 
 endlsystem
-
-###### INITIALISATION ######
-
-__lpy_code_version__ = 1.1
-
-
-def __initialiseContext__(context):
-    import openalea.plantgl.all as pgl
-    Color_0 = pgl.Material("Color_0", ambient=(30, 60, 10), diffuse=3, shininess=0)
-    Color_0.name = "Color_0"
-    context.turtle.setMaterial(0, Color_0)
-    Color_1 = pgl.Material("Color_1", ambient=(60, 0, 0), diffuse=3, shininess=0)
-    Color_1.name = "Color_1"
-    context.turtle.setMaterial(1, Color_1)
-    Color_2 = pgl.Material("Color_2", ambient=(60, 60, 15), diffuse=3, shininess=0)
-    Color_2.name = "Color_2"
-    context.turtle.setMaterial(2, Color_2)
-    Color_3 = pgl.Material("Color_3", ambient=(0, 0, 60), diffuse=3, shininess=0)
-    Color_3.name = "Color_3"
-    context.turtle.setMaterial(3, Color_3)
-    Color_5 = pgl.Material("Color_5", ambient=(51, 50, 16), diffuse=1.76471, shininess=0)
-    Color_5.name = "Color_5"
-    context.turtle.setMaterial(5, Color_5)
-    Color_6 = pgl.Material("Color_6", ambient=(71, 91, 46), diffuse=1.67033, shininess=0)
-    Color_6.name = "Color_6"
-    context.turtle.setMaterial(6, Color_6)
-    Color_10 = pgl.Material("Color_10", ambient=(71, 91, 46), diffuse=1.67033, shininess=0)
-    Color_10.name = "Color_10"
-    context.turtle.setMaterial(10, Color_10)
-    Color_11 = pgl.Material("Color_11", ambient=(71, 91, 46), diffuse=1.67033, shininess=0)
-    Color_11.name = "Color_11"
-    context.turtle.setMaterial(11, Color_11)
-    Color_12 = pgl.Material("Color_12", ambient=(63, 42, 20), diffuse=1.67033, shininess=0)
-    Color_12.name = "Color_12"
-    context.turtle.setMaterial(12, Color_12)
-    Color_14 = pgl.Material("Color_14", ambient=(62, 125, 20), diffuse=1.032, shininess=0)
-    Color_14.name = "Color_14"
-    context.turtle.setMaterial(14, Color_14)
-    Color_15 = pgl.Material("Color_15", ambient=(59, 49, 16), diffuse=1.76271, shininess=0)
-    Color_15.name = "Color_15"
-    context.turtle.setMaterial(15, Color_15)
-    Color_16 = pgl.Material("Color_16", ambient=(137, 52, 37), diffuse=1.64964, shininess=0)
-    Color_16.name = "Color_16"
-    context.turtle.setMaterial(16, Color_16)
-    Color_17 = pgl.Material("Color_17", ambient=(55, 60, 14), diffuse=3, shininess=0)
-    Color_17.name = "Color_17"
-    context.turtle.setMaterial(17, Color_17)
-    Color_18 = pgl.Material("Color_18", ambient=(30, 60, 10), diffuse=1.66667, shininess=0)
-    Color_18.name = "Color_18"
-    context.turtle.setMaterial(18, Color_18)
-    Color_20 = pgl.Material("Color_20", ambient=(30, 60, 10), diffuse=1.66667, shininess=0)
-    Color_20.name = "Color_20"
-    context.turtle.setMaterial(20, Color_20)
-    Color_21 = pgl.Material("Color_21", ambient=(162, 52, 68), diffuse=1.04321, shininess=0)
-    Color_21.name = "Color_21"
-    context.turtle.setMaterial(21, Color_21)
-    Color_22 = pgl.Material("Color_22", ambient=(101, 94, 11), diffuse=1.65347, shininess=0)
-    Color_22.name = "Color_22"
-    context.turtle.setMaterial(22, Color_22)
-    Color_23 = pgl.Material("Color_23", ambient=(2, 2, 2), diffuse=0, shininess=0)
-    Color_23.name = "Color_23"
-    context.turtle.setMaterial(23, Color_23)
-    Color_25 = pgl.Material("Color_25", ambient=(30, 60, 10), diffuse=1.66667, shininess=0)
-    Color_25.name = "Color_25"
-    context.turtle.setMaterial(25, Color_25)
-    Color_26 = pgl.Material("Color_26", ambient=(30, 60, 10), diffuse=1.96667, shininess=0)
-    Color_26.name = "Color_26"
-    context.turtle.setMaterial(26, Color_26)
-    Color_27 = pgl.Material("Color_27", ambient=(39, 80, 12), diffuse=1.2625, shininess=0)
-    Color_27.name = "Color_27"
-    context.turtle.setMaterial(27, Color_27)
-    Color_28 = pgl.Material("Color_28", ambient=(148, 148, 0), diffuse=0.810811, shininess=0)
-    Color_28.name = "Color_28"
-    context.turtle.setMaterial(28, Color_28)
-    Color_29 = pgl.Material("Color_29", ambient=(59, 49, 16), diffuse=1.74576, shininess=0)
-    Color_29.name = "Color_29"
-    context.turtle.setMaterial(29, Color_29)
-    Color_30 = pgl.Material("Color_30", ambient=(2, 2, 2), diffuse=0, shininess=0)
-    Color_30.name = "Color_30"
-    context.turtle.setMaterial(30, Color_30)
-    Color_32 = pgl.Material("Color_32", ambient=(41, 82, 13), diffuse=1.10976, shininess=0)
-    Color_32.name = "Color_32"
-    context.turtle.setMaterial(32, Color_32)
-    Color_33 = pgl.Material("Color_33", ambient=(107, 0, 107), diffuse=1.6729, shininess=0)
-    Color_33.name = "Color_33"
-    context.turtle.setMaterial(33, Color_33)
-    context.animation_timestep = 0.1
-    context.options.setSelection('Module declaration', 1)
-    context.options.setSelection('Warning with sharp module', 0)
-    scalars = [('Geometry', 'Category'), ('RESOLUTION', 'Integer', 2, 0, 3), ('LEAFY', 'Bool', True), ('WITH_INFLO', 'Bool', True), ('GENERALIZEDCYLINDER', 'Bool', True), ('TEXTURE', 'Bool', False), ('DISTINCT_MI', 'Bool', False), ('ELASTICITY', 'Float', 0.02, 0.0, 1.0, 2), ('Data Export', 'Category'), ('EXPORT_TO_MTG', 'Bool', True), ('SAVE_MTG', 'Bool', False), ('FRUITMODEL_OUTPUT', 'Bool', False), ('Simulation', 'Category'), ('TREE', 'Integer', 0, 0, 2), ('SEED', 'Integer', 9, 0, 100), ('TIMESTEP', 'Integer', 90, 1, 180), ('REPEAT_LASTPROBAS', 'Bool', False), ('GLM', 'Category'), ('WITH_GLM', 'Bool', True), ('_GLM_TYPE', 'Integer', 3, 1, 3), ('_GLM_RESTRICTION', 'Integer', 0, 0, 6), ('Fruit Model', 'Category'), ('FRUIT_MODEL', 'Bool', True), ('FRUITBRANCHSIZE', 'Integer', 1, 1, 10), ('PARALLELFRUITMODEL', 'Bool', True), ('Visuals', 'Category'), ('TIMEBAR', 'Bool', True)]
-    context["__scalars__"] = scalars
-    for s in scalars:
-        if not s[1] == "Category":
-            context[s[0]] = s[2]
-    import openalea.plantgl.all as pgl
-    axis1 = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.5, 0, 1), (-0.166667, 0, 1), (0.214286, 0.00865801, 1), (0.45671, 0.138528, 1)]),
-        )
-    axis1.name = "axis1"
-    axis2 = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.5, 0, 1), (-0.166667, 0, 1), (0.209957, -0.017316, 1), (0.491342, -0.0952381, 1)]),
-        )
-    axis2.name = "axis2"
-    axis3 = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.5, 0, 1), (-0.166667, 0, 1), (0.166667, 0, 1), (0.5, 0, 1)]),
-        )
-    axis3.name = "axis3"
-    axis4 = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.5, 0, 1), (-0.158009, -0.047619, 1), (0.166667, 0.004329, 1), (0.443723, -0.393939, 1)]),
-        )
-    axis4.name = "axis4"
-    axis5 = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.416733, 0.0128104, 1), (0.2343, -0.076231, 1), (0.507411, -0.330906, 1), (0.662132, -0.814102, 1)]),
-        )
-    axis5.name = "axis5"
-    leafsection = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(-0.508209, 0.16873, 1), (-0.515031, 0.138195, 1), (-0.198373, -0.0924227, 1), (-0.00298323, 0.188761, 1), (0.0897461, -0.106293, 1), (0.555704, 0.0979703, 1), (0.545047, 0.12817, 1)]),
-        )
-    leafsection.name = "leafsection"
-    import openalea.plantgl.all as pgl
-    leafwidthgrowth = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.0123039, 1), (0.289062, 0.0763736, 1), (0.289062, 0.454469, 1), (0.331839, 0.989763, 1), (1, 1, 1)]),
-        )
-    leafwidthgrowth.name = "leafwidthgrowth"
-    leafwidth = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.0846264, 1), (0.239002, 1.00091, 1), (0.485529, 0.991241, 1), (0.718616, 1.00718, 1), (0.877539, 0.231273, 1), (1, 0.00332359, 1)]),
-        )
-    leafwidth.name = "leafwidth"
-    petioleCurve = pgl.BezierCurve2D(
-        pgl.Point3Array([(-0.543785, 0.192006, 1), (-0.178289, 0.176044, 1), (-0.0656355, 0.0728558, 1), (0.548469, 0.597983, 1), (0.397151, 0.581459, 1), (0.543571, 0.599108, 1)]),
-        )
-    petioleCurve.name = "petioleCurve"
-    panel_0 = ({'name': 'Panel GU', 'active': True, 'visible': True}, [('Curve2D', axis1), ('Curve2D', axis2), ('Curve2D', axis3), ('Curve2D', axis4), ('Curve2D', axis5), ('Curve2D', leafsection), ('Function', leafwidthgrowth), ('Function', leafwidth), ('Curve2D', petioleCurve)])
-    radius_base03 = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.131507, 1), (0.00454138, 0.0251277, 1), (0.578848, 0.00694723, 1), (1, 0.00524218, 1)]),
-        )
-    radius_base03.name = "radius_base03"
-    inflo_radius = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.160173, 1), (0.393939, 0.151515, 1), (0.735931, 0.0649351, 1), (1, 0.025974, 1)]),
-        )
-    inflo_radius.name = "inflo_radius"
-    radius = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.107326, 1), (0.192635, 0.0975655, 1), (0.457142, 0.000244746, 1), (1, 0.026087, 1)]),
-        )
-    radius.name = "radius"
-    leafsize = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.431282, 1), (0.324129, 0.436757, 1), (0.408886, 0.416427, 1), (0.412274, 0.708684, 1), (0.844357, 0.703533, 1), (1, 0.246499, 1)]),
-        )
-    leafsize.name = "leafsize"
-    leaflength = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 1, 1), (0.00149779, 1.00072, 1), (1, 0.995671, 1), (1, 0.400121, 1)]),
-        )
-    leaflength.name = "leaflength"
-    leafpath = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(-0.5, 0, 1), (-0.145022, -0.0735931, 1), (0.0844156, -0.212121, 1), (0.123377, -0.497835, 1)]),
-        )
-    leafpath.name = "leafpath"
-    panel_1 = ({'name': 'Panel Unused', 'active': False, 'visible': True}, [('Function', radius_base03), ('Function', inflo_radius), ('Function', radius), ('Function', leafsize), ('Function', leaflength), ('Curve2D', leafpath)])
-    fruitprofile = pgl.BezierCurve2D(
-        pgl.Point3Array([(0.00563514, 0.994106, 1), (0.223956, 0.97883, 1), (0.425561, 0.771672, 1), (0.680945, 0.239898, 1), (0.509633, 0.00914747, 1), (0.0130125, 0.0011832, 1)]),
-        )
-    fruitprofile.name = "fruitprofile"
-    bract_axis = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(-0.5, 0, 1), (-0.166667, -0.168182, 1), (0.143939, -0.140909, 1), (0.504545, -0.113636, 1)]),
-        )
-    bract_axis.name = "bract_axis"
-    bract_section = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(-0.5, 0, 1), (-0.189394, -0.159091, 1), (0.221212, -0.186364, 1), (0.5, 0, 1)]),
-        )
-    bract_section.name = "bract_section"
-    bract_width = pgl.NurbsCurve2D(
-        ctrlPointList=pgl.Point3Array([(0, 0.141879, 1), (0.0485817, 1.44717, 1), (1, 1.11933, 1), (1, 0.0236465, 1)]),
-        )
-    bract_width.name = "bract_width"
-    panel_2 = ({'name': 'Panel Inflo', 'active': True, 'visible': True}, [('Curve2D', fruitprofile), ('Curve2D', bract_axis), ('Curve2D', bract_section), ('Function', bract_width)])
-    parameterset = [panel_0, panel_1, panel_2]
-    context["__functions__"] = [('leafwidthgrowth', leafwidthgrowth), ('leafwidth', leafwidth), ('bract_width', bract_width)]
-    context["__curves__"] = [('axis1', axis1), ('axis2', axis2), ('axis3', axis3), ('axis4', axis4), ('axis5', axis5), ('leafsection', leafsection), ('petioleCurve', petioleCurve), ('fruitprofile', fruitprofile), ('bract_axis', bract_axis), ('bract_section', bract_section)]
-    context["__parameterset__"] = parameterset
-    context["axis1"] = axis1
-    context["axis2"] = axis2
-    context["axis3"] = axis3
-    context["axis4"] = axis4
-    context["axis5"] = axis5
-    context["leafsection"] = leafsection
-    context["leafwidthgrowth"] = pgl.QuantisedFunction(leafwidthgrowth)
-    context["leafwidth"] = pgl.QuantisedFunction(leafwidth)
-    context["petioleCurve"] = petioleCurve
-    context["fruitprofile"] = fruitprofile
-    context["bract_axis"] = bract_axis
-    context["bract_section"] = bract_section
-    context["bract_width"] = pgl.QuantisedFunction(bract_width)
