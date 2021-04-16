@@ -1,15 +1,18 @@
 import pathlib
 import xsimlab as xs
 import numpy as np
+from pathlib import Path
+import io
 import openalea.lpy as lpy
 
 from . import (
     topology
 )
+from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class Geometry:
+class Geometry(ParameterizedProcess):
 
     lsystem = None
 
@@ -25,12 +28,22 @@ class Geometry:
     interpretation_freq = xs.variable(intent='in', static=True, default=-1)
     interpretation_steps = np.array([])
 
+    lpy_parameters = xs.any_object()
+
     @xs.runtime(args=('nsteps'))
     def initialize(self, nsteps):
+        super(Geometry, self).initialize()
         self.rng = np.random.default_rng(seed=self.seed)
-        self.lsystem = lpy.Lsystem(str(pathlib.Path(__file__).parent.joinpath('geometry.lpy')), {
-            'process': self
-        })
+        self.lpy_parameters = lpy.lsysparameters.LsystemParameters(
+            str(Path(self.parameter_file_path).parent.joinpath(self.parameters.lpy_parameters))
+        )
+        assert self.lpy_parameters.is_valid()
+        with io.open(pathlib.Path(__file__).parent.joinpath('geometry.lpy'), 'r') as file:
+            lpy_code = file.read()
+            self.lsystem = lpy.Lsystem()
+            self.lsystem.set(''.join([lpy_code, self.lpy_parameters.generate_py_code()]), {
+                'process': self
+            })
         self.scene = self.lsystem.sceneInterpretation(self.lstring)
         if self.interpretation_freq > 0:
             self.interpretation_steps = np.linspace(0, nsteps - 1, int(nsteps / self.interpretation_freq), dtype=np.int32)
