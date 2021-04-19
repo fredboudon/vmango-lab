@@ -171,9 +171,3 @@ class CarbonReserve(ParameterizedProcess):
         self.reserve_nmob_stem[is_active] += self.carbon_balance[('carbon_balance', 'reserve_nmob_stem_delta')][is_active]
 
         self.reserve_mob[is_active] = ((r_mobile_leaf * self.reserve_leaf[is_active]) + (r_mobile_stem * self.reserve_stem[is_active]))
-
-    def finalize_step(self):
-        pass
-
-    def finalize(self):
-        pass

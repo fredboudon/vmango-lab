@@ -2,6 +2,7 @@ title = 'fruit model'
 
 # all paths must be relative to this file and name must match process name in model
 [parameters]
+topology = '../parameters/topology.toml'
 environment = '../parameters/environment.toml'
 phenology = '../parameters/phenology.toml'
 growth = '../parameters/growth.toml'

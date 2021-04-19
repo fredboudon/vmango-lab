@@ -29,6 +29,7 @@ class FruitQuality(ParameterizedProcess):
 
     DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
+    # this dummy just forces process ordering
     __dummy = xs.foreign(carbon_balance.CarbonBalance, 'carbon_supply')
 
     DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')

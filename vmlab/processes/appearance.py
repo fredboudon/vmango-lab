@@ -16,9 +16,7 @@ class Appearance(ParameterizedProcess):
 
     rng = None
 
-    GU = xs.global_ref('GU')
-
-    nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
+    GU = xs.foreign(topology.Topology, 'GU')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     parent_is_apical = xs.foreign(topology.Topology, 'parent_is_apical')
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
@@ -31,16 +29,19 @@ class Appearance(ParameterizedProcess):
         dims='GU',
         intent='out'
     )
+
     final_length_gu = xs.variable(
         dims=('GU'),
         intent='inout',
         groups='appearance'
     )
+
     nb_internode = xs.variable(
         dims=('GU'),
         intent='out',
         groups='appearance'
     )
+
     final_length_internodes = xs.variable(
         dims=('GU'),
         intent='out',
@@ -49,6 +50,7 @@ class Appearance(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     final_length_leaves = xs.variable(
         dims=('GU'),
         intent='out',
@@ -57,6 +59,7 @@ class Appearance(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     final_length_inflos = xs.variable(
         dims=('GU'),
         intent='out',

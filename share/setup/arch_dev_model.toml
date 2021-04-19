@@ -3,6 +3,7 @@ title = 'arch dev'
 initial_tree = '../trees/tree_B10_cycle_030405.csv'
 
 [parameters]
+topology = '../parameters/topology.toml'
 arch_dev_veg_within = '../parameters/arch_dev_veg_within.toml'
 arch_dev_veg_between = '../parameters/arch_dev_veg_between.toml'
 arch_dev_rep = '../parameters/arch_dev_rep.toml'

@@ -9,10 +9,12 @@ from ._base.parameter import ParameterizedProcess
 
 @xs.process
 class Growth(ParameterizedProcess):
+    """Compute the current length, radius of entities
+    """
 
-    GU = xs.global_ref('GU')
     rng = None
 
+    GU = xs.foreign(topology.Topology, 'GU')
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
     seed = xs.foreign(topology.Topology, 'seed')
 
@@ -26,16 +28,17 @@ class Growth(ParameterizedProcess):
 
     final_length_gu = xs.foreign(appearance.Appearance, 'final_length_gu')
     nb_internode = xs.foreign(appearance.Appearance, 'nb_internode')
-    final_length_internodes = xs.foreign(appearance.Appearance, 'final_length_internodes')
     final_length_leaves = xs.foreign(appearance.Appearance, 'final_length_leaves')
     final_length_inflos = xs.foreign(appearance.Appearance, 'final_length_inflos')
     appeared = xs.foreign(appearance.Appearance, 'appeared')
+    any_is_growing = xs.variable(intent='out', groups='growth')
 
     radius_gu = xs.variable(
         dims=('GU'),
         intent='inout',
         groups='growth'
     )
+
     length_gu = xs.variable(
         dims=('GU'),
         intent='out',
@@ -50,6 +53,7 @@ class Growth(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     length_inflos = xs.variable(
         dims=('GU'),
         intent='out',
@@ -58,17 +62,18 @@ class Growth(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     radius_inflo = xs.variable(
         dims=('GU'),
         intent='out',
         groups='growth'
     )
+
     nb_leaf = xs.variable(
         dims='GU',
         intent='out',
         groups='growth'
     )
-    any_is_growing = xs.variable(intent='out', groups='growth')
 
     def get_length_inflos(self, final_length_inflos: typing.List[float], inflo_growth_tts, params):
         final_length_inflos = np.array(final_length_inflos)

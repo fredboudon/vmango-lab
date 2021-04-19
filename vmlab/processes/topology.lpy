@@ -2,11 +2,15 @@ import numpy as np
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
 
-default_phyllotaxy = 144.
-branching_angle = 60.
-
 module GU(idx)
 module A(idx)
+
+
+def Start():
+    global default_phyllotaxy, branching_angle
+    default_phyllotaxy = process.parameters.default_phyllotaxy
+    branching_angle = process.parameters.branching_angle
+
 
 Axiom:
     nproduce @Tp(0, 0, 1) @Ts(0.02)

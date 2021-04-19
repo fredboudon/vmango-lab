@@ -24,6 +24,7 @@ class CarbonAllocation(ParameterizedProcess):
     harvested = xs.foreign(harvest.Harvest, 'harvested')
 
     distance_to_fruit = xs.any_object()
+    # the only variable that uses nan explicitly (so np.nansum etc. can be used)
     is_in_distance_to_fruit = xs.any_object()
     allocation_share = xs.any_object()
     is_photo_active = xs.variable(dims='GU', intent='out')

@@ -191,9 +191,3 @@ class CarbonDemand(ParameterizedProcess):
             # daily maintenance respiration for reproductive and vegetative components
             self.MR_repro[has_fruit] = self.MR_fruit[has_fruit]
             self.MR_veget[is_active] = self.MR_stem[is_active] + self.MR_leaf[is_active]
-
-    def finalize_step(self):
-        pass
-
-    def finalize(self):
-        pass

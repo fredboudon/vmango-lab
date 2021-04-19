@@ -15,6 +15,7 @@ from ._base.parameter import ParameterizedProcess
 class Geometry(ParameterizedProcess):
 
     lsystem = None
+    interpretation_steps = np.array([])
 
     lstring = xs.foreign(topology.Topology, 'lstring')
     seed = xs.foreign(topology.Topology, 'seed')
@@ -24,10 +25,8 @@ class Geometry(ParameterizedProcess):
     appearance = xs.group_dict('appearance')
     photosynthesis = xs.group_dict('photosynthesis')
 
-    scene = xs.any_object()
     interpretation_freq = xs.variable(intent='in', static=True, default=-1)
-    interpretation_steps = np.array([])
-
+    scene = xs.any_object()
     lpy_parameters = xs.any_object()
 
     @xs.runtime(args=('nsteps'))
@@ -45,6 +44,7 @@ class Geometry(ParameterizedProcess):
                 'process': self
             })
         self.scene = self.lsystem.sceneInterpretation(self.lstring)
+
         if self.interpretation_freq > 0:
             self.interpretation_steps = np.linspace(0, nsteps - 1, int(nsteps / self.interpretation_freq), dtype=np.int32)
         elif self.interpretation_freq == -1:

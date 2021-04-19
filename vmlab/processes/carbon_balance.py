@@ -3,12 +3,10 @@ import numpy as np
 import warnings
 
 from . import (
-    growth,
     photosynthesis,
     carbon_allocation,
     carbon_reserve,
     carbon_demand,
-    topology,
     phenology
 )
 from ._base.parameter import ParameterizedProcess
@@ -20,15 +18,17 @@ class CarbonBalance(ParameterizedProcess):
         - only for fully developed GUs (gu_stage >= 4.)
     """
 
+    nb_gu = xs.global_ref('nb_gu')
+
     photo = xs.foreign(photosynthesis.Photosythesis, 'photo')
 
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     fruited = xs.foreign(phenology.Phenology, 'fruited')
 
-    is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
     allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
     is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
 
+    DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
     MR_repro = xs.foreign(carbon_demand.CarbonDemand, 'MR_repro')
     MR_veget = xs.foreign(carbon_demand.CarbonDemand, 'MR_veget')
@@ -39,11 +39,6 @@ class CarbonBalance(ParameterizedProcess):
     reserve_nmob_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_leaf')
     reserve_nmob_stem = xs.foreign(carbon_reserve.CarbonReserve, 'reserve_nmob_stem')
     DM_structural_leaf = xs.foreign(carbon_reserve.CarbonReserve, 'DM_structural_leaf')
-
-    DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
-
-    GU = xs.foreign(topology.Topology, 'GU')
-    nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
     carbon_supply = xs.variable(
         dims=('GU'),
@@ -154,17 +149,17 @@ class CarbonBalance(ParameterizedProcess):
 
         super(CarbonBalance, self).initialize()
 
-        self.carbon_supply = np.zeros(self.GU.shape, dtype=np.float32)
-        self.required_DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
-        self.remains_1 = np.zeros(self.GU.shape, dtype=np.float32)
-        self.remains_2 = np.zeros(self.GU.shape, dtype=np.float32)
-        self.remains_3 = np.zeros(self.GU.shape, dtype=np.float32)
-        self.DM_fruit = np.zeros(self.GU.shape, dtype=np.float32)
-        self.DM_fruit_delta = np.zeros(self.GU.shape, dtype=np.float32)
-        self.reserve_leaf_delta = np.zeros(self.GU.shape, dtype=np.float32)
-        self.reserve_stem_delta = np.zeros(self.GU.shape, dtype=np.float32)
-        self.reserve_nmob_leaf_delta = np.zeros(self.GU.shape, dtype=np.float32)
-        self.reserve_nmob_stem_delta = np.zeros(self.GU.shape, dtype=np.float32)
+        self.carbon_supply = np.zeros(self.nb_gu, dtype=np.float32)
+        self.required_DM_fruit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.remains_1 = np.zeros(self.nb_gu, dtype=np.float32)
+        self.remains_2 = np.zeros(self.nb_gu, dtype=np.float32)
+        self.remains_3 = np.zeros(self.nb_gu, dtype=np.float32)
+        self.DM_fruit = np.zeros(self.nb_gu, dtype=np.float32)
+        self.DM_fruit_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.reserve_leaf_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.reserve_stem_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.reserve_nmob_leaf_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.reserve_nmob_stem_delta = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=('step_start'))
     def run_step(self, step_start):
