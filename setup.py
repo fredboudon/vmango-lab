@@ -9,5 +9,6 @@ setup(
     description='V-Mango model',
     long_description='vmlab is a simulation and analysis tool for mango tree architecture.',
     license='Cecill-C',
-    packages=find_packages()
+    packages=find_packages(),
+    include_package_data=True
 )
