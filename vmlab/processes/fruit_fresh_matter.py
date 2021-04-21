@@ -16,11 +16,10 @@ from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class FruitQuality(ParameterizedProcess):
+class FruitFreshMatter(ParameterizedProcess):
     """
-    Process computing fruit quality (sugars and acids)
+    Process computing fresh matter changes
     """
-
     nb_gu = xs.global_ref('nb_gu')
 
     TM_day = xs.foreign(environment.Environment, 'TM_day')
