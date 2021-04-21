@@ -10,9 +10,9 @@ setup = vmlab.create_setup(
     setup_toml='share/setup/vmango.toml',
     current_cycle=3,
     input_vars={
-        'geometry__interpretation_freq': 14
+        'geometry__interpretation_freq': 0
     },
     output_vars=None
 )
 
-vmlab.run(setup, vmango)
+ds = vmlab.run(setup, vmango)
