@@ -15,4 +15,4 @@ setup = vmlab.create_setup(
     output_vars=None
 )
 
-vmlab.run(setup, vmango)
+ds = vmlab.run(setup, vmango)
