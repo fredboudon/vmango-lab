@@ -37,7 +37,9 @@ def get_inputs_from_df(model, df, cycle):
         'has_apical_child',
         'nb_lateral_children',
         'nb_inflo',
-        'nb_fruit'
+        'nb_fruit',
+        'nb_internode',
+        'final_length_gu'
     ]) & set(df.columns))
 
     assert len(set(df.columns) & set(required_attrs)) == len(required_attrs)
@@ -64,10 +66,15 @@ def get_inputs_from_df(model, df, cycle):
     if 'arch_dev' in model:
         inputs['arch_dev__pot_nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
         for attr in optional_attrs:
-            if attr == 'burst_date' or attr == 'flowering_date':
-                inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[D]')
-            else:
-                inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
+            if attr in ['burst_date', 'flowering_date', 'has_apical_child', 'nb_lateral_children', 'nb_inflo', 'nb_fruit']:
+                if attr == 'burst_date' or attr == 'flowering_date':
+                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[D]')
+                else:
+                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
+    if 'appearance' in model:
+        for attr in optional_attrs:
+            if attr in ['nb_internode', 'final_length_gu']:
+                inputs[f'appearance__{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
 
     return inputs, graph
 
@@ -147,7 +154,7 @@ def create_setup(
             if f'{prc_name}__{var_name}' not in output_vars_:
                 output_vars_[f'{prc_name}__{var_name}'] = output_vars if type(output_vars) is str else None  # str must be clock name
         if graph is not None:
-            # make simlab happy by passing initial 'inout' values (needlessly)
+            # make simlab happy by passing initial 'inout' values used to model cycles (needlessly)
             shape = (len(graph.vs.indices),)
             for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
                 if f'{prc_name}__{var_name}' not in input_vars:
