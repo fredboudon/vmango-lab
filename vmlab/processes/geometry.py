@@ -21,6 +21,7 @@ class Geometry(ParameterizedProcess):
     seed = xs.foreign(topology.Topology, 'seed')
 
     phenology = xs.group_dict('phenology')
+    harvest = xs.group_dict('harvest')
     growth = xs.group_dict('growth')
     appearance = xs.group_dict('appearance')
     photosynthesis = xs.group_dict('photosynthesis')
@@ -52,5 +53,5 @@ class Geometry(ParameterizedProcess):
 
     @xs.runtime(args=('step', 'nsteps'))
     def run_step(self, step, nsteps):
-        if (self.growth[('growth', 'any_is_growing')] or self.interpretation_freq == -1) and step in self.interpretation_steps:
+        if step in self.interpretation_steps:
             self.scene = self.lsystem.sceneInterpretation(self.lstring)

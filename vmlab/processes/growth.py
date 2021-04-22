@@ -18,6 +18,8 @@ class Growth(ParameterizedProcess):
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
     seed = xs.foreign(topology.Topology, 'seed')
 
+    harvest = xs.group_dict('harvest')
+
     gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
     leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
     inflo_growth_tts = xs.foreign(phenology.Phenology, 'inflo_growth_tts')
@@ -25,6 +27,7 @@ class Growth(ParameterizedProcess):
     inflo_stage = xs.foreign(phenology.Phenology, 'inflo_stage')
     nb_gu_stage = xs.foreign(phenology.Phenology, 'nb_gu_stage')
     nb_inflo_stage = xs.foreign(phenology.Phenology, 'nb_inflo_stage')
+    nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
 
     final_length_gu = xs.foreign(appearance.Appearance, 'final_length_gu')
     nb_internode = xs.foreign(appearance.Appearance, 'nb_internode')
@@ -35,7 +38,7 @@ class Growth(ParameterizedProcess):
 
     radius_gu = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='growth'
     )
 
@@ -118,7 +121,8 @@ class Growth(ParameterizedProcess):
 
         gu_growing = (self.gu_stage > 0.) & (self.gu_stage < self.nb_gu_stage) & (self.appeared == 1.)
         inflo_growing = (self.inflo_stage > 0.) & (self.inflo_stage < self.nb_inflo_stage) & (self.appeared == 1.)
-        self.any_is_growing = np.any(gu_growing | inflo_growing)
+        fruit_growing = (self.harvest[('harvest', 'ripeness_index')] < 1.) & (self.nb_fruit > 0.)
+        self.any_is_growing = np.any(gu_growing | inflo_growing | fruit_growing)
 
         if np.any(self.appeared):
             self.nb_leaf[self.appeared == 1.] = self.nb_internode[self.appeared == 1.]
