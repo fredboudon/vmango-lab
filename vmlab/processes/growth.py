@@ -1,6 +1,5 @@
 import xsimlab as xs
 import numpy as np
-import zarr
 import typing
 
 from . import topology, phenology, appearance
@@ -48,22 +47,12 @@ class Growth(ParameterizedProcess):
         groups='growth'
     )
 
-    length_leaves = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='growth',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    length_leaves = xs.any_object(
+        groups='growth'
     )
 
-    length_inflos = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='growth',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    length_inflos = xs.any_object(
+        groups='growth'
     )
 
     radius_inflo = xs.variable(

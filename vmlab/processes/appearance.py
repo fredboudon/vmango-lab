@@ -2,7 +2,6 @@ import xsimlab as xs
 import numpy as np
 import openalea.plantgl.all as pgl
 import math
-import zarr
 
 from . import (
     topology,
@@ -42,31 +41,16 @@ class Appearance(ParameterizedProcess):
         groups='appearance'
     )
 
-    final_length_internodes = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_internodes = xs.any_object(
+        groups='appearance'
     )
 
-    final_length_leaves = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_leaves = xs.any_object(
+        groups='appearance'
     )
 
-    final_length_inflos = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_inflos = xs.any_object(
+        groups='appearance'
     )
 
     def get_final_length_gu(self, is_apical, parent_is_apical, rng, params):

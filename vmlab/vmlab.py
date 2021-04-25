@@ -1,11 +1,15 @@
+import io
+import warnings
+import multiprocessing as mp
 import xsimlab as xs
+import xarray as xr
 from xsimlab.variable import VarIntent
 import pandas as pd
 import numpy as np
 import igraph as ig
-import io
+import openalea.plantgl.all as pgl
+from tqdm.auto import tqdm
 import toml
-import warnings
 import pathlib
 import IPython
 import pgljupyter
@@ -96,6 +100,8 @@ def create_setup(
         **({} if input_vars is None else input_vars)
     }
 
+    output_vars
+
     main_clock = 'day'
     clocks = {} if clocks is None else clocks
     clocks[main_clock] = pd.date_range(start=start_date, end=end_date, freq='1d')
@@ -138,12 +144,7 @@ def create_setup(
                     output_vars_[f'{name}__{var_name}'] = clock
             else:
                 output_vars_[name] = item
-
-    for prc_name in model:
-        for var_name in xs.filter_variables(model[prc_name], var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
-            if type(output_vars) == dict:  # must be exported because of growing index
-                if f'{prc_name}__{var_name}' not in output_vars:
-                    output_vars[f'{prc_name}__{var_name}'] = None
+        output_vars = output_vars_.copy()
 
     for prc_name in model:
         prc = model[prc_name]
@@ -167,21 +168,108 @@ def create_setup(
         input_vars,
         output_vars_,
         fill_default
-    )
+    ).assign_attrs({
+        '__vmlab_output_vars': list(output_vars.keys()) if output_vars is not None else []
+    })
 
 
-def run(dataset, model, progress=True, geometry=False, hooks=[]):
+def _fn_parallel(id, ds, geometry):
+    scene = pgl.Scene()
+
+    @xs.runtime_hook(stage='run_step')
+    def hook(model, context, state):
+        global scene
+        scene_ = state[('geometry', 'scene')]
+        if geometry:
+            _fn_parallel.q.put((id, pgl.tobinarystring(scene_, False)))
+            scene = scene_
+        if context['step'] == context['nsteps'] - 1:
+            _fn_parallel.q.put((id, 1))
+    try:
+        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=[hook])
+    except:
+        _fn_parallel.q.put((id, 1))
+        return ds
+
+    return out
+
+
+def _run_parallel(ds, model, batch, sw, scenes, positions):
+
+    geometry = sw is not None
+    batch_dim, batch_runs = batch
+    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry) for i, input_vars in enumerate(batch_runs)]
+
+    def f_init(q):
+        _fn_parallel.q = q
+
+    m = mp.Manager()
+    q = m.Queue()
+    p = mp.Pool(mp.cpu_count(), f_init, [q])
+
+    results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
+    p.close()
+
+    done = 0
+    with tqdm(total=len(jobs), bar_format='{bar} {percentage:3.0f}%') as bar:
+        while done < len(jobs):
+            id, got = q.get()
+            if got == 1:
+                done += got
+                bar.update()
+            else:
+                print(id)
+                scenes[id] = pgl.frombinarystring(got)
+                sw.set_scenes(scenes, scales=1 / 100, positions=positions)
+        bar.close()
+
+    dss = results.get()
+    p.terminate()
+
+    return xr.concat(dss, dim=batch_dim)
+
+
+def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
     hooks = [xs.monitoring.ProgressBar()] + hooks if progress else hooks
+    is_batch_run = type(batch) == tuple
+    sw = None
+    scenes = []
     if geometry:
-        sw = pgljupyter.SceneWidget(size_world=2.5)
-        IPython.display.display(sw)
+        if is_batch_run:
+            from math import ceil, sqrt, floor
+            cell = 1
+            length = len(batch[1])
+            positions = []
+            rows = cols = ceil(sqrt(length))
+            size = rows * cell
+            start = -size / 2 + cell / 2
+            scenes = [pgl.Scene()] * cols * cols
+            for i in range(length):
+                row = floor(i / rows)
+                col = (i - row * cols)
+                x = row * cell + start
+                y = col * cell + start
+                positions.append((x, y, 0))
+            sw = pgljupyter.SceneWidget(size_world=size)
+            IPython.display.display(sw)
+        else:
+            sw = pgljupyter.SceneWidget(size_world=2.5)
+            IPython.display.display(sw)
 
-        @xs.runtime_hook(stage='run_step')
-        def hook(model, context, state):
-            scene = state[('geometry', 'scene')]
-            if scene != sw.scenes[0]['scene']:
-                sw.set_scenes(scene, scales=[1/100])
+            @xs.runtime_hook(stage='run_step')
+            def hook(model, context, state):
+                scene = state[('geometry', 'scene')]
+                if scene != sw.scenes[0]['scene']:
+                    sw.set_scenes(scene, scales=[1 / 100])
+            hooks.append(hook)
 
-        hooks.append(hook)
+    if type(batch) == tuple:
+        with model:
+            ds = _run_parallel(dataset, model, batch, sw, scenes, positions)
+    else:
+        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks)
 
-    return dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks)
+    ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
+    ds.attrs = {}
+
+    return ds

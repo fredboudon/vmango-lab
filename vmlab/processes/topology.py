@@ -20,13 +20,14 @@ class Topology(ParameterizedProcess):
 
     sim_start_date = xs.variable(intent='inout', static=True)
     GU = xs.index(dims='GU')
+    GU_ = xs.index(dims='GU_')
     # make an inout variable so it is ignored in process ordering
     nb_gu = xs.variable(intent='inout', default=0, static=True, global_name='nb_gu')
 
     lstring = xs.any_object()
 
     current_cycle = xs.variable(intent='inout')
-    adjacency = xs.variable(dims=('GU', 'GU'), intent='inout')
+    adjacency = xs.variable(dims=('GU', 'GU_'), intent='inout')
     ancestor_is_apical = xs.variable(dims='GU', intent='inout')
     ancestor_nature = xs.variable(dims='GU', intent='inout')
     is_apical = xs.variable(dims='GU', intent='inout')
@@ -34,7 +35,7 @@ class Topology(ParameterizedProcess):
     cycle = xs.variable(dims='GU', intent='inout')
 
     appearance_date = xs.variable(dims='GU', intent='out')
-    distance = xs.variable(dims=('GU', 'GU'), intent='out')
+    distance = xs.variable(dims=('GU', 'GU_'), intent='out')
     bursted = xs.variable(dims='GU', intent='out')
     appeared = xs.variable(dims='GU', intent='out')
     nb_descendants = xs.variable(dims='GU', intent='out')
@@ -50,6 +51,7 @@ class Topology(ParameterizedProcess):
         self.sim_start_date = np.datetime64(self.sim_start_date)
         self.adjacency = np.array(self.adjacency, dtype=np.float32)
         self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
+        self.GU_ = self.GU
         self.nb_gu = self.GU.shape[0]
 
         self.ancestor_is_apical = np.array(self.ancestor_is_apical, dtype=np.float32)
@@ -97,6 +99,7 @@ class Topology(ParameterizedProcess):
             total_nb_children = np.sum(self.archdev[('arch_dev', 'pot_nb_lateral_children')][self.bursted == 1.] + self.archdev[('arch_dev', 'pot_has_apical_child')][self.bursted == 1.])
             self.idx_first_child = self.GU.shape[0]
             self.GU = np.append(self.GU, [f'GU{i + self.GU.shape[0]}' for i in range(int(total_nb_children))])
+            self.GU_ = self.GU
             self.nb_gu = self.GU.shape[0]
             # initialize new GUs
             step_date = step_start.astype('datetime64[D]')
