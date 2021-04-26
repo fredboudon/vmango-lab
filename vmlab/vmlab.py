@@ -121,11 +121,12 @@ def create_setup(
                             input_vars[f'{prc_name}__parameter_file_path'] = str(path)
                         else:
                             warnings.warn(f'Input file "{path}" does not exist')
-            if 'initial_tree' not in setup and tree is None:
-                raise ValueError('No initial tree provided')
-            elif 'initial_tree' in setup:
-                path = dir_path.joinpath(setup['initial_tree'])
-                tree = pd.read_csv(path).astype(np.float32)
+            if tree is None:
+                if 'initial_tree' in setup:
+                    path = dir_path.joinpath(setup['initial_tree'])
+                    tree = pd.read_csv(path).astype(np.float32)
+                else:
+                    raise ValueError('No initial tree provided')
 
     graph = None
     if 'topology' in model:
@@ -173,20 +174,21 @@ def create_setup(
     })
 
 
-def _fn_parallel(id, ds, geometry):
-    scene = pgl.Scene()
+def _fn_parallel(id, ds, geometry, scene):
+
+    @xs.runtime_hook(stage='finalize')
+    def finalize(model, context, state):
+        _fn_parallel.q.put((id, 1))
 
     @xs.runtime_hook(stage='run_step')
-    def hook(model, context, state):
-        global scene
+    def run_step(model, context, state):
         scene_ = state[('geometry', 'scene')]
-        if geometry:
+        if geometry and scene_ != run_step.scene:
             _fn_parallel.q.put((id, pgl.tobinarystring(scene_, False)))
-            scene = scene_
-        if context['step'] == context['nsteps'] - 1:
-            _fn_parallel.q.put((id, 1))
+            run_step.scene = scene_
+    run_step.scene = scene
     try:
-        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=[hook])
+        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=[finalize, run_step])
     except:
         _fn_parallel.q.put((id, 1))
         return ds
@@ -195,17 +197,19 @@ def _fn_parallel(id, ds, geometry):
 
 
 def _run_parallel(ds, model, batch, sw, scenes, positions):
+    # TODO: exceptions not catched in main thread
 
     geometry = sw is not None
     batch_dim, batch_runs = batch
-    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry) for i, input_vars in enumerate(batch_runs)]
+    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, None) for i, input_vars in enumerate(batch_runs)]
 
     def f_init(q):
         _fn_parallel.q = q
 
     m = mp.Manager()
     q = m.Queue()
-    p = mp.Pool(mp.cpu_count(), f_init, [q])
+    nb_workers = max(1, mp.cpu_count() - 1)
+    p = mp.Pool(nb_workers, f_init, [q])
 
     results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
     p.close()
@@ -218,9 +222,8 @@ def _run_parallel(ds, model, batch, sw, scenes, positions):
                 done += got
                 bar.update()
             else:
-                print(id)
                 scenes[id] = pgl.frombinarystring(got)
-                sw.set_scenes(scenes, scales=1 / 100, positions=positions)
+                sw.set_scenes(scenes, scales=1/100, positions=positions)
         bar.close()
 
     dss = results.get()
@@ -233,29 +236,29 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
     hooks = [xs.monitoring.ProgressBar()] + hooks if progress else hooks
     is_batch_run = type(batch) == tuple
     sw = None
+    size = 1
+    size_display = (400, 400)
     scenes = []
     if geometry:
+        if type(geometry) == dict:
+            size = size if 'size' not in geometry else geometry['size']
+            size_display = size_display if 'size_display' not in geometry else geometry['size_display']
         if is_batch_run:
             from math import ceil, sqrt, floor
-            cell = 1
             length = len(batch[1])
             positions = []
+            cell = size
             rows = cols = ceil(sqrt(length))
             size = rows * cell
             start = -size / 2 + cell / 2
-            scenes = [pgl.Scene()] * cols * cols
+            scenes = [None] * length
             for i in range(length):
                 row = floor(i / rows)
                 col = (i - row * cols)
                 x = row * cell + start
                 y = col * cell + start
                 positions.append((x, y, 0))
-            sw = pgljupyter.SceneWidget(size_world=size)
-            IPython.display.display(sw)
         else:
-            sw = pgljupyter.SceneWidget(size_world=2.5)
-            IPython.display.display(sw)
-
             @xs.runtime_hook(stage='run_step')
             def hook(model, context, state):
                 scene = state[('geometry', 'scene')]
@@ -263,7 +266,10 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
                     sw.set_scenes(scene, scales=[1 / 100])
             hooks.append(hook)
 
-    if type(batch) == tuple:
+        sw = pgljupyter.SceneWidget(size_world=size, size_display=size_display)
+        IPython.display.display(sw)
+
+    if is_batch_run:
         with model:
             ds = _run_parallel(dataset, model, batch, sw, scenes, positions)
     else:
