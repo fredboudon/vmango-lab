@@ -174,7 +174,7 @@ def create_setup(
     })
 
 
-def _fn_parallel(id, ds, geometry, scene):
+def _fn_parallel(id, ds, geometry):
 
     @xs.runtime_hook(stage='finalize')
     def finalize(model, context, state):
@@ -182,13 +182,16 @@ def _fn_parallel(id, ds, geometry, scene):
 
     @xs.runtime_hook(stage='run_step')
     def run_step(model, context, state):
-        scene_ = state[('geometry', 'scene')]
-        if geometry and scene_ != run_step.scene:
-            _fn_parallel.q.put((id, pgl.tobinarystring(scene_, False)))
-            run_step.scene = scene_
-    run_step.scene = scene
+        _fn_parallel.q.put((id, 0))
+        if geometry:
+            scene_ = state[('geometry', 'scene')]
+            if scene_ != run_step.scene:
+                _fn_parallel.q.put((id, pgl.tobinarystring(scene_, False)))
+                run_step.scene = scene_
+    run_step.scene = None
+    hooks = [finalize, run_step]
     try:
-        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=[finalize, run_step])
+        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=hooks)
     except:
         _fn_parallel.q.put((id, 1))
         return ds
@@ -201,7 +204,7 @@ def _run_parallel(ds, model, batch, sw, scenes, positions):
 
     geometry = sw is not None
     batch_dim, batch_runs = batch
-    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, None) for i, input_vars in enumerate(batch_runs)]
+    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry) for i, input_vars in enumerate(batch_runs)]
 
     def f_init(q):
         _fn_parallel.q = q
@@ -215,12 +218,14 @@ def _run_parallel(ds, model, batch, sw, scenes, positions):
     p.close()
 
     done = 0
-    with tqdm(total=len(jobs), bar_format='{bar} {percentage:3.0f}%') as bar:
+    nb_steps = len(jobs) * ds.day.values.shape[0] - len(jobs)
+    with tqdm(total=nb_steps, bar_format='{bar} {percentage:3.0f}%') as bar:
         while done < len(jobs):
             id, got = q.get()
-            if got == 1:
-                done += got
+            if got == 0:
                 bar.update()
+            elif got == 1:
+                done += got
             else:
                 scenes[id] = pgl.frombinarystring(got)
                 sw.set_scenes(scenes, scales=1/100, positions=positions)
