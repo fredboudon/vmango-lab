@@ -1,4 +1,3 @@
-import numpy as np
 from math import exp
 import openalea.plantgl.all as pgl
 from openalea.lpy import *
@@ -19,10 +18,12 @@ leaf_pheno_angle = pgl.QuantisedFunction(
 )
 inflo_nb_axes_length_ratio = [0.2, 5.]
 inflo_base_color = 20
-inflo_pheno_color = [c + inflo_base_color for c in [0, 0, 1, 1, 2, 3]]
+inflo_pheno_colors = [c + inflo_base_color for c in [0, 0, 1, 1, 2, 3]]
 flower_base_color = 25
-flower_pheno_color = list(range(flower_base_color, flower_base_color + 6))
+flower_pheno_colors = list(range(flower_base_color, flower_base_color + 6))
+fruit_pheno_colors = [32, 33]
 fruit_color = 32
+fruit = Revolution(fruitprofile, 8)
 
 
 def inflo_color_interpolator(x, coef):
@@ -162,7 +163,8 @@ def plot_inflo(
     nb_fruit,
     final_length_inflos,
     length_inflos,
-    radius_inflo
+    radius_inflo,
+    ripeness_index
 ):
     stage = int(inflo_stage // 1.)
     rank = inflo_stage % 1.
@@ -184,44 +186,28 @@ def plot_inflo(
                 phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
                 inflo_phyloangles_cache[idx][i] = phyloangles
             total_phyloangles = float(sum(phyloangles))
-            # if stage < 1:
-            #     bract_level = max(0, (2 * (rank - 0.5)))
             nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
             nsproduce([EndGC(), Tropism(0, 0, -1)])
+            elasticity = 0.05 + 0.4 * ripeness_index
             if stage >= 4.:
                 if stage == 4.:
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_stage % 1.))])
+                    nsproduce([SetColor(color_interpolator(inflo_pheno_colors[stage], inflo_pheno_colors[stage + 1], inflo_stage % 1.))])
                 else:
-                    nsproduce([SetColor(inflo_pheno_color[5])])
+                    nsproduce([SetColor(inflo_pheno_colors[5])])
                 nsproduce([SetWidth(radius_inflo), nF(length_inflo, internode_length), RollR(total_phyloangles)])
             else:
-                nsproduce([SetWidth(radius_inflo)])
                 nsproduce([f(0.3)])
-                if stage >= 3:
-                    elasticity = 0.005 + 0.035 * rank
-                else:
-                    elasticity = 0.005 * stage / 3.
-                nsproduce([Elasticity(elasticity)])
-                for k in range(0, nb_axes):
-                    pos = k / float(nb_axes)
-                    if stage > 2:
-                        cpos = pos
-                    else:
-                        cpos = (1 - pos)
-                    iradius = radius_inflo * (2 - pos) / 2.
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], inflo_color_interpolator(rank, cpos)))])
-                    nsproduce([F(internode_length, iradius), RollR(phyloangles[k])])
-                    axis_length = (length_inflo * (final_length_inflo * 0.687 - 3.97) / final_length_inflo) * (1 - pos)
-                    if stage >= 1:
-                        down = 5. + 40.
-                    else:
-                        down = 5. + 40. * rank
-                    nsproduce([SB(), Down(90), f(iradius), Up(90), Down(down), Tropism(0, 0, 1), Elasticity(0.01)])
-                    # if stage < 1 and pos > bract_level:
-                    #     bract_length = length_inflo * 0.1 + axis_length * 1.5
-                    #     nsproduce([SB(), Down(0), StartGC(), Sweep(bract_axis, bract_section, bract_length, bract_length / 10., bract_length / 5., bract_width), EB()])
-                    nsproduce([SetColor(color_interpolator(inflo_pheno_color[stage], inflo_pheno_color[stage + 1], rank)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
-                    nsproduce([EB()])
+                nsproduce([SetColor(color_interpolator(inflo_pheno_colors[stage], inflo_pheno_colors[stage + 1], inflo_stage % 1.)), IncWidth(length_inflo / 10), F(length_inflo, 0.1)])
+            nsproduce([Elasticity(elasticity)])
+            if i == 0:
+                if nb_fruit > 0.:
+                    nsproduce([SB(), RollToVert(), F(5 * min(1, ripeness_index)), RollToHorizontal()])
+                    nsproduce([Down(90)])
+                    ep = 10. * ripeness_index
+                    lrg = 10. * ripeness_index
+                    lng = 15. * ripeness_index
+                    nsproduce([SetColor(color_interpolator(fruit_pheno_colors[0], fruit_pheno_colors[1], ripeness_index))])
+                    nsproduce([PglShape(Scaled(ep, lrg, lng, fruit)), EB()])
             nsproduce([EB()])
 
 
@@ -237,6 +223,7 @@ GU(idx):
     appearance = process.appearance
     growth = process.growth
     phenology = process.phenology
+    harvest = process.harvest
     final_length_internodes = appearance[('appearance', 'final_length_internodes')][idx]
     final_length_leaves = appearance[('appearance', 'final_length_leaves')][idx]
     final_length_gu = float(appearance[('appearance', 'final_length_gu')][idx])
@@ -262,13 +249,15 @@ GU(idx):
     if (inflo_stage > 0. and inflo_stage < 5.) or nb_fruit > 0.:
         length_inflos = growth[('growth', 'length_inflos')][idx]
         radius_inflo = float(growth[('growth', 'radius_inflo')][idx])
+        ripeness_index = float(harvest[('harvest', 'ripeness_index')][idx])
         plot_inflo(
             idx,
             inflo_stage,
             nb_fruit,
             final_length_inflos,
             length_inflos,
-            radius_inflo
+            radius_inflo,
+            ripeness_index
         )
 
 endlsystem

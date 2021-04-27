@@ -1,14 +1,17 @@
 import xsimlab as xs
 import numpy as np
 
-from . import environment
+from . import (
+    environment,
+    topology
+)
 from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
 class Phenology(ParameterizedProcess):
 
-    GU = xs.global_ref('GU')
+    GU = xs.foreign(topology.Topology, 'GU')
     archdev = xs.group_dict('arch_dev')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
     harvest = xs.group_dict('harvest')

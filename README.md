@@ -11,7 +11,7 @@ conda env create -f environment.yml
 python setup.py develop
 ```
 
-## From **zero** to V-Mango on windows 10
+## From absolute **zero** to V-Mango on windows 10
 
 ### Download
 
@@ -42,4 +42,4 @@ If all goes well you can run Jupyter from the vscode terminal (with the `vmango-
 jupyter lab
 ```
 
-You will find several notebooks in the vmango-lab/notebooks
+You will find several notebook examples in the vmango-lab/examples/notebooks

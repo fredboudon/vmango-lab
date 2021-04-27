@@ -2,7 +2,6 @@ import xsimlab as xs
 import numpy as np
 
 from . import (
-    growth,
     light_interception,
     carbon_demand,
     carbon_allocation,
@@ -20,11 +19,9 @@ class Photosythesis(ParameterizedProcess):
     nb_gu = xs.global_ref('nb_gu')
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
-    nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
     is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
-    allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')

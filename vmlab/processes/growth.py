@@ -9,12 +9,16 @@ from ._base.parameter import ParameterizedProcess
 
 @xs.process
 class Growth(ParameterizedProcess):
+    """Compute the current length, radius of entities
+    """
 
-    GU = xs.global_ref('GU')
     rng = None
 
+    GU = xs.foreign(topology.Topology, 'GU')
     nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
     seed = xs.foreign(topology.Topology, 'seed')
+
+    harvest = xs.group_dict('harvest')
 
     gu_growth_tts = xs.foreign(phenology.Phenology, 'gu_growth_tts')
     leaf_growth_tts = xs.foreign(phenology.Phenology, 'leaf_growth_tts')
@@ -23,19 +27,21 @@ class Growth(ParameterizedProcess):
     inflo_stage = xs.foreign(phenology.Phenology, 'inflo_stage')
     nb_gu_stage = xs.foreign(phenology.Phenology, 'nb_gu_stage')
     nb_inflo_stage = xs.foreign(phenology.Phenology, 'nb_inflo_stage')
+    nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
 
     final_length_gu = xs.foreign(appearance.Appearance, 'final_length_gu')
     nb_internode = xs.foreign(appearance.Appearance, 'nb_internode')
-    final_length_internodes = xs.foreign(appearance.Appearance, 'final_length_internodes')
     final_length_leaves = xs.foreign(appearance.Appearance, 'final_length_leaves')
     final_length_inflos = xs.foreign(appearance.Appearance, 'final_length_inflos')
     appeared = xs.foreign(appearance.Appearance, 'appeared')
+    any_is_growing = xs.variable(intent='out', groups='growth')
 
     radius_gu = xs.variable(
         dims=('GU'),
-        intent='inout',
+        intent='out',
         groups='growth'
     )
+
     length_gu = xs.variable(
         dims=('GU'),
         intent='out',
@@ -50,6 +56,7 @@ class Growth(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     length_inflos = xs.variable(
         dims=('GU'),
         intent='out',
@@ -58,17 +65,18 @@ class Growth(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     radius_inflo = xs.variable(
         dims=('GU'),
         intent='out',
         groups='growth'
     )
+
     nb_leaf = xs.variable(
         dims='GU',
         intent='out',
         groups='growth'
     )
-    any_is_growing = xs.variable(intent='out', groups='growth')
 
     def get_length_inflos(self, final_length_inflos: typing.List[float], inflo_growth_tts, params):
         final_length_inflos = np.array(final_length_inflos)
@@ -113,7 +121,8 @@ class Growth(ParameterizedProcess):
 
         gu_growing = (self.gu_stage > 0.) & (self.gu_stage < self.nb_gu_stage) & (self.appeared == 1.)
         inflo_growing = (self.inflo_stage > 0.) & (self.inflo_stage < self.nb_inflo_stage) & (self.appeared == 1.)
-        self.any_is_growing = np.any(gu_growing | inflo_growing)
+        fruit_growing = (self.harvest[('harvest', 'ripeness_index')] < 1.) & (self.nb_fruit > 0.)
+        self.any_is_growing = np.any(gu_growing | inflo_growing | fruit_growing)
 
         if np.any(self.appeared):
             self.nb_leaf[self.appeared == 1.] = self.nb_internode[self.appeared == 1.]

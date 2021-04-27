@@ -17,8 +17,6 @@ class LightInterception(ParameterizedProcess):
 
     nb_gu = xs.global_ref('nb_gu')
     GR = xs.foreign(environment.Environment, 'GR')
-    hour = xs.foreign(environment.Environment, 'hour')
-
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
     sunlit_bs = xs.variable(
@@ -113,9 +111,3 @@ class LightInterception(ParameterizedProcess):
 
         self.LA_sunlit = self.sunlit_bs * sunlit_ws * np.vstack(self.LA)
         self.LA_shaded = np.vstack(self.LA) - self.LA_sunlit
-
-    def finalize_step(self):
-        pass
-
-    def finalize(self):
-        pass

@@ -16,9 +16,7 @@ class Appearance(ParameterizedProcess):
 
     rng = None
 
-    GU = xs.global_ref('GU')
-
-    nb_descendants = xs.foreign(topology.Topology, 'nb_descendants')
+    GU = xs.foreign(topology.Topology, 'GU')
     is_apical = xs.foreign(topology.Topology, 'is_apical')
     parent_is_apical = xs.foreign(topology.Topology, 'parent_is_apical')
     appeared_topo = xs.foreign(topology.Topology, 'appeared')
@@ -31,16 +29,19 @@ class Appearance(ParameterizedProcess):
         dims='GU',
         intent='out'
     )
+
     final_length_gu = xs.variable(
         dims=('GU'),
         intent='inout',
         groups='appearance'
     )
+
     nb_internode = xs.variable(
         dims=('GU'),
-        intent='out',
+        intent='inout',
         groups='appearance'
     )
+
     final_length_internodes = xs.variable(
         dims=('GU'),
         intent='out',
@@ -49,6 +50,7 @@ class Appearance(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     final_length_leaves = xs.variable(
         dims=('GU'),
         intent='out',
@@ -57,6 +59,7 @@ class Appearance(ParameterizedProcess):
             'object_codec': zarr.JSON()
         }
     )
+
     final_length_inflos = xs.variable(
         dims=('GU'),
         intent='out',
@@ -90,7 +93,7 @@ class Appearance(ParameterizedProcess):
 
         nb_internode = nb_internode - 1
         if nb_internode <= 1:
-            return final_length_gu
+            return [final_length_gu]
 
         lengths = [math.exp(-2.64 * i / float(nb_internode - 1.)) for i in range(int(nb_internode))]
         scaling = final_length_gu / sum(lengths)
@@ -144,7 +147,7 @@ class Appearance(ParameterizedProcess):
         )
 
         self.appeared = np.ones(self.GU.shape, dtype=np.float32)
-        self.nb_internode = np.ones(self.GU.shape, dtype=np.float32)
+        self.nb_internode = np.array(self.nb_internode, dtype=np.float32)
         self.final_length_internodes = np.full(self.GU.shape, None, dtype=object)
         self.final_length_leaves = np.full(self.GU.shape, None, dtype=object)
         self.final_length_inflos = np.full(self.GU.shape, None, dtype=object)
@@ -162,19 +165,23 @@ class Appearance(ParameterizedProcess):
 
             # growth units
 
-            self.final_length_gu[appeared] = self.get_final_length_gu(
-                self.is_apical[appeared],
-                self.parent_is_apical[appeared],
-                self.rng, params
-            )
+            is_uninitialized = (self.final_length_gu == 0.) | np.isnan(self.final_length_gu)
+            if np.any(is_uninitialized):
+                self.final_length_gu[appeared & is_uninitialized] = self.get_final_length_gu(
+                    self.is_apical[appeared & is_uninitialized],
+                    self.parent_is_apical[appeared & is_uninitialized],
+                    self.rng, params
+                )
 
             # internodes
 
-            self.nb_internode[appeared] = self.get_nb_internode(
-                self.is_apical[appeared],
-                self.final_length_gu[appeared],
-                params
-            )
+            is_uninitialized = (self.nb_internode == 0.) | np.isnan(self.nb_internode)
+            if np.any(is_uninitialized):
+                self.nb_internode[appeared & is_uninitialized] = self.get_nb_internode(
+                    self.is_apical[appeared & is_uninitialized],
+                    self.final_length_gu[appeared & is_uninitialized],
+                    params
+                )
 
             self.final_length_internodes[appeared] = self.get_final_length_internodes(
                 self.is_apical[appeared],

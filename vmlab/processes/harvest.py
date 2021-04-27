@@ -29,7 +29,7 @@ class Harvest(ParameterizedProcess):
     harvested = xs.variable(
         dims=('GU'),
         intent='inout',
-        description='',
+        description='Just a helper to set those GUs to 1. where fruits are ripe and harvested that day',
         groups='harvest',
         attrs={
             'unit': '-'
@@ -39,7 +39,7 @@ class Harvest(ParameterizedProcess):
     nb_fruit_harvested = xs.variable(
         dims=('GU'),
         intent='inout',
-        description='ripening index',
+        description='Number of fruits harvested',
         groups='harvest',
         attrs={
             'unit': '-'
