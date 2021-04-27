@@ -34,8 +34,7 @@ class FruitQuality(ParameterizedProcess):
         description='number of moles of osmotically active solutes in fruit flesh',
         attrs={
             'unit': 'mol'
-        },
-        groups='fruit_quality'
+        }
     )
 
     mass_suc = xs.variable(
@@ -44,8 +43,7 @@ class FruitQuality(ParameterizedProcess):
         description='sucrose mass in the fruit flesh',
         attrs={
             'unit': 'g'
-        },
-        groups='fruit_quality'
+        }
     )
 
     mass_glc = xs.variable(
