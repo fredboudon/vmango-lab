@@ -40,6 +40,9 @@ class FruitFreshMatter(ParameterizedProcess):
 
     DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
+    DM_fleshpeel_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel_delta')
+    DM_fleshpeel = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel')
+    DM_flesh = xs.foreign(carbon_balance.CarbonBalance, 'DM_flesh')
     DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
 
     FM_fruit = xs.variable(
@@ -60,30 +63,12 @@ class FruitFreshMatter(ParameterizedProcess):
         }
     )
 
-    DM_fleshpeel = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='fruit flesh and peel dry mass',
-        attrs={
-            'unit': 'g DM'
-        }
-    )
-
     W_flesh = xs.variable(
         dims=('GU'),
         intent='out',
         description='fruit flesh water mass',
         attrs={
             'unit': 'g H2O'
-        }
-    )
-
-    DM_flesh = xs.variable(
-        dims=('GU'),
-        intent='out',
-        description='fruit flesh dry mass',
-        attrs={
-            'unit': 'g DM'
         }
     )
 
@@ -193,9 +178,7 @@ class FruitFreshMatter(ParameterizedProcess):
 
         self.FM_fruit = np.zeros(self.nb_gu, dtype=np.float32)
         self.W_fleshpeel = np.zeros(self.nb_gu, dtype=np.float32)
-        self.DM_fleshpeel = np.zeros(self.nb_gu, dtype=np.float32)
         self.W_flesh = np.zeros(self.nb_gu, dtype=np.float32)
-        self.DM_flesh = np.zeros(self.nb_gu, dtype=np.float32)
         self.water_potential_fruit = np.zeros(self.nb_gu, dtype=np.float32)
         self.turgor_pressure_fruit = np.zeros(self.nb_gu, dtype=np.float32)
         self.osmotic_pressure_fruit = np.zeros(self.nb_gu, dtype=np.float32)
@@ -228,11 +211,6 @@ class FruitFreshMatter(ParameterizedProcess):
             psat_1 = params.psat_1
             psat_2 = params.psat_2
             density_DM = params.density_DM
-            e_fruit2peelDM_1 = params.e_fruit2peelDM_1
-            e_fruit2peelDM_2 = params.e_fruit2peelDM_2
-            e_fruit2fleshDM_1 = params.e_fruit2fleshDM_1
-            e_fruit2fleshDM_2 = params.e_fruit2fleshDM_2
-            e_fleshpeel2fleshDM = params.e_fleshpeel2fleshDM
             e_fleshpeel2fleshW = params.e_fleshpeel2fleshW
             e_fruitFM2surface_1 = params.e_fruitFM2surface_1
             e_fruitFM2surface_2 = params.e_fruitFM2surface_2
@@ -252,7 +230,7 @@ class FruitFreshMatter(ParameterizedProcess):
             e_fruit2peelW_1 = params.e_fruit2peelW_1
             e_fruit2peelW_2 = params.e_fruit2peelW_2
 
-            # initial fresh and dry mass of fruit compartements :
+            # initial fresh mass of fruit compartements :
             # from empirical relationships in Léchaudel (2004)
 
             if np.any(self.fruited):
@@ -260,21 +238,7 @@ class FruitFreshMatter(ParameterizedProcess):
 
                 self.FM_fruit[fruited] = e_fruitDM2FM_1 * self.DM_fruit[fruited] ** e_fruitDM2FM_2
                 self.W_fleshpeel[fruited] = (e_fruit2fleshW_1 * (self.FM_fruit[fruited] - self.DM_fruit[fruited]) ** e_fruit2fleshW_2) + (e_fruit2peelW_1 * (self.FM_fruit[fruited] - self.DM_fruit[fruited]) ** e_fruit2peelW_2)
-                self.DM_fleshpeel[fruited] = (e_fruit2fleshDM_1 * self.DM_fruit[fruited] ** e_fruit2fleshDM_2) + (e_fruit2peelDM_1 * self.DM_fruit[fruited] ** e_fruit2peelDM_2)
                 self.W_flesh[fruited] = e_fleshpeel2fleshW * self.W_fleshpeel[fruited]
-                self.DM_flesh[fruited] = e_fleshpeel2fleshDM * self.DM_fleshpeel[fruited]
-
-            # ========================================================================================================================
-            # DRY MASS AND GROWTH RATE OF FRUIT FLESH
-            # ========================================================================================================================
-            # from empirical relationships in Léchaudel (2004)
-
-            DM_fruit_previous = self.DM_fruit[fruiting] - self.DM_fruit_delta[fruiting]
-            DM_fleshpeel_previous = (e_fruit2fleshDM_1 * (DM_fruit_previous) ** e_fruit2fleshDM_2) + (e_fruit2peelDM_1 * (DM_fruit_previous) ** e_fruit2peelDM_2)
-            DM_fleshpeel_delta = (e_fruit2fleshDM_1 * e_fruit2fleshDM_2 * self.DM_fruit[fruiting] ** (e_fruit2fleshDM_2 - 1) + e_fruit2peelDM_1 * e_fruit2peelDM_2 *
-                                  self.DM_fruit[fruiting] ** (e_fruit2peelDM_2 - 1)) * self.DM_fruit_delta[fruiting]
-            DM_fleshpeel_delta = np.maximum(0, DM_fleshpeel_delta)
-            W_flesh_previous = e_fleshpeel2fleshW * self.W_fleshpeel[fruiting]
 
             # ========================================================================================================================
             # OSMOTIC PRESSURE IN THE FRUIT
@@ -282,7 +246,7 @@ class FruitFreshMatter(ParameterizedProcess):
             # from fruit growth model in Léchaudel et al (2007)
 
             # -- osmotic pressure in fruit flesh (eq.6-7) :
-            self.osmotic_pressure_fruit[fruiting] = (R * (self.TM_day + 273.15) * self.nmol_solutes[fruiting]) / (W_flesh_previous / density_W) + osmotic_pressure_aa
+            self.osmotic_pressure_fruit[fruiting] = (R * (self.TM_day + 273.15) * self.nmol_solutes[fruiting]) / (self.W_flesh[fruiting] / density_W) + osmotic_pressure_aa
 
             # ========================================================================================================================
             # FRUIT TRANSPIRATION
@@ -313,7 +277,7 @@ class FruitFreshMatter(ParameterizedProcess):
             Phi = phi_max * tau ** np.maximum(0., self.fruit_growth_tts[fruiting] - dd_thresh)
 
             # -- threshold pressure (eq.15-16) :
-            V = self.W_fleshpeel[fruiting] / density_W + DM_fleshpeel_previous / density_DM
+            V = self.W_fleshpeel[fruiting] / density_W + self.DM_fleshpeel[fruiting] / density_DM
             Y = Y_0 + h * (V - V_0)
 
             # ========================================================================================================================
@@ -326,13 +290,13 @@ class FruitFreshMatter(ParameterizedProcess):
 
             # -- turgor pressure in the fruit (defined by combining eq.11 and eq.13) :
             ALf = A_fruit * aLf
-            numerator = Phi * V * Y + ALf * (water_potential_stem + self.osmotic_pressure_fruit[fruiting]) / density_W - self.transpiration_fruit[fruiting] / density_W + DM_fleshpeel_delta / density_DM
+            numerator = Phi * V * Y + ALf * (water_potential_stem + self.osmotic_pressure_fruit[fruiting]) / density_W - self.transpiration_fruit[fruiting] / density_W + self.DM_fleshpeel_delta[fruiting] / density_DM
             denominator = Phi * V + ALf / density_W
             self.turgor_pressure_fruit[fruiting] = numerator / denominator
 
             self.turgor_pressure_fruit[fruiting] = np.where(
                 self.turgor_pressure_fruit[fruiting] < Y,
-                np.maximum(Y_0, water_potential_stem + self.osmotic_pressure_fruit[fruiting] - (self.transpiration_fruit[fruiting] - DM_fleshpeel_delta * density_W / density_DM) / ALf),
+                np.maximum(Y_0, water_potential_stem + self.osmotic_pressure_fruit[fruiting] - (self.transpiration_fruit[fruiting] - self.DM_fleshpeel_delta[fruiting] * density_W / density_DM) / ALf),
                 np.maximum(Y_0, self.turgor_pressure_fruit[fruiting])
             )
 
@@ -349,11 +313,9 @@ class FruitFreshMatter(ParameterizedProcess):
 
             # -- changes in dry mass, fresh mass and water mass of fruit compartments :
             FM_minus_stone = self.W_flesh[fruiting] + self.DM_flesh[fruiting]
-            self.DM_fleshpeel[fruiting] = DM_fleshpeel_previous + DM_fleshpeel_delta
             self.W_fleshpeel[fruiting] = self.W_fleshpeel[fruiting] + self.flux_xylem_phloem[fruiting] - self.transpiration_fruit[fruiting]
             FM_stone = e_flesh2stoneFM * (self.DM_fleshpeel[fruiting] + self.W_fleshpeel[fruiting])
             self.FM_fruit[fruiting] = self.DM_fleshpeel[fruiting] + self.W_fleshpeel[fruiting] + FM_stone
-            self.DM_flesh[fruiting] = self.DM_fleshpeel[fruiting] * e_fleshpeel2fleshDM
             self.W_flesh[fruiting] = self.W_fleshpeel[fruiting] * e_fleshpeel2fleshW
 
             self.sucrose[fruiting] = self.mass_suc[fruiting] / FM_minus_stone

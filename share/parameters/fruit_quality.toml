@@ -1,8 +1,3 @@
-e_fruit2peelDM_1 = 0.4086       # specific parameter for fruit peel dry mass calculation based on fruit dry mass [g1-0.7641 DM]
-e_fruit2peelDM_2 = 0.7641       # specific parameter for fruit peel dry mass calculation based on fruit dry mass [dimensionless]
-e_fruit2fleshDM_1 = 0.5219      # specific parameter for fruit flesh dry mass calculation based on fruit dry mass [g1-1.0584 DM]
-e_fruit2fleshDM_2 = 1.0584      # specific parameter for fruit flesh dry mass calculation based on fruit dry mass [dimensionless]
-e_fleshpeel2fleshDM = 0.8226    # proportion of flesh in fruit flesh and peel dry mass [dimensionless]
 Tthresh_fruit_stage = 352.72    # cumulated degree-days at the end of cell division [dd]
 
 [delta]  # specific parameters for calculation of mass proportion of malic acid in fruit flesh based on degree-days and fruit flesh dry mass [g g-1 DM] [g g-1 DM dd-1] [g g-2 DM] [g g-2 DM dd-1] :
