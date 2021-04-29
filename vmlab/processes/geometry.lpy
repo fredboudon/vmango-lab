@@ -186,11 +186,9 @@ def plot_inflo(
                 phyloangles = [(float(60 + process.rng.integers(0, 30)) if (i < nb_axes * 0.136 or i > nb_axes * 0.555) else 220.) for i in range(nb_axes)]
                 inflo_phyloangles_cache[idx][i] = phyloangles
             total_phyloangles = float(sum(phyloangles))
-            # if stage < 1:
-            #     bract_level = max(0, (2 * (rank - 0.5)))
             nsproduce([RollL(phyllotaxy), SB(), Down(branching_angle)])
             nsproduce([EndGC(), Tropism(0, 0, -1)])
-            elasticity = 0.005 + 0.4 * ripeness_index
+            elasticity = 0.05 + 0.4 * ripeness_index
             if stage >= 4.:
                 if stage == 4.:
                     nsproduce([SetColor(color_interpolator(inflo_pheno_colors[stage], inflo_pheno_colors[stage + 1], inflo_stage % 1.))])
@@ -208,7 +206,7 @@ def plot_inflo(
                     ep = 10. * ripeness_index
                     lrg = 10. * ripeness_index
                     lng = 15. * ripeness_index
-                    nsproduce([SetColor(fruit_pheno_colors[1])])
+                    nsproduce([SetColor(color_interpolator(fruit_pheno_colors[0], fruit_pheno_colors[1], ripeness_index))])
                     nsproduce([PglShape(Scaled(ep, lrg, lng, fruit)), EB()])
             nsproduce([EB()])
 
