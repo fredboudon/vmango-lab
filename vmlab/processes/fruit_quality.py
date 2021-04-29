@@ -23,7 +23,6 @@ class FruitQuality(ParameterizedProcess):
     fruit_growth_tts = xs.foreign(phenology.Phenology, 'fruit_growth_tts')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
 
-    DM_fruit_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit_delta')
     DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
     DM_fleshpeel = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel')
     DM_flesh = xs.foreign(carbon_balance.CarbonBalance, 'DM_flesh')

@@ -338,7 +338,7 @@ class CarbonBalance(ParameterizedProcess):
 
             # FRUIT DRY MATTER
 
-            # dry mass of fruit from carbon allocation:
+            # dry mass of fruit:
             self.DM_fruit_delta[fruiting] = np.minimum(self.D_fruit[fruiting], np.dot(self.allocation_share, self.remains_2)) / (cc_fruit + GRC_fruit) / self.nb_fruit[fruiting]
             self.DM_fruit[fruiting] = self.DM_fruit[fruiting] + self.DM_fruit_delta[fruiting]
 
@@ -346,7 +346,6 @@ class CarbonBalance(ParameterizedProcess):
             self.DM_fleshpeel_delta[fruiting] = (e_fruit2fleshDM_1 * e_fruit2fleshDM_2 * self.DM_fruit[fruiting] ** (e_fruit2fleshDM_2 - 1) + e_fruit2peelDM_1 * e_fruit2peelDM_2 *
                                                  self.DM_fruit[fruiting] ** (e_fruit2peelDM_2 - 1)) * self.DM_fruit_delta[fruiting]
             self.DM_fleshpeel_delta = np.maximum(0, self.DM_fleshpeel_delta)
-            # self.DM_fleshpeel[fruiting] = (e_fruit2fleshDM_1 * (self.DM_fruit[fruiting]) ** e_fruit2fleshDM_2) + (e_fruit2peelDM_1 * (self.DM_fruit[fruiting]) ** e_fruit2peelDM_2)
             self.DM_fleshpeel[fruiting] = self.DM_fleshpeel[fruiting] + self.DM_fleshpeel_delta[fruiting]
             self.DM_flesh[fruiting] = e_fleshpeel2fleshDM * self.DM_fleshpeel[fruiting]
 
