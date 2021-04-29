@@ -97,13 +97,13 @@ class FruitQuality(ParameterizedProcess):
 
         super(FruitQuality, self).initialize()
 
-        self.nmol_solutes = np.zeros(self.nb_gu)
-        self.mass_suc = np.zeros(self.nb_gu)
-        self.mass_glc = np.zeros(self.nb_gu)
-        self.mass_frc = np.zeros(self.nb_gu)
-        self.mass_sta = np.zeros(self.nb_gu)
-        self.mass_mal = np.zeros(self.nb_gu)
-        self.mass_cit = np.zeros(self.nb_gu)
+        self.nmol_solutes = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_suc = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_glc = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_frc = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_sta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_mal = np.zeros(self.nb_gu, dtype=np.float32)
+        self.mass_cit = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):
