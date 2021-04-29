@@ -2,7 +2,7 @@ from xsimlab.model import _ModelBuilder, filter_variables
 from xsimlab.variable import VarType
 import numpy as np
 
-from .vmlab import create_setup, run
+from .vmlab import create_setup, run, get_vars_from_model
 from . import constants, enums
 from .vmlab import DotDict
 
@@ -93,5 +93,6 @@ __all__ = [
     'run',
     'constants',
     'enums',
-    'DotDict'
+    'DotDict',
+    'get_vars_from_model'
 ]

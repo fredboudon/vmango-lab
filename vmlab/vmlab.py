@@ -21,7 +21,17 @@ class DotDict(dict):
         self.__dict__ = self
 
 
-def get_inputs_from_df(model, df, cycle):
+def get_vars_from_model(model, process_filter=None):
+    var_names = []
+    for prc_name in model:
+        if process_filter is None or prc_name in process_filter:
+            prc = model[prc_name]
+            for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: not var.metadata['static']):
+                var_names.append(f'{prc_name}__{var_name}')
+    return var_names
+
+
+def _get_inputs_from_df(model, df, cycle):
     topology_prc = model['topology']
     inputs = {}
     required_attrs = [
@@ -72,7 +82,7 @@ def get_inputs_from_df(model, df, cycle):
         for attr in optional_attrs:
             if attr in ['burst_date', 'flowering_date', 'has_apical_child', 'nb_lateral_children', 'nb_inflo', 'nb_fruit']:
                 if attr == 'burst_date' or attr == 'flowering_date':
-                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[D]')
+                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[ns]')
                 else:
                     inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
     if 'appearance' in model:
@@ -99,8 +109,6 @@ def create_setup(
     input_vars = {
         **({} if input_vars is None else input_vars)
     }
-
-    output_vars
 
     main_clock = 'day'
     clocks = {} if clocks is None else clocks
@@ -130,7 +138,7 @@ def create_setup(
 
     graph = None
     if 'topology' in model:
-        inputs, graph = get_inputs_from_df(model, tree, current_cycle)
+        inputs, graph = _get_inputs_from_df(model, tree, current_cycle)
         input_vars.update(inputs)
         input_vars['topology__current_cycle'] = current_cycle
         # work-around for main_clock not available at initialization.
@@ -192,7 +200,10 @@ def _fn_parallel(id, ds, geometry):
     hooks = [finalize, run_step]
     try:
         out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=hooks)
-    except:
+    except Exception:
+        import traceback
+        import logging
+        logging.error(traceback.format_exc())
         _fn_parallel.q.put((id, 1))
         return ds
 
@@ -241,9 +252,10 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
     hooks = [xs.monitoring.ProgressBar()] + hooks if progress else hooks
     is_batch_run = type(batch) == tuple
     sw = None
+    scenes = []
+    positions = []
     size = 1
     size_display = (400, 400)
-    scenes = []
     if geometry:
         if type(geometry) == dict:
             size = size if 'size' not in geometry else geometry['size']
@@ -278,9 +290,21 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
         with model:
             ds = _run_parallel(dataset, model, batch, sw, scenes, positions)
     else:
-        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks)
+        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': True}, hooks=hooks)
 
     ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
     ds.attrs = {}
+
+    dims_to_drop = [k for k in ds.dims.keys()]
+    for dim in ds.dims.keys():
+        for data_var in ds.data_vars:
+            if dim in ds[data_var].dims:
+                dims_to_drop.remove(dim)
+                break
+    for data_var in ds.data_vars:
+        if '_FillValue' in ds[data_var].attrs:
+            ds[data_var].attrs.pop('_FillValue')
+    if len(dims_to_drop):
+        ds = ds.drop_dims(dims_to_drop)
 
     return ds

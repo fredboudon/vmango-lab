@@ -50,7 +50,7 @@ class Topology(ParameterizedProcess):
 
         self.sim_start_date = np.datetime64(self.sim_start_date)
         self.adjacency = np.array(self.adjacency, dtype=np.float32)
-        self.GU = np.array([f'GU{x}' for x in range(self.adjacency.shape[0])], dtype=np.dtype('<U10'))
+        self.GU = np.array([x for x in range(self.adjacency.shape[0])], dtype=np.int32)
         self.GU_ = self.GU
         self.nb_gu = self.GU.shape[0]
 
@@ -98,7 +98,7 @@ class Topology(ParameterizedProcess):
         if np.any(self.bursted):
             total_nb_children = np.sum(self.archdev[('arch_dev', 'pot_nb_lateral_children')][self.bursted == 1.] + self.archdev[('arch_dev', 'pot_has_apical_child')][self.bursted == 1.])
             self.idx_first_child = self.GU.shape[0]
-            self.GU = np.append(self.GU, [f'GU{i + self.GU.shape[0]}' for i in range(int(total_nb_children))])
+            self.GU = np.append(self.GU, [i + self.GU.shape[0] for i in range(int(total_nb_children))])
             self.GU_ = self.GU
             self.nb_gu = self.GU.shape[0]
             # initialize new GUs

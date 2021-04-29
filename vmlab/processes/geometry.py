@@ -53,5 +53,6 @@ class Geometry(ParameterizedProcess):
 
     @xs.runtime(args=('step', 'nsteps'))
     def run_step(self, step, nsteps):
-        if step in self.interpretation_steps:
+        if len(self.interpretation_steps) > 0 and (step == 0 or step == nsteps - 1) or (
+             self.growth[('growth', 'any_is_growing')] and step in self.interpretation_steps):
             self.scene = self.lsystem.sceneInterpretation(self.lstring)

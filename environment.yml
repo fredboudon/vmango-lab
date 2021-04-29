@@ -19,6 +19,7 @@ dependencies:
   - sparse
   - scipy
   - pycairo
+  - netCDF4
   - flake8
   - pip
   - pip:
