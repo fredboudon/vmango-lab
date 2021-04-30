@@ -182,7 +182,7 @@ def create_setup(
     })
 
 
-def _fn_parallel(id, ds, geometry):
+def _fn_parallel(id, ds, geometry, store):
 
     @xs.runtime_hook(stage='finalize')
     def finalize(model, context, state):
@@ -199,7 +199,7 @@ def _fn_parallel(id, ds, geometry):
     run_step.scene = None
     hooks = [finalize, run_step]
     try:
-        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=hooks)
+        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=hooks, store=store)
     except Exception:
         import traceback
         import logging
@@ -210,12 +210,12 @@ def _fn_parallel(id, ds, geometry):
     return out
 
 
-def _run_parallel(ds, model, batch, sw, scenes, positions):
+def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     # TODO: exceptions not catched in main thread
 
     geometry = sw is not None
     batch_dim, batch_runs = batch
-    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry) for i, input_vars in enumerate(batch_runs)]
+    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
 
     def f_init(q):
         _fn_parallel.q = q
@@ -248,13 +248,13 @@ def _run_parallel(ds, model, batch, sw, scenes, positions):
     return xr.concat(dss, dim=batch_dim)
 
 
-def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
+def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None, store=None):
     hooks = [xs.monitoring.ProgressBar()] + hooks if progress else hooks
     is_batch_run = type(batch) == tuple
     sw = None
     scenes = []
     positions = []
-    size = 1
+    size = 2.5
     size_display = (400, 400)
     if geometry:
         if type(geometry) == dict:
@@ -280,7 +280,7 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
             def hook(model, context, state):
                 scene = state[('geometry', 'scene')]
                 if scene != sw.scenes[0]['scene']:
-                    sw.set_scenes(scene, scales=[1 / 100])
+                    sw.set_scenes(scene, scales=1 / 100)
             hooks.append(hook)
 
         sw = pgljupyter.SceneWidget(size_world=size, size_display=size_display)
@@ -288,9 +288,9 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None):
 
     if is_batch_run:
         with model:
-            ds = _run_parallel(dataset, model, batch, sw, scenes, positions)
+            ds = _run_parallel(dataset, model, store, batch, sw, scenes, positions)
     else:
-        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': True}, hooks=hooks)
+        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
 
     ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
     ds.attrs = {}
