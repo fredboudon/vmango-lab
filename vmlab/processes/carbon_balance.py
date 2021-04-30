@@ -105,6 +105,33 @@ class CarbonBalance(ParameterizedProcess):
         groups='carbon_balance'
     )
 
+    DM_fleshpeel = xs.variable(
+        dims=('GU'),
+        intent='out',
+        description='fruit flesh and peel dry mass for average fruit of growth unit',
+        attrs={
+            'unit': 'g DM'
+        }
+    )
+
+    DM_fleshpeel_delta = xs.variable(
+        dims=('GU'),
+        intent='out',
+        description='change in fruit flesh and peel dry mass for average fruit of growth unit',
+        attrs={
+            'unit': 'g DM'
+        }
+    )
+
+    DM_flesh = xs.variable(
+        dims=('GU'),
+        intent='out',
+        description='fruit flesh dry mass for average fruit of growth unit',
+        attrs={
+            'unit': 'g DM'
+        }
+    )
+
     reserve_stem_delta = xs.variable(
         dims=('GU'),
         intent='inout',
@@ -156,6 +183,9 @@ class CarbonBalance(ParameterizedProcess):
         self.remains_3 = np.zeros(self.nb_gu, dtype=np.float32)
         self.DM_fruit = np.zeros(self.nb_gu, dtype=np.float32)
         self.DM_fruit_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.DM_fleshpeel = np.zeros(self.nb_gu, dtype=np.float32)
+        self.DM_fleshpeel_delta = np.zeros(self.nb_gu, dtype=np.float32)
+        self.DM_flesh = np.zeros(self.nb_gu, dtype=np.float32)
         self.reserve_leaf_delta = np.zeros(self.nb_gu, dtype=np.float32)
         self.reserve_stem_delta = np.zeros(self.nb_gu, dtype=np.float32)
         self.reserve_nmob_leaf_delta = np.zeros(self.nb_gu, dtype=np.float32)
@@ -176,7 +206,17 @@ class CarbonBalance(ParameterizedProcess):
         cc_fruit = params.cc_fruit
         GRC_fruit = params.GRC_fruit
 
-        self.DM_fruit[np.flatnonzero(self.fruited)] = self.DM_fruit_0
+        e_fruit2peelDM_1 = params.e_fruit2peelDM_1
+        e_fruit2peelDM_2 = params.e_fruit2peelDM_2
+        e_fruit2fleshDM_1 = params.e_fruit2fleshDM_1
+        e_fruit2fleshDM_2 = params.e_fruit2fleshDM_2
+        e_fleshpeel2fleshDM = params.e_fleshpeel2fleshDM
+
+        fruited = np.flatnonzero(self.fruited)
+        self.DM_fruit[fruited] = self.DM_fruit_0
+        self.DM_fleshpeel[fruited] = (e_fruit2fleshDM_1 * self.DM_fruit[fruited] ** e_fruit2fleshDM_2) + (e_fruit2peelDM_1 * self.DM_fruit[fruited] ** e_fruit2peelDM_2)
+        self.DM_flesh[fruited] = e_fleshpeel2fleshDM * self.DM_fleshpeel[fruited]
+
         self.DM_fruit[self.nb_fruit == 0.] = 0.
         self.reserve_leaf_delta[:] = 0.
         self.reserve_stem_delta[:] = 0.
@@ -296,8 +336,18 @@ class CarbonBalance(ParameterizedProcess):
             self.reserve_nmob_leaf_delta[active] = reserve_nmob_leaf[active] - self.reserve_nmob_leaf[active]
             self.reserve_nmob_stem_delta[active] = reserve_nmob_stem[active] - self.reserve_nmob_stem[active]
 
+            # FRUIT DRY MATTER
+
+            # dry mass of fruit:
             self.DM_fruit_delta[fruiting] = np.minimum(self.D_fruit[fruiting], np.dot(self.allocation_share, self.remains_2)) / (cc_fruit + GRC_fruit) / self.nb_fruit[fruiting]
             self.DM_fruit[fruiting] = self.DM_fruit[fruiting] + self.DM_fruit_delta[fruiting]
+
+            # dry mass of fruit compartements from empirical relationships in Léchaudel (2004):
+            self.DM_fleshpeel_delta[fruiting] = (e_fruit2fleshDM_1 * e_fruit2fleshDM_2 * self.DM_fruit[fruiting] ** (e_fruit2fleshDM_2 - 1) + e_fruit2peelDM_1 * e_fruit2peelDM_2 *
+                                                 self.DM_fruit[fruiting] ** (e_fruit2peelDM_2 - 1)) * self.DM_fruit_delta[fruiting]
+            self.DM_fleshpeel_delta = np.maximum(0, self.DM_fleshpeel_delta)
+            self.DM_fleshpeel[fruiting] = self.DM_fleshpeel[fruiting] + self.DM_fleshpeel_delta[fruiting]
+            self.DM_flesh[fruiting] = e_fleshpeel2fleshDM * self.DM_fleshpeel[fruiting]
 
     def finalize_step(self):
         pass
