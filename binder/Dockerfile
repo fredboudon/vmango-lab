@@ -6,8 +6,7 @@ ARG NB_UID=1000
 COPY . /home/${NB_USER}
 USER root
 SHELL ["/bin/bash", "-c"]
-RUN conda install -y -c conda-forge seaborn sparse scipy pycairo toml netCDF4 && \
-    pip install python-igraph && \
+RUN conda env update -f /home/${NB_USER}/environment.yml && \
     chown -R ${NB_UID} /home/${NB_USER} && \
     python /home/${NB_USER}/setup.py develop
 WORKDIR /home/${NB_USER}
