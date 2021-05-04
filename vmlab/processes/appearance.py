@@ -2,7 +2,6 @@ import xsimlab as xs
 import numpy as np
 import openalea.plantgl.all as pgl
 import math
-import zarr
 
 from . import (
     topology,
@@ -42,31 +41,16 @@ class Appearance(ParameterizedProcess):
         groups='appearance'
     )
 
-    final_length_internodes = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_internodes = xs.any_object(
+        groups='appearance'
     )
 
-    final_length_leaves = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_leaves = xs.any_object(
+        groups='appearance'
     )
 
-    final_length_inflos = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='appearance',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    final_length_inflos = xs.any_object(
+        groups='appearance'
     )
 
     def get_final_length_gu(self, is_apical, parent_is_apical, rng, params):
@@ -156,6 +140,20 @@ class Appearance(ParameterizedProcess):
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
+
+        if self.final_length_inflos.shape != self.GU.shape:
+            final_length_internodes = np.empty(self.GU.shape, dtype=object)
+            final_length_internodes[0:self.final_length_internodes.shape[0]] = self.final_length_internodes
+            final_length_internodes[self.final_length_internodes.shape[0]:] = None
+            self.final_length_internodes = final_length_internodes
+            final_length_leaves = np.empty(self.GU.shape, dtype=object)
+            final_length_leaves[0:self.final_length_leaves.shape[0]] = self.final_length_leaves
+            final_length_leaves[self.final_length_leaves.shape[0]:] = None
+            self.final_length_leaves = final_length_leaves
+            final_length_inflos = np.empty(self.GU.shape, dtype=object)
+            final_length_inflos[0:self.final_length_inflos.shape[0]] = self.final_length_inflos
+            final_length_inflos[self.final_length_inflos.shape[0]:] = None
+            self.final_length_inflos = final_length_inflos
 
         params = self.parameters
         appeared = (self.appeared_topo == 1.) if step >= 0 else np.full(self.GU.shape, True)

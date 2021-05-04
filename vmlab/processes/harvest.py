@@ -67,14 +67,14 @@ class HarvestByQuality(Harvest):
     """Decide when fruit is ripe based of fruit quality
     """
 
-    fruit_quality = xs.group_dict('fruit_quality')
+    fruit_fresh_matter = xs.group_dict('fruit_fresh_matter')
 
     def initialize(self):
         super(HarvestByQuality, self).initialize()
 
     @xs.runtime(args=())
     def run_step(self):
-        sucrose = self.fruit_quality[('fruit_quality', 'sucrose')]
+        sucrose = self.fruit_fresh_matter[('fruit_fresh_matter', 'sucrose')]
         self.harvested[:] = 0.
         growing = self.fruit_growth_tts > 0.
         sucrose_thresh_fruit_ripe = self.parameters.sucrose_thresh_fruit_ripe

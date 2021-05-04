@@ -1,6 +1,5 @@
 import xsimlab as xs
 import numpy as np
-import zarr
 import typing
 
 from . import topology, phenology, appearance
@@ -48,22 +47,12 @@ class Growth(ParameterizedProcess):
         groups='growth'
     )
 
-    length_leaves = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='growth',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    length_leaves = xs.any_object(
+        groups='growth'
     )
 
-    length_inflos = xs.variable(
-        dims=('GU'),
-        intent='out',
-        groups='growth',
-        encoding={
-            'object_codec': zarr.JSON()
-        }
+    length_inflos = xs.any_object(
+        groups='growth'
     )
 
     radius_inflo = xs.variable(
@@ -118,6 +107,16 @@ class Growth(ParameterizedProcess):
 
     @xs.runtime(args=('step'))
     def run_step(self, step):
+
+        if self.length_leaves.shape != self.GU.shape:
+            length_leaves = np.empty(self.GU.shape, dtype=object)
+            length_leaves[0:self.length_leaves.shape[0]] = self.length_leaves
+            length_leaves[self.length_leaves.shape[0]:] = None
+            self.length_leaves = length_leaves
+            length_inflos = np.empty(self.GU.shape, dtype=object)
+            length_inflos[0:self.length_inflos.shape[0]] = self.length_inflos
+            length_inflos[self.length_inflos.shape[0]:] = None
+            self.length_inflos = length_inflos
 
         gu_growing = (self.gu_stage > 0.) & (self.gu_stage < self.nb_gu_stage) & (self.appeared == 1.)
         inflo_growing = (self.inflo_stage > 0.) & (self.inflo_stage < self.nb_inflo_stage) & (self.appeared == 1.)
