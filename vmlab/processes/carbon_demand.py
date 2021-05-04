@@ -28,7 +28,7 @@ class CarbonDemand(ParameterizedProcess):
 
     is_photo_active = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_photo_active')
 
-    carbon_balance = xs.group_dict('carbon_balance')
+    carbon_allocation = xs.group_dict('carbon_allocation')
 
     TM = xs.foreign(environment.Environment, 'TM')
     TM_day = xs.foreign(environment.Environment, 'TM_day')
@@ -173,7 +173,7 @@ class CarbonDemand(ParameterizedProcess):
         DM_fruit = np.where(
             self.fruited,
             self.DM_fruit_0,
-            self.carbon_balance[('carbon_balance', 'DM_fruit')]
+            self.carbon_allocation[('carbon_allocation', 'DM_fruit')]
         )
 
         if np.any(self.is_photo_active == 1.):

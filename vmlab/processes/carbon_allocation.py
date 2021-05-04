@@ -13,7 +13,7 @@ from ._base.parameter import ParameterizedProcess
 
 
 @xs.process
-class CarbonBalance(ParameterizedProcess):
+class CarbonAllocation(ParameterizedProcess):
     """
         - only for fully developed GUs (gu_stage >= 4.)
     """
@@ -92,7 +92,7 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g DM'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     DM_fruit_delta = xs.variable(
@@ -102,7 +102,7 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g DM'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     DM_fleshpeel = xs.variable(
@@ -139,7 +139,7 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g C'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     reserve_leaf_delta = xs.variable(
@@ -149,7 +149,7 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g C'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     reserve_nmob_stem_delta = xs.variable(
@@ -159,7 +159,7 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g C'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     reserve_nmob_leaf_delta = xs.variable(
@@ -169,12 +169,12 @@ class CarbonBalance(ParameterizedProcess):
         attrs={
             'unit': 'g C'
         },
-        groups='carbon_balance'
+        groups='carbon_allocation'
     )
 
     def initialize(self):
 
-        super(CarbonBalance, self).initialize()
+        super(CarbonAllocation, self).initialize()
 
         self.carbon_supply = np.zeros(self.nb_gu, dtype=np.float32)
         self.required_DM_fruit = np.zeros(self.nb_gu, dtype=np.float32)

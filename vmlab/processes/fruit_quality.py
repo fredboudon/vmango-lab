@@ -8,7 +8,7 @@ from vmlab.constants import (
 from . import (
     environment,
     carbon_demand,
-    carbon_balance,
+    carbon_allocation,
     phenology,
     fruit_composition
 )
@@ -38,10 +38,10 @@ class FruitQuality(ParameterizedProcess):
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     fruited = xs.foreign(phenology.Phenology, 'fruited')
 
-    DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
-    DM_fleshpeel_delta = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel_delta')
-    DM_fleshpeel = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel')
-    DM_flesh = xs.foreign(carbon_balance.CarbonBalance, 'DM_flesh')
+    DM_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_fruit')
+    DM_fleshpeel_delta = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_fleshpeel_delta')
+    DM_fleshpeel = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_fleshpeel')
+    DM_flesh = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_flesh')
     DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
 
     FM_fruit = xs.variable(

@@ -17,7 +17,7 @@ from ..processes import (
     carbon_flow_coef,
     carbon_reserve,
     carbon_demand,
-    carbon_balance,
+    carbon_allocation,
     fruit_composition,
     fruit_quality,
     harvest
@@ -41,7 +41,7 @@ vmango = xs.Model({
     'carbon_flow_coef': carbon_flow_coef.CarbonFlowCoef,
     'carbon_reserve': carbon_reserve.CarbonReserve,
     'carbon_demand': carbon_demand.CarbonDemand,
-    'carbon_balance': carbon_balance.CarbonBalance,
+    'carbon_allocation': carbon_allocation.CarbonAllocation,
     'fruit_composition': fruit_composition.FruitComposition,
     'fruit_quality': fruit_quality.FruitQuality,
     'harvest': harvest.Harvest
@@ -70,7 +70,7 @@ fruit_model = xs.Model({
     'carbon_flow_coef': carbon_flow_coef.CarbonFlowCoef,
     'carbon_reserve': carbon_reserve.CarbonReserve,
     'carbon_demand': carbon_demand.CarbonDemand,
-    'carbon_balance': carbon_balance.CarbonBalance,
+    'carbon_allocation': carbon_allocation.CarbonAllocation,
     'fruit_composition': fruit_composition.FruitComposition,
     'fruit_quality': fruit_quality.FruitQuality,
     'harvest': harvest.Harvest
@@ -93,7 +93,7 @@ longnames = {
     'carbon_flow_coef': 'Carbon Flow Coef',
     'carbon_reserve': 'Carbon Reserve',
     'carbon_demand': 'Carbon Demand',
-    'carbon_balance': 'Carbon Allocation',
+    'carbon_allocation': 'Carbon Allocation',
     'fruit_composition': 'Fruit Composition',
     'fruit_quality': 'Fruit Quality',
     'harvest': 'Fruit Harvest'

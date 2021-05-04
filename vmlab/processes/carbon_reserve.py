@@ -14,7 +14,7 @@ class CarbonReserve(ParameterizedProcess):
     """Compute carbon available from reserves
     """
 
-    carbon_balance = xs.group_dict('carbon_balance')
+    carbon_allocation = xs.group_dict('carbon_allocation')
     appeared = xs.foreign(topology.Topology, 'appeared')
     month_begin_veg_cycle = xs.foreign(topology.Topology, 'month_begin_veg_cycle')
 
@@ -163,11 +163,11 @@ class CarbonReserve(ParameterizedProcess):
             self.reserve_nmob_stem[appeared] = self.reserve_stem[appeared] * (1 - r_mobile_stem)
             self.reserve_leaf_max[appeared] = (r_storage_leaf_max / (1 - r_storage_leaf_max)) * self.DM_structural_leaf[appeared] * cc_leaf
 
-        assert not np.any(np.isnan(self.carbon_balance[('carbon_balance', 'reserve_leaf_delta')][is_active]))
-        assert not np.any(np.isnan(self.carbon_balance[('carbon_balance', 'reserve_stem_delta')][is_active]))
-        self.reserve_leaf[is_active] += self.carbon_balance[('carbon_balance', 'reserve_leaf_delta')][is_active]
-        self.reserve_stem[is_active] += self.carbon_balance[('carbon_balance', 'reserve_stem_delta')][is_active]
-        self.reserve_nmob_leaf[is_active] += self.carbon_balance[('carbon_balance', 'reserve_nmob_leaf_delta')][is_active]
-        self.reserve_nmob_stem[is_active] += self.carbon_balance[('carbon_balance', 'reserve_nmob_stem_delta')][is_active]
+        assert not np.any(np.isnan(self.carbon_allocation[('carbon_allocation', 'reserve_leaf_delta')][is_active]))
+        assert not np.any(np.isnan(self.carbon_allocation[('carbon_allocation', 'reserve_stem_delta')][is_active]))
+        self.reserve_leaf[is_active] += self.carbon_allocation[('carbon_allocation', 'reserve_leaf_delta')][is_active]
+        self.reserve_stem[is_active] += self.carbon_allocation[('carbon_allocation', 'reserve_stem_delta')][is_active]
+        self.reserve_nmob_leaf[is_active] += self.carbon_allocation[('carbon_allocation', 'reserve_nmob_leaf_delta')][is_active]
+        self.reserve_nmob_stem[is_active] += self.carbon_allocation[('carbon_allocation', 'reserve_nmob_stem_delta')][is_active]
 
         self.reserve_mob[is_active] = ((r_mobile_leaf * self.reserve_leaf[is_active]) + (r_mobile_stem * self.reserve_stem[is_active]))

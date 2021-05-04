@@ -6,7 +6,7 @@ from vmlab.constants import (
 )
 
 from . import (
-    carbon_balance,
+    carbon_allocation,
     phenology
 )
 from ._base.parameter import ParameterizedProcess
@@ -23,11 +23,11 @@ class FruitComposition(ParameterizedProcess):
     fruit_growth_tts = xs.foreign(phenology.Phenology, 'fruit_growth_tts')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
 
-    DM_fruit = xs.foreign(carbon_balance.CarbonBalance, 'DM_fruit')
-    DM_fleshpeel = xs.foreign(carbon_balance.CarbonBalance, 'DM_fleshpeel')
-    DM_flesh = xs.foreign(carbon_balance.CarbonBalance, 'DM_flesh')
+    DM_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_fruit')
+    DM_fleshpeel = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_fleshpeel')
+    DM_flesh = xs.foreign(carbon_allocation.CarbonAllocation, 'DM_flesh')
     # this dummy just forces process ordering
-    __dummy = xs.foreign(carbon_balance.CarbonBalance, 'carbon_supply')
+    __dummy = xs.foreign(carbon_allocation.CarbonAllocation, 'carbon_supply')
 
     nmol_solutes = xs.variable(
         dims=('GU'),
