@@ -4,7 +4,7 @@ import warnings
 
 from . import (
     photosynthesis,
-    carbon_allocation,
+    carbon_flow_coef,
     carbon_reserve,
     carbon_demand,
     phenology
@@ -25,8 +25,8 @@ class CarbonBalance(ParameterizedProcess):
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
     fruited = xs.foreign(phenology.Phenology, 'fruited')
 
-    allocation_share = xs.foreign(carbon_allocation.CarbonAllocation, 'allocation_share')
-    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
+    allocation_share = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'allocation_share')
+    is_photo_active = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_photo_active')
 
     DM_fruit_0 = xs.foreign(carbon_demand.CarbonDemand, 'DM_fruit_0')
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')

@@ -4,7 +4,7 @@ import numpy as np
 from . import (
     topology,
     growth,
-    carbon_allocation
+    carbon_flow_coef
 )
 from ._base.parameter import ParameterizedProcess
 
@@ -21,7 +21,7 @@ class CarbonReserve(ParameterizedProcess):
     nb_gu = xs.global_ref('nb_gu')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
-    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
+    is_photo_active = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_photo_active')
 
     DM_structural_stem = xs.variable(
         dims=('GU'),

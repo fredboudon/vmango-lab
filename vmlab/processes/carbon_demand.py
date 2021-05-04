@@ -3,7 +3,7 @@ import numpy as np
 
 from . import (
     environment,
-    carbon_allocation,
+    carbon_flow_coef,
     carbon_reserve,
     phenology
 )
@@ -26,7 +26,7 @@ class CarbonDemand(ParameterizedProcess):
     seed = xs.global_ref('seed')
     nb_gu = xs.global_ref('nb_gu')
 
-    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
+    is_photo_active = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_photo_active')
 
     carbon_balance = xs.group_dict('carbon_balance')
 

@@ -12,7 +12,7 @@ from . import (
 
 
 @xs.process
-class CarbonAllocation(ParameterizedProcess):
+class CarbonFlowCoef(ParameterizedProcess):
 
     GU = xs.foreign(topology.Topology, 'GU')
     appeared = xs.foreign(topology.Topology, 'appeared')
@@ -31,7 +31,7 @@ class CarbonAllocation(ParameterizedProcess):
 
     def initialize(self):
 
-        super(CarbonAllocation, self).initialize()
+        super(CarbonFlowCoef, self).initialize()
 
         self.distance_to_fruit = np.array([], dtype=np.float32)
         self.is_in_distance_to_fruit = np.array([], dtype=np.bool)
