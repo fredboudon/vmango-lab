@@ -90,7 +90,7 @@ longnames = {
     'arch_dev': 'Integrative Devel',
     'light_interception': 'Light Interception',
     'photosynthesis': 'Photosynthesis',
-    'carbon_fluxcoef': 'Carbon Flow Coef',
+    'carbon_flow_coef': 'Carbon Flow Coef',
     'carbon_reserve': 'Carbon Reserve',
     'carbon_demand': 'Carbon Demand',
     'carbon_balance': 'Carbon Allocation',
