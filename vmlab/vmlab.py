@@ -14,6 +14,8 @@ import pathlib
 import IPython
 import pgljupyter
 
+pgl.pglParserVerbose(False)
+
 
 class DotDict(dict):
     def __init__(self, *args, **kwargs):
