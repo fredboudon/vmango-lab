@@ -295,15 +295,21 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None, sto
     ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
     ds.attrs = {}
 
+    # drop unused dims
     dims_to_drop = [k for k in ds.dims.keys()]
     for dim in ds.dims.keys():
         for data_var in ds.data_vars:
             if dim in ds[data_var].dims:
                 dims_to_drop.remove(dim)
                 break
+
+    # it seems zarr creates some attrs and encoding settings that break writing to netcdf
+    # https://github.com/pydata/xarray/issues/5223
     for data_var in ds.data_vars:
+        ds[data_var].encoding = {}
         if '_FillValue' in ds[data_var].attrs:
             ds[data_var].attrs.pop('_FillValue')
+
     if len(dims_to_drop):
         ds = ds.drop_dims(dims_to_drop)
 

@@ -60,7 +60,7 @@ class Topology(ParameterizedProcess):
         self.appearance_month = np.array(self.appearance_month, dtype=np.float32)
         self.cycle = np.array(self.cycle, dtype=np.float32)
 
-        self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
+        self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency)).astype(np.float32)
         self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
 
         self.appearance_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
