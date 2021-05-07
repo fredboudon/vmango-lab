@@ -182,7 +182,7 @@ def create_setup(
     })
 
 
-def _fn_parallel( id, ds, geometry, store):
+def _fn_parallel(id, ds, geometry, store):
 
     @xs.runtime_hook(stage='finalize')
     def finalize(model, context, state):
@@ -210,29 +210,22 @@ def _fn_parallel( id, ds, geometry, store):
     return out
 
 
-def _f_init(q):
-    _fn_parallel.q = q
-
-
 def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     # TODO: exceptions not catched in main thread
 
     geometry = sw is not None
     batch_dim, batch_runs = batch
-    jobs = [( i, ds.xsimlab.update_vars(input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
+    jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
+
+    def f_init(q):
+        _fn_parallel.q = q
 
     m = mp.Manager()
     q = m.Queue()
     nb_workers = max(1, mp.cpu_count() - 1)
+    p = mp.Pool(nb_workers, f_init, [q])
 
-    p = mp.Pool(nb_workers, _f_init, [q], context=mp.get_context('fork'))
-
-    if not len(xs.Model.active):
-        with model:
-            results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err : print(err))
-    else:
-        results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err : print(err))
-
+    results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
     p.close()
 
     done = 0
