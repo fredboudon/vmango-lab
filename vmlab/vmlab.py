@@ -186,15 +186,15 @@ def _fn_parallel(id, ds, geometry, store):
 
     @xs.runtime_hook(stage='finalize')
     def finalize(model, context, state):
-        _fn_parallel.q.put((id, 1))
+        _fn_parallel.queue.put((id, 1))
 
     @xs.runtime_hook(stage='run_step')
     def run_step(model, context, state):
-        _fn_parallel.q.put((id, 0))
+        _fn_parallel.queue.put((id, 0))
         if geometry:
             scene_ = state[('geometry', 'scene')]
             if scene_ != run_step.scene:
-                _fn_parallel.q.put((id, pgl.tobinarystring(scene_, False)))
+                _fn_parallel.queue.put((id, pgl.tobinarystring(scene_, False)))
                 run_step.scene = scene_
     run_step.scene = None
     hooks = [finalize, run_step]
@@ -204,46 +204,45 @@ def _fn_parallel(id, ds, geometry, store):
         import traceback
         import logging
         logging.error(traceback.format_exc())
-        _fn_parallel.q.put((id, 1))
+        _fn_parallel.queue.put((id, 1))
         return ds
 
     return out
 
 
-def _run_parallel(ds, model, store, batch, sw, scenes, positions):
-    # TODO: exceptions not catched in main thread
+def _f_init(queue):
+    _fn_parallel.queue = queue
 
+
+def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     geometry = sw is not None
     batch_dim, batch_runs = batch
     jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
 
-    def f_init(q):
-        _fn_parallel.q = q
+    ctx = mp.get_context('fork')
+    queue = ctx.Manager().Queue()
+    nb_workers = max(1, min(len(jobs), ctx.cpu_count() - 1))
+    pool = mp.Pool(nb_workers, _f_init, [queue])
 
-    m = mp.Manager()
-    q = m.Queue()
-    nb_workers = max(1, mp.cpu_count() - 1)
-    p = mp.Pool(nb_workers, f_init, [q])
-
-    results = p.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
-    p.close()
+    results = pool.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
+    pool.close()
 
     done = 0
     nb_steps = len(jobs) * ds.day.values.shape[0] - len(jobs)
     with tqdm(total=nb_steps, bar_format='{bar} {percentage:3.0f}%') as bar:
         while done < len(jobs):
-            id, got = q.get()
+            id, got = queue.get()
             if got == 0:
                 bar.update()
             elif got == 1:
-                done += got
+                done += 1
             else:
                 scenes[id] = pgl.frombinarystring(got)
                 sw.set_scenes(scenes, scales=1/100, positions=positions)
         bar.close()
 
     dss = results.get()
-    p.terminate()
+    pool.terminate()
 
     return xr.concat(dss, dim=batch_dim)
 
