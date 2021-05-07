@@ -123,7 +123,7 @@ class FruitQuality(ParameterizedProcess):
         attrs={
             'unit': 'g g-1 FM'
         },
-        groups='fruit_fresh_matter'
+        groups='fruit_quality'
     )
 
     glucose = xs.variable(

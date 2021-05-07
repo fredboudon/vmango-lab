@@ -99,12 +99,14 @@ longnames = {
     'harvest': 'Fruit Harvest'
 }
 
+
 def copy_model(model):
     process_names = list(model.all_vars_dict.keys())
     processes = {}
     for p in process_names:
         processes[p] = model[p].__class__
     return xs.Model(processes)
+
 
 def longname_model(model):
     process_names = list(model.all_vars_dict.keys())
