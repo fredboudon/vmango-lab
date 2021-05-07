@@ -31,6 +31,42 @@ def get_vars_from_model(model, process_filter=None):
     return var_names
 
 
+def detect_processes(processpath='vmlab.processes'):
+    import inspect
+    import pkgutil
+    import importlib
+    base = importlib.import_module(processpath)
+
+    result = {}
+    found_packages = list(pkgutil.iter_modules(base.__path__))
+    for mfinder, modname, ispkg in found_packages:
+        if not modname.startswith('_'):
+            submodule = importlib.import_module(processpath+'.'+modname)
+            for objname in dir(submodule):
+                obj = submodule.__dict__[objname]
+                if inspect.isclass(obj):
+                    result[objname] = obj
+    return result
+
+
+def model_parameters(model):
+    process_names = list(model.all_vars_dict.keys())
+    processes = {}
+    for p in process_names:
+        processes[p] = model[p].__class__.__name__
+    return processes
+
+
+def model_from_parameters(parameters):
+    processes = detect_processes()
+    arguments = dict([(name, processes[processname]) for name, processname in parameters.items()])
+    return xs.Model(arguments)
+
+
+def copy_model(model):
+    return model_from_parameters(model_parameters(model))
+
+
 def _get_inputs_from_df(model, df, cycle):
     topology_prc = model['topology']
     inputs = {}
@@ -199,7 +235,7 @@ def _fn_parallel(id, ds, geometry, store):
     run_step.scene = None
     hooks = [finalize, run_step]
     try:
-        out = ds.xsimlab.run(decoding={'mask_and_scale': False}, hooks=hooks, store=store)
+        out = ds.xsimlab.run(_fn_parallel.model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
     except Exception:
         import traceback
         import logging
@@ -210,8 +246,9 @@ def _fn_parallel(id, ds, geometry, store):
     return out
 
 
-def _f_init(queue):
+def _f_init(queue, model_param):
     _fn_parallel.queue = queue
+    _fn_parallel.model = model_from_parameters(model_param)
 
 
 def _run_parallel(ds, model, store, batch, sw, scenes, positions):
@@ -219,10 +256,9 @@ def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     batch_dim, batch_runs = batch
     jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
 
-    ctx = mp.get_context('fork')
-    queue = ctx.Manager().Queue()
-    nb_workers = max(1, min(len(jobs), ctx.cpu_count() - 1))
-    pool = ctx.Pool(nb_workers, _f_init, [queue])
+    queue = mp.Manager().Queue()
+    nb_workers = max(1, min(len(jobs), mp.cpu_count() - 1))
+    pool = mp.Pool(nb_workers, _f_init, [queue, model_parameters(model)])
 
     results = pool.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
     pool.close()
