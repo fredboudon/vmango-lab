@@ -222,7 +222,7 @@ def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     ctx = mp.get_context('fork')
     queue = ctx.Manager().Queue()
     nb_workers = max(1, min(len(jobs), ctx.cpu_count() - 1))
-    pool = mp.Pool(nb_workers, _f_init, [queue])
+    pool = ctx.Pool(nb_workers, _f_init, [queue])
 
     results = pool.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
     pool.close()
