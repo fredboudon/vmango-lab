@@ -4,7 +4,7 @@ import numpy as np
 from . import (
     light_interception,
     carbon_demand,
-    carbon_allocation,
+    carbon_flow_coef,
     phenology
 )
 from ._base.parameter import ParameterizedProcess
@@ -20,8 +20,8 @@ class Photosythesis(ParameterizedProcess):
 
     D_fruit = xs.foreign(carbon_demand.CarbonDemand, 'D_fruit')
     nb_fruit = xs.foreign(phenology.Phenology, 'nb_fruit')
-    is_in_distance_to_fruit = xs.foreign(carbon_allocation.CarbonAllocation, 'is_in_distance_to_fruit')
-    is_photo_active = xs.foreign(carbon_allocation.CarbonAllocation, 'is_photo_active')
+    is_in_distance_to_fruit = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_in_distance_to_fruit')
+    is_photo_active = xs.foreign(carbon_flow_coef.CarbonFlowCoef, 'is_photo_active')
 
     LA = xs.foreign(light_interception.LightInterception, 'LA')
     PAR = xs.foreign(light_interception.LightInterception, 'PAR')
