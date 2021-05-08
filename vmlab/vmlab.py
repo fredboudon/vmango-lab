@@ -220,7 +220,38 @@ def create_setup(
     })
 
 
+def _cleaup_dataset(ds):
+
+    # keep only those that were explicitly defined as output
+    if '__vmlab_output_vars' in ds.attrs:
+        ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
+    ds.attrs = {}
+
+    # drop unused dims
+    dims_to_drop = [k for k in ds.dims.keys()]
+    for dim in ds.dims.keys():
+        for data_var in ds.data_vars:
+            if dim in ds[data_var].dims:
+                dims_to_drop.remove(dim)
+                break
+
+    # it seems zarr creates some attrs and encoding settings that break writing to netcdf
+    # https://github.com/pydata/xarray/issues/5223
+    for data_var in ds.data_vars:
+        ds[data_var].encoding = {}
+        if '_FillValue' in ds[data_var].attrs:
+            ds[data_var].attrs.pop('_FillValue')
+
+    if len(dims_to_drop):
+        ds = ds.drop_dims(dims_to_drop)
+
+    return ds
+
+
 def _fn_parallel(id, ds, geometry, store):
+
+    if store is not None:
+        store = f'{store}__{id}.zarr'
 
     @xs.runtime_hook(stage='finalize')
     def finalize(model, context, state):
@@ -279,10 +310,10 @@ def _run_parallel(ds, model, store, batch, sw, scenes, positions):
                 sw.set_scenes(scenes, scales=1/100, positions=positions)
         bar.close()
 
-    dss = results.get()
+    out = [_cleaup_dataset(ds) for ds in results.get()]
     pool.terminate()
 
-    return xr.concat(dss, dim=batch_dim)
+    return xr.concat(out, dim=batch_dim)
 
 
 def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None, store=None):
@@ -329,25 +360,4 @@ def run(dataset, model, progress=True, geometry=False, hooks=[], batch=None, sto
     else:
         ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
 
-    ds = ds.drop_vars(set(ds.keys()).difference(ds.attrs['__vmlab_output_vars']))
-    ds.attrs = {}
-
-    # drop unused dims
-    dims_to_drop = [k for k in ds.dims.keys()]
-    for dim in ds.dims.keys():
-        for data_var in ds.data_vars:
-            if dim in ds[data_var].dims:
-                dims_to_drop.remove(dim)
-                break
-
-    # it seems zarr creates some attrs and encoding settings that break writing to netcdf
-    # https://github.com/pydata/xarray/issues/5223
-    for data_var in ds.data_vars:
-        ds[data_var].encoding = {}
-        if '_FillValue' in ds[data_var].attrs:
-            ds[data_var].attrs.pop('_FillValue')
-
-    if len(dims_to_drop):
-        ds = ds.drop_dims(dims_to_drop)
-
-    return ds
+    return _cleaup_dataset(ds)
