@@ -2,7 +2,13 @@ from xsimlab.model import _ModelBuilder, filter_variables
 from xsimlab.variable import VarType
 import numpy as np
 
-from .vmlab import create_setup, run, get_vars_from_model
+from .vmlab import (
+    create_setup,
+    run,
+    get_vars_from_model,
+    load_graph,
+    check_graph
+)
 from . import constants, enums
 from .vmlab import DotDict
 
@@ -14,7 +20,7 @@ def fill_value_from_dtype(dtype=None):
     if dtype.kind in 'f':
         return 0.
     elif dtype.kind == 'M':
-        return np.datetime64('NAT')
+        return np.datetime64('NaT')
     elif dtype.kind == 'O':
         return None
     else:
@@ -94,5 +100,7 @@ __all__ = [
     'constants',
     'enums',
     'DotDict',
-    'get_vars_from_model'
+    'get_vars_from_model',
+    'load_graph',
+    'check_graph'
 ]

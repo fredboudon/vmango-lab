@@ -63,7 +63,7 @@ class Topology(ParameterizedProcess):
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency)).astype(np.float32)
         self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
 
-        self.appearance_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
+        self.appearance_date = np.full(self.GU.shape, np.datetime64('NaT'), dtype='datetime64[D]')
         self.parent_is_apical = np.full(self.GU.shape, 1., dtype=np.float32)
         self.ancestor = np.full(self.GU.shape, 0., dtype=np.float32)
         self.parent_is_apical[np.argwhere(self.adjacency)[:, 1]] = self.is_apical[np.argwhere(self.adjacency)[:, 0]]

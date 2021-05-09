@@ -30,7 +30,7 @@ class ArchDevVegWithin(ProbabilityTableProcess):
     has_veg_children_within = xs.variable(dims='GU', intent='out')
     has_apical_child_within = xs.variable(dims='GU', intent='out')
     burst_month_children_within = xs.variable(dims='GU', intent='out')
-    burst_date_children_within = xs.variable(dims='GU', intent='out')
+    burst_date_children_within = xs.variable(dims='GU', intent='out', encoding={'fill_value': 'NaT'})
     has_lateral_children_within = xs.variable(dims='GU', intent='out')
     nb_lateral_children_within = xs.variable(dims='GU', intent='out')
 
@@ -40,9 +40,9 @@ class ArchDevVegWithin(ProbabilityTableProcess):
 
         self.has_veg_children_within = np.zeros(self.GU.shape, dtype=np.float32)
         self.has_apical_child_within = np.zeros(self.GU.shape, dtype=np.float32)
-        self.burst_date_children_within = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
+        self.burst_date_children_within = np.full(self.GU.shape, np.datetime64('NaT'), dtype='datetime64[D]')
         self.burst_month_children_within = np.where(
-            self.burst_date_children_within != np.datetime64('NAT'),
+            self.burst_date_children_within != np.datetime64('NaT'),
             self.burst_date_children_within.astype('datetime64[M]').astype(np.int) % 12 + 1,
             -1
         ).astype(np.int8)

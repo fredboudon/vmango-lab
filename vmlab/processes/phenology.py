@@ -132,7 +132,7 @@ class Phenology(ParameterizedProcess):
         self.inflo_pheno_tts = np.zeros(self.GU.shape, dtype=np.float32)
         self.inflo_stage = np.zeros(self.GU.shape)
 
-        self.full_bloom_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
+        self.full_bloom_date = np.full(self.GU.shape, np.datetime64('NaT'), dtype='datetime64[D]')
         self.DAFB = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruit_growth_tts = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruit_growth_tts_delta = np.zeros(self.GU.shape, dtype=np.float32)
