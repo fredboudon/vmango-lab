@@ -69,66 +69,50 @@ def copy_model(model):
     return model_from_parameters(model_parameters(model))
 
 
-def _get_inputs_from_df(model, df, cycle):
-    topology_prc = model['topology']
-    inputs = {}
-    required_attrs = [
-        'id',
-        'parent_id',
-        'cycle',
-        'is_apical',
-        'appearance_month',
-        'ancestor_nature',
-        'ancestor_is_apical',
-        'nature'
-    ]
-    # all optinal attrs are related to arch dev
-    optional_attrs = list(set([
-        'burst_date',
-        'flowering_date',
-        'has_apical_child',
-        'nb_lateral_children',
-        'nb_inflo',
-        'nb_fruit',
-        'nb_internode',
-        'final_length_gu'
-    ]) & set(df.columns))
+def check_graph(graph):
 
-    assert len(set(df.columns) & set(required_attrs)) == len(required_attrs)
-
-    df = df[df['cycle'] <= cycle]
-    edges = df[['id', 'parent_id']][pd.notna(df['parent_id'])]
-    vertices = df[required_attrs + optional_attrs]
-
-    graph = ig.Graph.DictList(
-        vertices=vertices.to_dict('records'),
-        edges=edges.to_dict('records'),
-        vertex_name_attr='id',
-        edge_foreign_keys=('parent_id', 'id'),
-        directed=True
-    )
+    assert len(graph.vs.indices) > 0
+    # the tree must be directed and acyclic
     assert graph.is_dag()
+    # all vertices must be connected (only one tree/component)
+    assert len(graph.components('weak').sizes()) == 1
 
-    for var_name in xs.filter_variables(topology_prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT):
-        if var_name in graph.vs.attribute_names():
-            inputs[f'topology__{var_name}'] = np.array(graph.vs.get_attribute_values(var_name), dtype=np.float32)
+
+def load_graph(df):
+
+    assert 'id' in df.columns.to_list() and 'parent_id' in df.columns.to_list()
+
+    edges = df[['parent_id', 'id']].dropna()
+    vertices = df.drop('parent_id', axis=1) if len(df.columns.to_list()) > 2 else None
+    graph = ig.Graph.DataFrame(edges, vertices=vertices)
+
+    check_graph(graph)
+
+    return graph
+
+
+def _get_inputs_from_graph(graph, model, cycle):
+
+    all_vars_dict = model.all_vars_dict
+    inputs = {}
+
+    # drop all vertices where attr cycle > cycle if attr cycle is provided
+    if 'topology__cycle' in graph.vs.attribute_names():
+        graph.delete_vertices(graph.vs.select(topology__cycle_gt=cycle))
+        check_graph(graph)
+    else:
+        graph.vs.set_attribute_values('topology__cycle', cycle)
+
     inputs['topology__adjacency'] = np.array(graph.get_adjacency().data, dtype=np.float32)
-    if 'arch_dev_rep' in model:
-        inputs['arch_dev_rep__nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
-    if 'arch_dev' in model:
-        inputs['arch_dev__pot_nature'] = np.array(graph.vs.get_attribute_values('nature'), dtype=np.float32)
-        for attr in optional_attrs:
-            if attr in ['burst_date', 'flowering_date', 'has_apical_child', 'nb_lateral_children', 'nb_inflo', 'nb_fruit']:
-                if attr == 'burst_date' or attr == 'flowering_date':
-                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype='datetime64[ns]')
-                else:
-                    inputs[f'arch_dev__pot_{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
-    if 'appearance' in model:
-        for attr in optional_attrs:
-            if attr in ['nb_internode', 'final_length_gu']:
-                inputs[f'appearance__{attr}'] = np.array(graph.vs.get_attribute_values(attr), dtype=np.float32)
 
-    return inputs, graph
+    for attr in graph.vs.attribute_names():
+        if attr.find('__', 1, -1) > 0:
+            prc_name, var_name = attr.split('__', maxsplit=1)
+            if prc_name in all_vars_dict and var_name in all_vars_dict[prc_name]:
+                # not sure what the best way is to figure out the date type
+                inputs[attr] = np.array(graph.vs.get_attribute_values(attr)).astype('datetime64[ns]' if 'date' in var_name else np.float32)
+
+    return inputs
 
 
 def create_setup(
@@ -170,18 +154,16 @@ def create_setup(
             if tree is None:
                 if 'initial_tree' in setup:
                     path = dir_path.joinpath(setup['initial_tree'])
-                    tree = pd.read_csv(path).astype(np.float32)
+                    tree = pd.read_csv(path)
                 else:
                     raise ValueError('No initial tree provided')
 
-    graph = None
-    if 'topology' in model:
-        inputs, graph = _get_inputs_from_df(model, tree, current_cycle)
-        input_vars.update(inputs)
-        input_vars['topology__current_cycle'] = current_cycle
-        # work-around for main_clock not available at initialization.
-        # set the start date variable
-        input_vars['topology__sim_start_date'] = start_date
+    graph = load_graph(tree)
+    input_vars.update(_get_inputs_from_graph(graph, model, current_cycle))
+    input_vars['topology__current_cycle'] = current_cycle
+    # work-around for main_clock not available at initialization.
+    # set the start date variable
+    input_vars['topology__sim_start_date'] = start_date
 
     output_vars_ = {}
     if type(output_vars) == dict:
@@ -206,7 +188,10 @@ def create_setup(
             shape = (len(graph.vs.indices),)
             for var_name in xs.filter_variables(prc, var_type='variable', func=lambda var: var.metadata['intent'] == VarIntent.INOUT and 'GU' in list(sum(var.metadata['dims'], ()))):
                 if f'{prc_name}__{var_name}' not in input_vars:
-                    input_vars[f'{prc_name}__{var_name}'] = np.full(shape, np.nan, dtype=np.float32)
+                    if 'date' in var_name:
+                        input_vars[f'{prc_name}__{var_name}'] = np.full(shape, np.datetime64('NaT'), dtype='datetime64[ns]')
+                    else:
+                        input_vars[f'{prc_name}__{var_name}'] = np.full(shape, np.nan, dtype=np.float32)
 
     return xs.create_setup(
         model,
@@ -216,6 +201,7 @@ def create_setup(
         output_vars_,
         fill_default
     ).assign_attrs({
+        # store as private attr so we can drop all outputs later that we just added to make zarr work with growing indices
         '__vmlab_output_vars': list(output_vars.keys()) if output_vars is not None else []
     })
 
