@@ -28,6 +28,11 @@ class CarbonFlowCoef(ParameterizedProcess):
     is_in_distance_to_fruit = xs.any_object()
     allocation_share = xs.any_object()
     is_photo_active = xs.variable(dims='GU', intent='out')
+    max_distance_to_fruit = xs.variable(
+        static=True,
+        description='Maximum distance (hops) between source and sink GUs',
+        default=3
+    )
 
     def initialize(self):
 
@@ -41,8 +46,6 @@ class CarbonFlowCoef(ParameterizedProcess):
     @xs.runtime(args=())
     def run_step(self):
 
-        max_distance_to_fruit = self.parameters.max_distance_to_fruit
-
         is_fruting = (self.nb_fruit > 0.)
         is_leafy = (self.nb_leaf > 0.) & (self.gu_stage >= 4.)
 
@@ -55,7 +58,7 @@ class CarbonFlowCoef(ParameterizedProcess):
                     directed=False
                 ).astype(np.float32)
 
-            self.distance_to_fruit[self.distance_to_fruit > max_distance_to_fruit] = np.inf
+            self.distance_to_fruit[self.distance_to_fruit > self.max_distance_to_fruit] = np.inf
             self.distance_to_fruit[:, np.flatnonzero(~is_leafy)] = np.inf
 
             self.is_in_distance_to_fruit = np.isfinite(self.distance_to_fruit).astype(np.float32)

@@ -33,18 +33,27 @@ class Growth(ParameterizedProcess):
     final_length_leaves = xs.foreign(appearance.Appearance, 'final_length_leaves')
     final_length_inflos = xs.foreign(appearance.Appearance, 'final_length_inflos')
     appeared = xs.foreign(appearance.Appearance, 'appeared')
+
     any_is_growing = xs.variable(intent='out', groups='growth')
+
+    leaf_senescence_enabled = xs.variable(static=True, default=True)
 
     radius_gu = xs.variable(
         dims=('GU'),
-        intent='out',
-        groups='growth'
+        intent='inout',
+        groups='growth',
+        attrs={
+            'unit': 'cm'
+        }
     )
 
     length_gu = xs.variable(
         dims=('GU'),
         intent='out',
-        groups='growth'
+        groups='growth',
+        attrs={
+            'unit': 'cm'
+        }
     )
 
     length_leaves = xs.any_object(
@@ -63,8 +72,11 @@ class Growth(ParameterizedProcess):
 
     nb_leaf = xs.variable(
         dims='GU',
-        intent='out',
-        groups='growth'
+        intent='inout',
+        groups=('growth', 'growth_inout'),
+        encoding={
+            'fill_value': np.nan
+        }
     )
 
     def get_length_inflos(self, final_length_inflos: typing.List[float], inflo_growth_tts, params):
@@ -93,16 +105,17 @@ class Growth(ParameterizedProcess):
         self.get_length_inflos = np.vectorize(self.get_length_inflos, otypes=[object], excluded={'params'})
         self.get_length_leaves = np.vectorize(self.get_length_leaves, otypes=[object], excluded={'leaf_growth_tts', 'params'})
 
-        self.radius_gu = (radius_coefficient_gu * (self.nb_descendants + 1) ** radius_exponent_gu).astype(np.float32)
+        radius_gu_isnan = np.isnan(self.radius_gu)
+        self.radius_gu[radius_gu_isnan] = (radius_coefficient_gu * (self.nb_descendants[radius_gu_isnan] + 1) ** radius_exponent_gu).astype(np.float32)
         self.radius_inflo = np.zeros(self.GU.shape, dtype=np.float32)
         self.length_gu = self.final_length_gu.copy()
         self.length_leaves = self.final_length_leaves.copy()
         self.length_inflos = self.final_length_inflos.copy()
-        self.nb_leaf = np.where(
-            self.radius_gu * 2 >= max_leafy_diameter_gu,
-            0.,
-            self.nb_internode
-        ).astype(np.float32)
+
+        self.nb_leaf[np.isnan(self.nb_leaf)] = self.nb_internode[np.isnan(self.nb_leaf)]
+        if self.leaf_senescence_enabled:
+            self.nb_leaf[self.radius_gu * 2. >= max_leafy_diameter_gu] = 0.
+
         self.any_is_growing = False
 
     @xs.runtime(args=('step'))
@@ -124,7 +137,8 @@ class Growth(ParameterizedProcess):
         self.any_is_growing = np.any(gu_growing | inflo_growing | fruit_growing)
 
         if np.any(self.appeared):
-            self.nb_leaf[self.appeared == 1.] = self.nb_internode[self.appeared == 1.]
+            is_uninitialized = (self.appeared == 1.) & np.isnan(self.nb_leaf)
+            self.nb_leaf[is_uninitialized] = self.nb_internode[is_uninitialized]
 
         params = self.parameters
 
@@ -158,4 +172,5 @@ class Growth(ParameterizedProcess):
                 params
             )
 
-        self.nb_leaf[self.radius_gu >= params.max_leafy_diameter_gu / 2.] = 0.
+        if self.leaf_senescence_enabled:
+            self.nb_leaf[self.radius_gu * 2. >= params.max_leafy_diameter_gu] = 0.

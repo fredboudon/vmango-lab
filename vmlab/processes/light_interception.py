@@ -19,17 +19,41 @@ class LightInterception(ParameterizedProcess):
     GR = xs.foreign(environment.Environment, 'GR')
     nb_leaf = xs.foreign(growth.Growth, 'nb_leaf')
 
-    sunlit_bs = xs.variable(
-        dims='hour',
-        intent='out',
-        description='',
+    sunlit_fraction_df = xs.any_object()
+
+    sunlit_fraction_col_default = xs.variable(
+        static=True,
+        default=4,
+        description='The default column index from sunlit_fraction dataframe',
         attrs={
-            'unit': '?'
+            'unit': '-'
+        }
+    )
+
+    sunlit_fraction_col = xs.variable(
+        dims='GU',
+        intent='inout',
+        description='The column index from sunlit_fraction dataframe',
+        attrs={
+            'unit': '-'
+        },
+        encoding={
+            # set the fill value explicitly because when the array is grown the default is 0
+            'fill_value': np.nan
+        }
+    )
+
+    sunlit_fraction = xs.variable(
+        dims=('GU', 'hour'),
+        intent='out',
+        description='Fraction of leaf area in direct sun light',
+        attrs={
+            'unit': 'm²/m²'
         }
     )
 
     LA = xs.variable(
-        dims=('GU'),
+        dims='GU',
         intent='out',
         description='total leaf area per GU',
         attrs={
@@ -38,7 +62,7 @@ class LightInterception(ParameterizedProcess):
     )
 
     PAR = xs.variable(
-        dims=('hour'),
+        dims='hour',
         intent='out',
         description='hourly photosynthetically active radiation',
         attrs={
@@ -47,7 +71,7 @@ class LightInterception(ParameterizedProcess):
     )
 
     PAR_shaded = xs.variable(
-        dims=('hour'),
+        dims='hour',
         intent='out',
         description='hourly photosynthetically active radiation received by shaded leaves',
         attrs={
@@ -77,18 +101,26 @@ class LightInterception(ParameterizedProcess):
 
         super(LightInterception, self).initialize()
 
-        self.sunlit_fractions_df = pd.read_csv(
+        self.sunlit_fraction_df = pd.read_csv(
             pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.sunlit_fractions_file_path),
             sep='\\s+',
-            usecols=['q10', 'q25', 'q50', 'q75', 'q90']
+            usecols=['q5', 'q10', 'q25', 'q50', 'q75', 'q90', 'q95']
         )
-        self.sunlit_bs = self.sunlit_fractions_df.iloc[:, 3].to_numpy(dtype=np.float32)
+
+        self.sunlit_fraction_col[np.isnan(self.sunlit_fraction_col)] = self.sunlit_fraction_col_default
+        self.sunlit_fraction = self.sunlit_fraction_df.iloc[:, self.sunlit_fraction_col].to_numpy(dtype=np.float32).T
         self.LA = np.zeros(self.nb_gu, dtype=np.float32)
         self.LA_sunlit = np.zeros(self.nb_gu, dtype=np.float32)
         self.LA_shaded = np.zeros(self.nb_gu, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):
+
+        if np.any(np.isnan(self.sunlit_fraction_col)):
+            # initialization of appearing GUs
+            nan_sunlit_fractions = np.flatnonzero(np.isnan(self.sunlit_fraction_col))
+            self.sunlit_fraction_col[nan_sunlit_fractions] = self.sunlit_fraction_col_default
+            self.sunlit_fraction[nan_sunlit_fractions, :] = self.sunlit_fraction_df.iloc[:, self.sunlit_fraction_col[nan_sunlit_fractions]].to_numpy(dtype=np.float32).T
 
         params = self.parameters
 
@@ -109,5 +141,5 @@ class LightInterception(ParameterizedProcess):
         # leaf area (eq. 11) :
         self.LA = e_nleaf2LA_1 * self.nb_leaf ** e_nleaf2LA_2
 
-        self.LA_sunlit = self.sunlit_bs * sunlit_ws * np.vstack(self.LA)
+        self.LA_sunlit = self.sunlit_fraction * sunlit_ws * np.vstack(self.LA)
         self.LA_shaded = np.vstack(self.LA) - self.LA_sunlit

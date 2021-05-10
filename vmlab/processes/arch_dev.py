@@ -16,8 +16,8 @@ class ArchDev:
 
     GU = xs.foreign(topology.Topology, 'GU')
 
-    pot_burst_date = xs.variable(dims='GU', intent='inout', groups='arch_dev')
-    pot_flowering_date = xs.variable(dims='GU', intent='inout', groups='arch_dev')
+    pot_burst_date = xs.variable(dims='GU', intent='inout', groups='arch_dev', encoding={'fill_value': 'NaT'})
+    pot_flowering_date = xs.variable(dims='GU', intent='inout', groups='arch_dev', encoding={'fill_value': 'NaT'})
     pot_nature = xs.variable(dims='GU', intent='inout', groups='arch_dev')
     pot_has_apical_child = xs.variable(dims='GU', intent='inout', groups='arch_dev')
     pot_nb_lateral_children = xs.variable(dims='GU', intent='inout', groups='arch_dev')
@@ -25,8 +25,8 @@ class ArchDev:
     pot_nb_fruit = xs.variable(dims='GU', intent='inout', groups='arch_dev')
 
     def initialize(self):
-        self.pot_burst_date = np.array(self.pot_burst_date, dtype='datetime64[D]')
-        self.pot_flowering_date = np.array(self.pot_flowering_date, dtype='datetime64[D]')
+        self.pot_burst_date = np.array(self.pot_burst_date, dtype='datetime64[ns]')
+        self.pot_flowering_date = np.array(self.pot_flowering_date, dtype='datetime64[ns]')
         self.pot_nature = np.array(self.pot_nature, dtype=np.float32)
         self.pot_has_apical_child = np.array(self.pot_has_apical_child, dtype=np.float32)
         self.pot_nb_lateral_children = np.array(self.pot_nb_lateral_children, dtype=np.float32)

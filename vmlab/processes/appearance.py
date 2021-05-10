@@ -23,6 +23,7 @@ class Appearance(ParameterizedProcess):
     flowered = xs.foreign(phenology.Phenology, 'flowered')
     seed = xs.foreign(topology.Topology, 'seed')
     is_initially_terminal = xs.foreign(topology.Topology, 'is_initially_terminal')
+    growth = xs.group_dict('growth_inout')
 
     appeared = xs.variable(
         dims='GU',
@@ -32,7 +33,10 @@ class Appearance(ParameterizedProcess):
     final_length_gu = xs.variable(
         dims=('GU'),
         intent='inout',
-        groups='appearance'
+        groups='appearance',
+        attrs={
+            'unit': 'cm'
+        }
     )
 
     nb_internode = xs.variable(
@@ -60,9 +64,9 @@ class Appearance(ParameterizedProcess):
             gu_length = rng.normal(mu, sigma)
         return gu_length
 
-    def get_nb_internode(self, is_apical, final_length_gu, params):
+    def get_nb_internode(self, is_apical, final_length_gu, nb_leaf, params):
         ratio, intercept = params.leaf_nb_distrib[(is_apical, )]
-        return max(round(intercept + ratio * final_length_gu), 1)
+        return max(round(intercept + ratio * final_length_gu), max(1, nb_leaf if not np.isnan(nb_leaf) else 0))
 
     def get_final_length_internodes(self, is_apical, final_length_gu, nb_internode, rng, params):
         LEPF = 0.  # length of space before the first leaf
@@ -141,6 +145,7 @@ class Appearance(ParameterizedProcess):
     @xs.runtime(args=('step'))
     def run_step(self, step):
 
+        # can not be automatically resized because be don't want arrays of objects as xs.variables (gives all sorts of issues)
         if self.final_length_inflos.shape != self.GU.shape:
             final_length_internodes = np.empty(self.GU.shape, dtype=object)
             final_length_internodes[0:self.final_length_internodes.shape[0]] = self.final_length_internodes
@@ -173,11 +178,13 @@ class Appearance(ParameterizedProcess):
 
             # internodes
 
+            nb_leaf = self.growth[('growth', 'nb_leaf')]
             is_uninitialized = (self.nb_internode == 0.) | np.isnan(self.nb_internode)
             if np.any(is_uninitialized):
                 self.nb_internode[appeared & is_uninitialized] = self.get_nb_internode(
                     self.is_apical[appeared & is_uninitialized],
                     self.final_length_gu[appeared & is_uninitialized],
+                    nb_leaf[appeared & is_uninitialized],
                     params
                 )
 

@@ -33,7 +33,7 @@ class ArchDevRep(ProbabilityTableProcess):
 
     flowering = xs.variable(dims='GU', intent='out')
     flowering_week = xs.variable(dims='GU', intent='out')
-    flowering_date = xs.variable(dims='GU', intent='out')
+    flowering_date = xs.variable(dims='GU', intent='out', encoding={'fill_value': 'NaT'})
     nb_inflorescences = xs.variable(dims='GU', intent='out')
     fruiting = xs.variable(dims='GU', intent='out')
     nb_fruits = xs.variable(dims='GU', intent='out')
@@ -45,7 +45,7 @@ class ArchDevRep(ProbabilityTableProcess):
 
         self.flowering = np.zeros(self.GU.shape, dtype=np.float32)
         self.flowering_week = np.zeros(self.GU.shape, dtype=np.float32)
-        self.flowering_date = np.full(self.GU.shape, np.datetime64('NAT'), dtype='datetime64[D]')
+        self.flowering_date = np.full(self.GU.shape, np.datetime64('NaT'), dtype='datetime64[D]')
         self.nb_inflorescences = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruiting = np.zeros(self.GU.shape, dtype=np.float32)
         self.nb_fruits = np.zeros(self.GU.shape, dtype=np.float32)
@@ -101,7 +101,7 @@ class ArchDevRep(ProbabilityTableProcess):
                                 self.flowering_date[gu] = begin_flowering + week * np.timedelta64(7, 'D')
                         else:
                             self.flowering_week[gu] = 0
-                            self.flowering_date[gu] = np.datetime64('NAT')
+                            self.flowering_date[gu] = np.datetime64('NaT')
 
                 if self.current_cycle in self.tbls_fruiting:
                     tbl = self.tbls_fruiting[self.current_cycle]
