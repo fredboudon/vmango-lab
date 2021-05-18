@@ -1,7 +1,7 @@
 r_DM_stem_ini = 0.1             # initial dry mass fraction of reserves in stem [dimensionless]
 r_DM_leaf_ini = 0.074           # initial dry mass fraction of reserves in leaf [dimensionless]
 
-DM_stem_density = 0.5           # stem dry mass density [g DM cm-3]
+DM_stem_density = 0.3           # stem dry mass density [g DM cm-3]
 DM_leaf_unit = 0.8              # leaf dry mass (for a single leaf) [g DM]
 
 r_mobile_stem = 0.0164          # mobile fraction of carbon reserves in stem [dimensionless]
