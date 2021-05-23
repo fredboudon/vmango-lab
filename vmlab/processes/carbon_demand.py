@@ -89,12 +89,13 @@ class CarbonDemand(ParameterizedProcess):
     )
 
     DM_fruit_0 = xs.variable(
-        intent='out',
+        intent='inout',
         description='fruit dry mass per fruit at the end of cell division (at 352.72 dd)',
         attrs={
             'unit': 'g DM'
         },
-        static=True
+        static=True,
+        default=np.nan
     )
 
     DM_fruit_max = xs.variable(
@@ -132,7 +133,8 @@ class CarbonDemand(ParameterizedProcess):
         e_fruitDM02max_1 = params.e_fruitDM02max_1
         e_fruitDM02max_2 = params.e_fruitDM02max_2
 
-        self.DM_fruit_0 = np.float32(weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2))
+        if np.isnan(self.DM_fruit_0):
+            self.DM_fruit_0 = np.float32(weight_1 * self.rng.normal(mu_1, sigma_1) + weight_2 * self.rng.normal(mu_2, sigma_2))
         self.DM_fruit_max = np.float32(e_fruitDM02max_1 * self.DM_fruit_0 ** e_fruitDM02max_2)
 
         self.D_fruit = np.zeros(self.nb_gu, dtype=np.float32)
@@ -181,7 +183,6 @@ class CarbonDemand(ParameterizedProcess):
             # carbon demand for fruit growth (eq.5-6-7) :
             # maybe problem if Tbase_fruit_growth <=  self.TM_day at day of full_bloom_date
             self.D_fruit = self.fruit_growth_tts_delta * (cc_fruit + GRC_fruit) * RGR_fruit_ini * DM_fruit * (1 - (DM_fruit / self.DM_fruit_max)) * self.nb_fruit
-
             # MAINTENANCE RESPIRATION (eq.4)
             # daily maintenance respiration for the stem, leaves (only during dark hours) and fruits
             self.MR_stem[is_active] = np.sum(MRR_stem / 24 * (Q10_stem ** ((self.TM - Tref) / 10.)) * np.vstack(self.DM_structural_stem[is_active] + (self.reserve_stem[is_active] / cc_stem)), axis=1)
