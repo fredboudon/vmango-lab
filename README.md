@@ -42,4 +42,4 @@ If all goes well you can run Jupyter from the vscode terminal (with the `vmango-
 jupyter lab
 ```
 
-You will find several notebook examples in the vmango-lab/examples/notebooks
+You will find several notebook examples in the vmango-lab/notebooks
