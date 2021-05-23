@@ -148,7 +148,8 @@ def create_setup(
                         if path.exists():
                             # process 'prc_name' must inherit from ParameterizedProcess or
                             # declare a parameter_file_path 'in' variable and handle it
-                            input_vars[f'{prc_name}__parameter_file_path'] = str(path)
+                            if f'{prc_name}__parameter_file_path' not in input_vars:
+                                input_vars[f'{prc_name}__parameter_file_path'] = str(path)
                         else:
                             warnings.warn(f'Input file "{path}" does not exist')
             if tree is None:
