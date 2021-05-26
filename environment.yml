@@ -8,7 +8,7 @@ dependencies:
   - openalea.plantgl=3.*
   - openalea.mtg
   - xarray-simlab=0.5.*
-  - jupyterlab=3.*
+  - jupyterlab>=3.0.16
   - jupyterlab_widgets
   - ipython=7
   - toml
@@ -23,5 +23,5 @@ dependencies:
   - flake8
   - pip
   - pip:
-    - pgljupyter>=1.0.5
+    - pgljupyter>=1.0.6
     - python-igraph>=0.9.1
