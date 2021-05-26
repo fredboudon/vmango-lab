@@ -17,6 +17,12 @@ class Environment(ParameterizedProcess):
     weather_daily_df = None
     weather_hourly_df = None
 
+    weather_file = xs.variable(
+        description='path to file with weather data',
+        default='',
+        static=True
+    )
+
     TM = xs.variable(
         dims=('hour'),
         intent='out',
@@ -74,7 +80,11 @@ class Environment(ParameterizedProcess):
 
         self.hour = np.arange(24, dtype=np.int8)
 
-        weather_file_path = pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.weather_file_path)
+        # try to read weather file path from parameter file if not provided in 'input_vars' dict
+        if not self.weather_file:
+            weather_file_path = pathlib.Path(self.parameter_file_path).parent.joinpath(self.parameters.weather_file_path)
+        else:
+            weather_file_path = self.weather_file
 
         self.weather_hourly_df = pd.read_csv(
             weather_file_path,
