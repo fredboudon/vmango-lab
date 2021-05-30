@@ -1,6 +1,0 @@
-[probability_tables]
-flowering = '../probability_tables/interaction_glm/flowering'
-flowering_week = '../probability_tables/interaction_glm/flowering_week'
-nb_inflorescences = '../probability_tables/interaction_glm/nb_inflorescences'
-fruiting = '../probability_tables/interaction_glm/fruiting'
-nb_fruits = '../probability_tables/interaction_glm/nb_fruits'

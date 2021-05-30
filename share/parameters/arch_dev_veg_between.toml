@@ -1,6 +1,0 @@
-[probability_tables]
-has_veg_children_between = '../probability_tables/interaction_glm/has_veg_children_between'
-has_apical_child_between = '../probability_tables/interaction_glm/has_apical_child_between'
-burst_date_children_between = '../probability_tables/interaction_glm/burst_date_children_between'
-has_lateral_children_between = '../probability_tables/interaction_glm/has_lateral_children_between'
-nb_lateral_children_between = '../probability_tables/interaction_glm/nb_lateral_children_between'

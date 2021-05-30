@@ -1,0 +1,26 @@
+fruitDM0_weight_1 = 0.97        # specific parameter for fruit dry mass distribution at the end of cell division [dimensionless]
+fruitDM0_mu_1 = 13.9	        # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
+fruitDM0_sigma_1 = 4.1          # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
+fruitDM0_weight_2 = 0.03        # specific parameter for fruit dry mass distribution at the end of cell division [dimensionless]
+fruitDM0_mu_2 = 29.2            # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
+fruitDM0_sigma_2 = 0.66         # specific parameter for fruit dry mass distribution at the end of cell division [g DM]
+
+e_fruitDM02max_1 = 16.736       # specific parameter for maximum fruit dry mass calculation [g1-0.624]
+e_fruitDM02max_2 = 0.624        # specific parameter for maximum fruit dry mass calculation [dimensionless]
+
+RGR_fruit_ini = 0.0105          # initial relative growth rate of fruit [dd-1]
+GRC_fruit = 0.04                # growth respiration coefficient of fruit [g C g-1 DM]
+
+dd_cum_0 = 352.72               # cumulated degree-days at the end of cell division [dd]
+
+cc_fruit = 0.4239               # carbon content of fruit dry matter [g C g-1 DM]
+cc_stem = 0.4387                # carbon content of stem dry matter [g C g-1 DM]
+cc_leaf = 0.4051                # carbon content of leaf dry matter [g C g-1 DM]
+
+MRR_stem = 0.000858             # maintenance respiration rate of stem [g C g-1 day-1]
+MRR_leaf = 0.000156             # maintenance respiration rate of leaf [g C g-1 h-1]
+MRR_fruit = 0.00115             # maintenance respiration rate of fruit [g C g-1 day-1]
+Q10_stem = 1.96                 # Q10 value for stem [dimensionless]
+Q10_leaf = 2.11                 # Q10 value for leaf [dimensionless]
+Q10_fruit = 1.9                 # Q10 value for fruit [dimensionless]
+Tref = 20                       # reference temperature for maintenance respiration calculation based on Q10 concept [°C]
