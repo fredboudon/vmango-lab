@@ -1,0 +1,16 @@
+Tthresh_fruit_stage = 352.72    # cumulated degree-days at the end of cell division [dd]
+
+[delta]  # specific parameters for calculation of mass proportion of malic acid in fruit flesh based on degree-days and fruit flesh dry mass [g g-1 DM] [g g-1 DM dd-1] [g g-2 DM] [g g-2 DM dd-1] :
+mal = [ 0.06620651,  -0.0000538797,  -0.002464413,    2.406565e-06]   # malic acid
+cit = [ 0.1625024,   -0.0000640754,   0.003906348,   -4.784292e-06]   # citric acid
+pyr = [ 0.0006896104, 1.613387e-06,   0.00005063595, -6.912509e-08]   # pyruvic acid
+oxa = [ 0.004750718, -2.113094e-06,  -0.00002965687,  0.0]            # oxalic acid
+K =   [ 0.01394964,  -5.234608e-06,  -0.000288464,    2.682089e-07]   # K+
+Mg =  [ 0.00115595,  -7.937479e-07,  -0.00002320017,  2.344528e-08]   # Mg2+
+Ca =  [ 0.001588606, -6.625787e-07,  -0.0000228527,   1.514343e-08]   # Ca2+
+NH4 = [ 0.000246011,  3.741743e-07,   0.00002495255, -3.010081e-08]   # NH4+
+Na =  [ 0.0001279568, 8.15203e-08,   -1.468235e-06,   0.0]            # Na+
+glc = [ 0.08074145,  -0.00006325543, -0.001161846,    1.161344e-06]   # glucose
+frc = [ 0.04972199,   0.0000966001,  -0.001078579,    0.0]            # fructose
+suc = [ 0.0,          0.00017695,    -0.007249,       9.03e-06]       # sucrose
+sta = [-0.1708815,    0.0004380411,   0.01923022,    -0.00002059459]  # starch

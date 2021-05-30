@@ -1,0 +1,12 @@
+id,parent_id,topology__is_apical,arch_dev__pot_flowering_date,arch_dev__pot_nb_inflo,arch_dev__pot_nb_fruit,growth__nb_leaf,growth__radius_gu,appearance__final_length_gu,light_interception__sunlit_fraction_col
+1,NA,1,NaT,NA,NA,0,1.322,2,3
+2,1,0,NaT,NA,NA,0,1.314,5,3
+3,2,1,NaT,NA,NA,2,1.203,12,3
+4,3,1,NaT,NA,NA,7,1.093,13,3
+5,4,1,2002-09-13,1,1,18,0.984,17,3
+6,4,0,NaT,NA,NA,7,0.361,9,3
+7,4,0,NaT,NA,NA,8,0.545,11,3
+8,1,0,NaT,NA,NA,0,0.714,4,3
+9,8,1,NaT,NA,NA,3,0.61,10,3
+10,9,1,NaT,NA,NA,6,0.508,5,3
+11,10,1,NaT,NA,NA,14,0.407,8,3

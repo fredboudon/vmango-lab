@@ -1,7 +1,0 @@
-Pmax_max = 15                   # maximal threshold of light-saturated leaf photosynthesis [µmol CO2 m-2 s-1]
-Pmax_min = 3                    # minimal threshold of light-saturated leaf photosynthesis [µmol CO2 m-2 s-1]
-p_1 = 3.85                      # specific parameter for photosynthesis calculation [µmol CO2 day s-1 g-1 C]
-p_2 = 33.23                     # specific parameter for photosynthesis calculation [µmol CO2 m-2 s-1]
-p_3 = 0.483                     # specific parameter for photosynthesis calculation [µmol CO2 m-2 s-1]
-p_4 = 0.034                     # specific parameter for photosynthesis calculation [µmol CO2 µmol-1 photon]
-k = 0.0432                      # conversion factor of leaf photosynthesis (from µmol CO2 s-1 to g C h-1) [g C s h-1 µmol-1 CO2]

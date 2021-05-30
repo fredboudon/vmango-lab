@@ -45,7 +45,7 @@ class State(dict):
                 var_value = self[var_name]
                 var_shape = var_value.shape
                 var_dims = np.array(var.metadata.get('dims')).flatten()
-                if index_name in var_dims:
+                if len(var_dims) and index_name in var_dims:
                     fill_value = None
                     var_enc = var.metadata.get('encoding')
                     if 'fill_value' in var_enc:

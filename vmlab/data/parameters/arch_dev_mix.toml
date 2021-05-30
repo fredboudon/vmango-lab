@@ -1,0 +1,2 @@
+[probability_tables]
+has_mixed_inflo_children_between = '../probability_tables/interaction_glm/has_mixed_inflo_children_between'
