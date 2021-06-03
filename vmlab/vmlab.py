@@ -168,7 +168,7 @@ def create_setup(
     setup_toml : str
         A custom file path or file name of the toml file that containes relevant
         parameters like paths to weather data, process parameters etc.
-        If the file is not present it will look for teh file name in
+        If the file is not present it will look for the file name in
         the vmlab/data/setup folder.
     current_cycle : int, optional
         The number of the current (at start_date) vegetative cycle.
@@ -206,6 +206,9 @@ def create_setup(
         (i.e., 'foo__bar').
         (copied from the xarray-simlab documentation)
     """
+
+    assert type(input_vars) == dict or input_vars is None
+    assert type(output_vars) == dict or output_vars is None
 
     input_vars = {
         **({} if input_vars is None else input_vars)
@@ -457,7 +460,7 @@ def run(dataset, model, progress=True, geometry=False, batch=None, store=None, h
             def hook(model, context, state):
                 scene = state[('geometry', 'scene')]
                 if scene is not None:
-                    sw.set_scenes(scene, scales=1 / 100)
+                    sw.set_scenes(scene, scales=1/100)
             hooks.append(hook)
 
         sw = pgljupyter.SceneWidget(size_world=size, size_display=size_display)
