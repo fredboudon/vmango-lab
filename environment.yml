@@ -4,9 +4,8 @@ channels:
   - conda-forge
 dependencies:
   - alinea.caribu
-  - openalea.lpy=3.*
-  - openalea.plantgl=3.*
-  - openalea.mtg
+  - openalea.lpy=3.8.*
+  - openalea.plantgl=3.9.*
   - xarray-simlab=0.5.*
   - jupyterlab>=3.0.16
   - jupyterlab_widgets
@@ -23,5 +22,5 @@ dependencies:
   - flake8
   - pip
   - pip:
-    - pgljupyter>=1.0.6
-    - python-igraph>=0.9.1
+    - pgljupyter>=1.1.*
+    - python-igraph>=0.9.*
