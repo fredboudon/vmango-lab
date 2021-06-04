@@ -57,6 +57,7 @@ class Topology(ParameterizedProcess):
         self.ancestor_is_apical = np.array(self.ancestor_is_apical, dtype=np.float32)
         self.ancestor_nature = np.array(self.ancestor_nature, dtype=np.float32)
         self.is_apical = np.array(self.is_apical, dtype=np.float32)
+        self.is_apical[np.isnan(self.is_apical)] = 0.0
         self.appearance_month = np.array(self.appearance_month, dtype=np.float32)
         self.cycle = np.array(self.cycle, dtype=np.float32)
 

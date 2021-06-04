@@ -96,7 +96,7 @@ def check_graph(graph):
     assert len(graph.components('weak').sizes()) == 1
 
 
-def load_graph(df):
+def to_graph(df):
     """Load and validate an igraph graph from a pandas DataFrame
 
     Parameters
@@ -104,6 +104,10 @@ def load_graph(df):
     df : :class:`pandas.DataFrame` object
         Required format is identical with what is specified for the
         'tree' input in the vmlab.create_setup function.
+
+    Returns
+    -------
+    graph : :class:`igraph.Graph`
     """
 
     assert 'id' in df.columns.to_list() and 'parent_id' in df.columns.to_list()
@@ -115,6 +119,27 @@ def load_graph(df):
     check_graph(graph)
 
     return graph
+
+
+def to_dataframe(graph):
+    """Load and validate an pandas DataFrame from an igraph graph
+
+    Parameters
+    ----------
+    graph : :class:`igraph.Graph`
+
+    Returns
+    -------
+    df : :class:`pandas.DataFrame` object
+    """
+
+    edges = np.argwhere(np.array(graph.get_adjacency().data))
+    df = pd.DataFrame({
+        'id': np.append(0, edges[:, 1]),
+        'parent_id': np.append(np.nan, edges[:, 0])
+    }).join(graph.get_vertex_dataframe())
+
+    return df
 
 
 def _get_inputs_from_graph(graph, model, cycle):
@@ -177,8 +202,8 @@ def create_setup(
         from the initial tree. If they are not provided the cycle
         property of all initially present GUs will be set to 'current_cycle'
     tree : :class:`pandas.DataFrame object, optional
-        A pandas DataFrame with two mandatory columns: 'id' and 'parent_id'
-        (the topology).
+        A pandas DataFrame with at least the following columns:
+        'id', 'parent_id' and 'topology__is_apical'
         Optionally any other input variable with a 'GU' dimension may be added.
         Column names follow the 'foo__bar' naming logic (see input_vars).
         If None it is expected that a path to a csv file is present in the
@@ -246,7 +271,7 @@ def create_setup(
             else:
                 raise ValueError('No initial tree provided')
 
-    graph = load_graph(tree)
+    graph = to_graph(tree)
     input_vars.update(_get_inputs_from_graph(graph, model, current_cycle))
     input_vars['topology__current_cycle'] = current_cycle
     # work-around for main_clock not available at initialization.

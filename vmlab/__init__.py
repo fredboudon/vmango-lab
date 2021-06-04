@@ -6,7 +6,8 @@ from .vmlab import (
     create_setup,
     run,
     get_vars_from_model,
-    load_graph,
+    to_graph,
+    to_dataframe,
     check_graph
 )
 from . import constants, enums
@@ -101,6 +102,7 @@ __all__ = [
     'enums',
     'DotDict',
     'get_vars_from_model',
-    'load_graph',
+    'to_graph',
+    'to_dataframe',
     'check_graph'
 ]

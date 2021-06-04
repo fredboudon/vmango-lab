@@ -49,6 +49,7 @@ class ArchDevRep(ProbabilityTableProcess):
         self.nb_inflorescences = np.zeros(self.GU.shape, dtype=np.float32)
         self.fruiting = np.zeros(self.GU.shape, dtype=np.float32)
         self.nb_fruits = np.zeros(self.GU.shape, dtype=np.float32)
+        self.nature[np.isnan(self.nature)] = Nature.VEGETATIVE
 
         probability_tables = self.get_probability_tables()
 
