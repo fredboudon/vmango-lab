@@ -94,7 +94,7 @@ def check_graph(graph):
     graph : :class:`igraph.Graph` object
     """
 
-    # tree must bot be empty
+    # tree must not be empty
     assert len(graph.vs.indices) > 0
     # tree must be directed and acyclic
     assert graph.is_dag()
