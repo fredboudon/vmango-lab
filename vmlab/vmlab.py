@@ -82,15 +82,21 @@ def copy_model(model):
 
 
 def check_graph(graph):
-    """Test if an igraph graph's structure is valid and usable in vmlab
+    """Test if an igraph graph's structure is valid and usable in vmlab:
+
+        - not empty
+        - is directed and acyclic
+        - all vertices are connected
+        - at most one apical child per parent
 
     Parameters
     ----------
     graph : :class:`igraph.Graph` object
     """
 
+    # tree must bot be empty
     assert len(graph.vs.indices) > 0
-    # the tree must be directed and acyclic
+    # tree must be directed and acyclic
     assert graph.is_dag()
     # all vertices must be connected (only one tree/component)
     assert len(graph.components('weak').sizes()) == 1
@@ -102,7 +108,6 @@ def check_graph(graph):
             for successor in successors:
                 nb_apical_children = nb_apical_children + successor['topology__is_apical']
                 assert nb_apical_children <= 1
-                print(nb_apical_children)
 
 
 def to_graph(df):
