@@ -94,6 +94,15 @@ def check_graph(graph):
     assert graph.is_dag()
     # all vertices must be connected (only one tree/component)
     assert len(graph.components('weak').sizes()) == 1
+    # all vertices may have at most one apical child
+    if 'topology__is_apical' in graph.vs.attribute_names():
+        for v in graph.vs:
+            successors = v.successors()
+            nb_apical_children = 0
+            for successor in successors:
+                nb_apical_children = nb_apical_children + successor['topology__is_apical']
+                assert nb_apical_children <= 1
+                print(nb_apical_children)
 
 
 def to_graph(df):
