@@ -522,15 +522,15 @@ def run(dataset, model, progress=True, geometry=False, batch=None, store=None, h
         sw = pgljupyter.SceneWidget(size_world=size, size_display=size_display)
         IPython.display.display(sw)
 
-        if verbosity == 0:
-            warnings.filterwarnings('ignore', 'vmlab*')
-        else:
-            warnings.filterwarnings('default', 'vmlab*')
+    if verbosity == 0:
+        warnings.filterwarnings('ignore', 'vmlab*')
+    else:
+        warnings.filterwarnings('default', 'vmlab*')
 
-        if is_batch_run:
-            with model:
-                ds = _run_parallel(dataset, model, store, batch, sw, scenes, positions, progress, nb_proc)
-        else:
-            ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
+    if is_batch_run:
+        with model:
+            ds = _run_parallel(dataset, model, store, batch, sw, scenes, positions, progress, nb_proc)
+    else:
+        ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
 
     return _cleaup_dataset(ds)
