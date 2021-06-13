@@ -395,13 +395,13 @@ def _f_init(queue, model_param):
     _fn_parallel.model = _model_from_parameters(model_param)
 
 
-def _run_parallel(ds, model, store, batch, sw, scenes, positions):
+def _run_parallel(ds, model, store, batch, sw, scenes, positions, progress, nb_proc):
     geometry = sw is not None
     batch_dim, batch_runs = batch
     jobs = [(i, ds.xsimlab.update_vars(model, input_vars=input_vars), geometry, store) for i, input_vars in enumerate(batch_runs)]
 
     queue = mp.Manager().Queue()
-    nb_workers = min(len(jobs), mp.cpu_count())
+    nb_workers = min(len(jobs), nb_proc or mp.cpu_count())
     pool = mp.Pool(nb_workers, _f_init, [queue, _model_parameters(model)])
 
     results = pool.starmap_async(_fn_parallel, jobs, error_callback=lambda err: print(err))
@@ -409,17 +409,29 @@ def _run_parallel(ds, model, store, batch, sw, scenes, positions):
 
     done = 0
     nb_steps = len(jobs) * ds.day.values.shape[0] - len(jobs)
-    with tqdm(total=nb_steps, bar_format='{bar} {percentage:3.0f}%') as bar:
+
+    if progress:
+        with tqdm(total=nb_steps, bar_format='{bar} {percentage:3.0f}%') as bar:
+            while done < len(jobs):
+                id, got = queue.get()
+                if got == 0:
+                    bar.update()
+                elif got == 1:
+                    done += 1
+                elif geometry:
+                    scenes[id] = pgl.frombinarystring(got)
+                    sw.set_scenes(scenes, scales=1/100, positions=positions)
+            bar.close()
+    else:
         while done < len(jobs):
             id, got = queue.get()
             if got == 0:
-                bar.update()
+                pass
             elif got == 1:
                 done += 1
-            else:
+            elif geometry:
                 scenes[id] = pgl.frombinarystring(got)
                 sw.set_scenes(scenes, scales=1/100, positions=positions)
-        bar.close()
 
     out = [_cleaup_dataset(ds) for ds in results.get()]
     pool.terminate()
@@ -433,7 +445,7 @@ def _run_parallel(ds, model, store, batch, sw, scenes, positions):
     return xr.concat(out, dim=dim)
 
 
-def run(dataset, model, progress=True, geometry=False, batch=None, store=None, hooks=[]):
+def run(dataset, model, progress=True, geometry=False, batch=None, store=None, hooks=[], nb_proc=None):
     """Run a vmlab model
 
     Wraps the xarray-simlab (v0.5.0) run function
@@ -457,6 +469,9 @@ def run(dataset, model, progress=True, geometry=False, batch=None, store=None, h
         A file path. In batch mode each batch's path will be extended with its index
     hooks : list, optional
         One or more xarray-simlab runtime hooks
+    nb_proc : int, optional
+        Maximum number of processes created in batch muti-process processing.
+        Defaults to minimum(number of CPU cores available, number of batches)
 
     Returns
     -------
@@ -507,7 +522,7 @@ def run(dataset, model, progress=True, geometry=False, batch=None, store=None, h
 
     if is_batch_run:
         with model:
-            ds = _run_parallel(dataset, model, store, batch, sw, scenes, positions)
+            ds = _run_parallel(dataset, model, store, batch, sw, scenes, positions, progress, nb_proc)
     else:
         ds = dataset.xsimlab.run(model=model, decoding={'mask_and_scale': False}, hooks=hooks, store=store)
 
