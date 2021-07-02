@@ -23,15 +23,27 @@ class CarbonFlowCoef(ParameterizedProcess):
     fruited = xs.foreign(phenology.Phenology, 'fruited')
     harvested = xs.foreign(harvest.Harvest, 'harvested')
 
+    # Must be object because it does only store those GU indices on axis 0 that actually bear a fruit
+    # For other purposes there is a full (GUxGU) distance matrix stored in variable 'distances'
     distance_to_fruit = xs.any_object()
     # the only variable that uses nan explicitly (so np.nansum etc. can be used)
     is_in_distance_to_fruit = xs.any_object()
     allocation_share = xs.any_object()
     is_photo_active = xs.variable(dims='GU', intent='out')
     max_distance_to_fruit = xs.variable(
+        intent='inout',
         static=True,
         description='Maximum distance (hops) between source and sink GUs',
         default=3
+    )
+    distances = xs.variable(
+        dims=('GU', 'GU_'),
+        intent='out',
+        description='Distance of each leafy GU to all fruit bearing GUs where no hops <= max_distance_to_fruit',
+        attrs={
+            'fill_value': np.inf,
+            'unit': 'no hops'
+        }
     )
 
     def initialize(self):
@@ -42,6 +54,7 @@ class CarbonFlowCoef(ParameterizedProcess):
         self.is_in_distance_to_fruit = np.array([], dtype=np.bool)
         self.allocation_share = np.array([], dtype=np.float32)
         self.is_photo_active = np.zeros(self.GU.shape, dtype=np.float32)
+        self.distances = np.full((self.GU.shape[0], self.GU.shape[0]), np.inf, dtype=np.float32)
 
     @xs.runtime(args=())
     def run_step(self):
@@ -57,8 +70,10 @@ class CarbonFlowCoef(ParameterizedProcess):
                     indices=np.flatnonzero(is_fruting),
                     directed=False
                 ).astype(np.float32)
+                self.distances[:] = np.inf
 
             self.distance_to_fruit[self.distance_to_fruit > self.max_distance_to_fruit] = np.inf
+            self.distances[np.flatnonzero(is_fruting), :] = self.distance_to_fruit
             self.distance_to_fruit[:, np.flatnonzero(~is_leafy)] = np.inf
 
             self.is_in_distance_to_fruit = np.isfinite(self.distance_to_fruit).astype(np.float32)

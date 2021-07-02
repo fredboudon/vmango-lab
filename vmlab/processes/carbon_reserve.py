@@ -116,7 +116,7 @@ class CarbonReserve(ParameterizedProcess):
         self.DM_structural_leaf = np.full(self.nb_gu, DM_leaf_unit * self.nb_leaf * (1 - r_DM_leaf_ini), dtype=np.float32)
         self.reserve_leaf = np.full(self.nb_gu, DM_leaf_unit * self.nb_leaf * r_DM_leaf_ini * cc_leaf, dtype=np.float32)
 
-        self.DM_structural_stem = DM_stem_density * (1 - r_DM_stem_ini) * np.pi * 2. * self.radius_gu * self.length_gu
+        self.DM_structural_stem = DM_stem_density * (1 - r_DM_stem_ini) * np.pi * self.radius_gu**2 * self.length_gu
         self.reserve_stem = self.DM_structural_stem * r_DM_stem_ini * cc_stem
 
         self.reserve_mob = ((r_mobile_leaf * self.reserve_leaf) + (r_mobile_stem * self.reserve_stem)).astype(np.float32)

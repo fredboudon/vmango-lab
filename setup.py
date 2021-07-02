@@ -1,4 +1,6 @@
 from setuptools import setup, find_packages
+from glob import glob
+import os
 
 setup(
     name='vmlab',
@@ -10,5 +12,12 @@ setup(
     long_description='vmlab is a simulation and analysis tool for mango tree architecture.',
     license='Cecill-C',
     packages=find_packages(),
-    include_package_data=True
+    include_package_data=True,
+    package_data={
+        'vmlab': [
+            os.path.join(*path.split('/')[1:]) for path in glob('vmlab/data/**/*.*', recursive=True)
+        ] + [
+            os.path.join(*path.split('/')[1:]) for path in glob('vmlab/processes/*.lpy')
+        ],
+    }
 )

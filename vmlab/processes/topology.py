@@ -57,11 +57,12 @@ class Topology(ParameterizedProcess):
         self.ancestor_is_apical = np.array(self.ancestor_is_apical, dtype=np.float32)
         self.ancestor_nature = np.array(self.ancestor_nature, dtype=np.float32)
         self.is_apical = np.array(self.is_apical, dtype=np.float32)
+        self.is_apical[np.isnan(self.is_apical)] = 0.0
         self.appearance_month = np.array(self.appearance_month, dtype=np.float32)
         self.cycle = np.array(self.cycle, dtype=np.float32)
 
         self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency)).astype(np.float32)
-        self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
+        self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1).astype(np.float32)
 
         self.appearance_date = np.full(self.GU.shape, np.datetime64('NaT'), dtype='datetime64[D]')
         self.parent_is_apical = np.full(self.GU.shape, 1., dtype=np.float32)
@@ -98,7 +99,7 @@ class Topology(ParameterizedProcess):
         if np.any(self.bursted):
             total_nb_children = np.sum(self.archdev[('arch_dev', 'pot_nb_lateral_children')][self.bursted == 1.] + self.archdev[('arch_dev', 'pot_has_apical_child')][self.bursted == 1.])
             self.idx_first_child = self.GU.shape[0]
-            self.GU = np.append(self.GU, [i + self.GU.shape[0] for i in range(int(total_nb_children))])
+            self.GU = np.append(self.GU, np.array([i + self.GU.shape[0] for i in range(int(total_nb_children))], np.int32))
             self.GU_ = self.GU
             self.nb_gu = self.GU.shape[0]
             # initialize new GUs
@@ -108,6 +109,6 @@ class Topology(ParameterizedProcess):
             self.appeared[self.idx_first_child:] = 1.
             self.adjacency[np.isnan(self.adjacency)] = 0.
             self.cycle[self.idx_first_child:] = self.current_cycle
-            self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency))
+            self.distance = csgraph.shortest_path(csgraph.csgraph_from_dense(self.adjacency)).astype(np.float32)
             self.lstring = self.lsystem.derive(self.lstring, step, 1)
-            self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1)
+            self.nb_descendants = np.count_nonzero(~np.isinf(self.distance) & (self.distance > 0.), axis=1).astype(np.float32)

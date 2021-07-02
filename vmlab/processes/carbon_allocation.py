@@ -276,7 +276,7 @@ class CarbonAllocation(ParameterizedProcess):
 
             if np.any(gu_died):
                 # TODO: What to do with variables?
-                warnings.warn('Vegetative part of the system dies ...')
+                warnings.warn('vmlab: Vegetative part of the system dies ...')
 
             # use of remaining assimilates for maintenance respiration of reproductive components :
             remaining_assimilates_lt_mr_repro = np.dot(self.allocation_share, self.remains_1) < self.MR_repro[fruiting]
@@ -300,7 +300,7 @@ class CarbonAllocation(ParameterizedProcess):
             if np.any(fruit_died):
                 # TODO: What to do with variables?
                 # death of reproductive components if maintenance respiration is not satisfied by remaining assimilates and fruit reserves :
-                warnings.warn('Reproductive part of the system dies ...')
+                warnings.warn('vmlab: Reproductive part of the system dies ...')
 
             self.remains_2[active] = np.maximum(0, self.remains_1[active] - self.MR_repro[active])
 

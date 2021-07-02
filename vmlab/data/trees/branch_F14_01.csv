@@ -1,0 +1,7 @@
+id,parent_id,topology__is_apical,arch_dev__pot_flowering_date,arch_dev__pot_nb_inflo,arch_dev__pot_nb_fruit,growth__nb_leaf,growth__radius_gu,appearance__final_length_gu,light_interception__sunlit_fraction_col;;;
+1,NA,1,NaT,NA,NA,13,0.951,14,3;;;
+2,1,0,2002-09-11,1,1,7,0.595,12,3;;;
+3,1,0,NaT,NA,NA,6,0.344,10,3;;;
+4,1,0,NaT,NA,NA,5,0.524,12,3;;;
+5,1,0,NaT,NA,NA,4,0.393,9,3;;;
+6,1,0,NaT,NA,NA,5,0.436,10,3;;;

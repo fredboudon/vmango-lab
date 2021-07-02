@@ -6,7 +6,8 @@ from .vmlab import (
     create_setup,
     run,
     get_vars_from_model,
-    load_graph,
+    to_graph,
+    to_dataframe,
     check_graph
 )
 from . import constants, enums
@@ -45,7 +46,7 @@ class State(dict):
                 var_value = self[var_name]
                 var_shape = var_value.shape
                 var_dims = np.array(var.metadata.get('dims')).flatten()
-                if index_name in var_dims:
+                if len(var_dims) and index_name in var_dims:
                     fill_value = None
                     var_enc = var.metadata.get('encoding')
                     if 'fill_value' in var_enc:
@@ -101,6 +102,7 @@ __all__ = [
     'enums',
     'DotDict',
     'get_vars_from_model',
-    'load_graph',
+    'to_graph',
+    'to_dataframe',
     'check_graph'
 ]
