@@ -12,6 +12,7 @@ from .vmlab import (
 )
 from . import constants, enums
 from .vmlab import DotDict
+from ._version import __version__, version_info
 
 
 def fill_value_from_dtype(dtype=None):
@@ -96,6 +97,8 @@ _ModelBuilder.set_state = set_state
 
 
 __all__ = [
+    '__version__',
+    'version_info',
     'create_setup',
     'run',
     'constants',
