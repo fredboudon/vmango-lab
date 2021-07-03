@@ -25,7 +25,7 @@ setup(
     url='https://github.com/jvail/vmango-lab',
     author='Frederic Boudon, Jan Vaillant, Isabelle Grechi, Frederic Normand',
     author_email='frederic.boudon@cirad.fr',
-    description='A library and en environment for mango tree modeling',
+    description='A library and an environment for mango tree modeling',
     long_description='A library and an environment for the simulation and analysis of mango tree growth, development, fruit production and architecture.',
     license='Cecill-C',
     packages=find_packages(),
