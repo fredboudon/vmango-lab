@@ -7,7 +7,7 @@ dependencies:
   - openalea.lpy=3.8.*
   - openalea.plantgl=3.9.*
   - xarray-simlab=0.5.*
-  - jupyterlab>=3.0.16
+  - jupyterlab>=3.0.*
   - jupyterlab_widgets
   - ipython=7
   - toml
