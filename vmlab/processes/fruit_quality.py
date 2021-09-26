@@ -132,7 +132,8 @@ class FruitQuality(ParameterizedProcess):
         description='glucose content in the fruit flesh',
         attrs={
             'unit': 'g g-1 FM'
-        }
+        },
+        groups='fruit_quality'
     )
 
     fructose = xs.variable(
@@ -141,7 +142,8 @@ class FruitQuality(ParameterizedProcess):
         description='fructose content in the fruit flesh',
         attrs={
             'unit': 'g g-1 FM'
-        }
+        },
+        groups='fruit_quality'
     )
 
     soluble_sugars = xs.variable(
@@ -150,7 +152,8 @@ class FruitQuality(ParameterizedProcess):
         description='soluble sugar (sucrose, fructuse, glucose) content in the fruit flesh',
         attrs={
             'unit': 'g g-1 FM'
-        }
+        },
+        groups='fruit_quality'
     )
 
     starch = xs.variable(
@@ -159,7 +162,8 @@ class FruitQuality(ParameterizedProcess):
         description='starch content in the fruit flesh',
         attrs={
             'unit': 'g g-1 FM'
-        }
+        },
+        groups='fruit_quality'
     )
 
     organic_acids = xs.variable(
@@ -168,7 +172,8 @@ class FruitQuality(ParameterizedProcess):
         description='organic acid (malic and citric acids) content in the fruit flesh',
         attrs={
             'unit': 'g g-1 FM'
-        }
+        },
+        groups='fruit_quality'
     )
 
     def initialize(self):
