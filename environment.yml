@@ -22,5 +22,5 @@ dependencies:
   - flake8
   - pip
   - pip:
-    - pgljupyter=1.*
-    - python-igraph=0.9.*
+    - pgljupyter==1.*
+    - python-igraph==0.9.*

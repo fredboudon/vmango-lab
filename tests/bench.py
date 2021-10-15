@@ -81,14 +81,20 @@ def run_parallel(i, tree, freq):
     return took
 
 
-times_geo_30_parallel = [run_parallel(i, tree, 30) for i, tree in enumerate(trees)]
-times_geo_0_parallel = [run_parallel(i, tree, 0) for i, tree in enumerate(trees)]
-times_geo_30 = [run(i, tree, 30) for i, tree in enumerate(trees)]
-times_geo_0 = [run(i, tree, 0) for i, tree in enumerate(trees)]
+for repetition in range(0, 10):
 
-pd.DataFrame({
-    'S0': times_geo_0,
-    'S30': times_geo_30,
-    'P0': times_geo_0_parallel,
-    'P30': times_geo_30_parallel
-}, index=nb_gus).to_csv('bench.csv')
+    times_geo_30_parallel = [run_parallel(i, tree, 30) for i, tree in enumerate(trees)]
+    times_geo_0_parallel = [run_parallel(i, tree, 0) for i, tree in enumerate(trees)]
+    times_geo_30 = [run(i, tree, 30) for i, tree in enumerate(trees)]
+    times_geo_0 = [run(i, tree, 0) for i, tree in enumerate(trees)]
+
+    pd.DataFrame({
+        'S0': times_geo_0,
+        'S30': times_geo_30,
+        'P0': times_geo_0_parallel,
+        'P30': times_geo_30_parallel
+    }, index=nb_gus).to_csv(f'bench_{repetition}.csv')
+
+    gc.collect()
+
+    print('done repetition', repetition)
