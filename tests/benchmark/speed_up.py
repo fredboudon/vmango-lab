@@ -1,3 +1,5 @@
+# for((i=0;i<10;i+=1)); do python speed_up.py $i ; done
+
 import igraph as ig
 import numpy as np
 import pandas as pd
@@ -67,10 +69,13 @@ def run_parallel(nb_proc, tree):
     return took
 
 
-times_parallel = np.array([run_parallel(i, tree) for i in range(2, mp.cpu_count() + 1)])
-times_single = np.array([run(i, tree) for i in range(2, mp.cpu_count() + 1)])
-speed_up = times_single / times_parallel
-
-pd.DataFrame({
-    'speed_up': speed_up
-}, index=[i for i in range(2, mp.cpu_count() + 1)]).to_csv('speed_up.csv')
+if __name__ == '__main__':
+    import sys
+    repetition = sys.argv[1]
+    times_parallel = np.array([run_parallel(i, tree) for i in range(2, mp.cpu_count() + 1)])
+    times_single = np.array([run(i, tree) for i in range(2, mp.cpu_count() + 1)])
+    speed_up = times_single / times_parallel
+    pd.DataFrame({
+        'speed_up': speed_up
+    }, index=[i for i in range(2, mp.cpu_count() + 1)]).to_csv('speed_up' + repetition + '.csv')
+    print('done repetition', repetition)

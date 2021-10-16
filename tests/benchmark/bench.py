@@ -1,3 +1,5 @@
+# for((i=0;i<10;i+=1)); do python bench.py $i ; done
+
 import igraph as ig
 import numpy as np
 import pandas as pd
@@ -81,20 +83,17 @@ def run_parallel(i, tree, freq):
     return took
 
 
-for repetition in range(0, 10):
-
+if __name__ == '__main__':
+    import sys
+    repetition = sys.argv[1]
     times_geo_30_parallel = [run_parallel(i, tree, 30) for i, tree in enumerate(trees)]
     times_geo_0_parallel = [run_parallel(i, tree, 0) for i, tree in enumerate(trees)]
     times_geo_30 = [run(i, tree, 30) for i, tree in enumerate(trees)]
     times_geo_0 = [run(i, tree, 0) for i, tree in enumerate(trees)]
-
     pd.DataFrame({
         'S0': times_geo_0,
         'S30': times_geo_30,
         'P0': times_geo_0_parallel,
         'P30': times_geo_30_parallel
-    }, index=nb_gus).to_csv(f'bench_{repetition}.csv')
-
-    gc.collect()
-
+    }, index=nb_gus).to_csv('bench' + repetition + '.csv')
     print('done repetition', repetition)
