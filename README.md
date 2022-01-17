@@ -142,5 +142,12 @@ jupyter notebook
 
 You will find several notebook examples in the vmango-lab/notebooks
 
+
+You will find several notebook examples in the vmango-lab/notebooks
+
+You can run directly notebooks from vscode. For this you need to install Jupyter and Python extension, then in the View menu, select 'Command Palette', Type 'Jupyter: Select Interpreter to start Jupyter server', select vmango-lab and then open the notebooks.
+To use vmango-lab env in the python shell, you can also type in the command palette, 'Python: Select interpreter' and select the appropriate environment.
+
+
 ---
 <a name="Boudon_2020">1</a> Frédéric Boudon et al. V-Mango: a functional–structural model of mango tree growth, development and fruit production, Annals of Botany, Volume 126, Issue 4, 14 September 2020, Pages 745–763
