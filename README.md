@@ -110,6 +110,11 @@ pip install -e .
 - git https://git-scm.com/download/win
 - vscode https://code.visualstudio.com/download
 
+You may also install TortoiseGit to have simpler access to git from your file explorer:
+
+- TortoiseGit https://tortoisegit.org/download/
+
+
 #### Install
 
 Run all installers (if you are unsure just use the default options)
