@@ -22,7 +22,7 @@ version = get_version(join(name, '_version.py'))
 setup(
     name=name,
     version=version,
-    url='https://github.com/jvail/vmango-lab',
+    url='https://github.com/fredboudon/vmango-lab',
     author='Frederic Boudon, Jan Vaillant, Isabelle Grechi, Frederic Normand',
     author_email='frederic.boudon@cirad.fr',
     description='A library and an environment for mango tree modeling',
