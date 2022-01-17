@@ -122,7 +122,7 @@ Open vscode and open the default terminal available in vscode
 run the following commands from the terminal one after the other. The line conda install -c conda-forge nodejs is only required if Node.js is not installed on the system and you want to build the JupyterLab plugin of plantgl-jupyter (3D visualization). This step is not required for classical notebooks.
 
 ```bash
-git clone https://github.com/jvail/vmango-lab.git
+git clone https://github.com/fredboudon/vmango-lab.git
 cd vmango-lab
 conda env create -f environment.yml
 conda activate vmango-lab
