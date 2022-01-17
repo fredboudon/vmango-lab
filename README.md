@@ -124,6 +124,10 @@ run the following commands from the terminal one after the other. The line conda
 ```bash
 git clone https://github.com/fredboudon/vmango-lab.git
 cd vmango-lab
+```
+You need then to install Python extension, then in the 'View' menu, select 'Command Palette', Type 'Python: Select interpreter', select 'base'.
+
+```bash
 conda env create -f environment.yml
 conda activate vmango-lab
 conda install -c conda-forge nodejs
@@ -142,8 +146,8 @@ jupyter notebook
 
 You will find several notebook examples in the vmango-lab/notebooks
 
-You can run directly notebooks from vscode. For this you need to install Jupyter and Python extension, then in the View menu, select 'Command Palette', Type 'Jupyter: Select Interpreter to start Jupyter server', select vmango-lab and then open the notebooks.
-To use vmango-lab env in the python shell, you can also type in the command palette, 'Python: Select interpreter' and select the appropriate environment.
+You can run directly notebooks from vscode. For this you need to install Jupyter extension, then with the 'Command Palette', Type 'Jupyter: Select Interpreter to start Jupyter server', select vmango-lab and then open the notebooks.
+To use vmango-lab env in the python shell, you can also type in the 'Command Palette', 'Python: Select interpreter' and select 'vmango-lab'.
 
 
 ---
