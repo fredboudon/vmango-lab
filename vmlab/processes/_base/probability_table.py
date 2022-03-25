@@ -81,15 +81,18 @@ class ProbabilityTableProcess(ParameterizedProcess):
                             for month in list(map(np.float, d.split('-'))):
                                 row = df.loc[i].copy()
                                 row['appearance_month'] = month
-                                tbl = tbl.append(row, ignore_index=True)
+                                tbl = pd.concat([tbl, row.to_frame().T], ignore_index=True)
                     elif 'flowering_week' in df:
                         for i, d in df['flowering_week'].items():
                             for week in list(map(np.float, d.split('-'))):
                                 row = df.loc[i].copy()
                                 row['flowering_week'] = week
-                                tbl = tbl.append(row, ignore_index=True)
+                                tbl = pd.concat([tbl, row.to_frame().T], ignore_index=True)
                     else:
                         tbl = df
+
+                    # cast all values to float
+                    tbl = tbl.astype(np.float32)
 
                     # extract cycle from file name
                     cycle = float(file.name.split('_0')[1][0])
@@ -98,9 +101,6 @@ class ProbabilityTableProcess(ParameterizedProcess):
                     index = [factor for factor in self._factors.values() if factor in tbl.columns]
                     if len(index):
                         tbl.set_index([factor for factor in self._factors.values() if factor in tbl.columns], inplace=True, )
-
-                    # cast all values to float
-                    tbl.astype(np.float, copy=False)
 
                     # normalize probabilities (0 <= sum(p) >= 1) for nomial and multinomial distributions (lambda is possion)
                     if 'lambda' not in tbl.columns:
