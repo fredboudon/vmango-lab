@@ -6,7 +6,7 @@ vmango-lab is a library and an environment for the simulation and analysis of ma
 
 ![Mango Tree](doc/img/mango-tree.png)
 
-Cite
+### Cite
 
 Jan Vaillant, Isabelle Grechi, Frédéric Normand, Frédéric Boudon, Towards virtual modelling environments for functional–structural plant models based on Jupyter notebooks: application to the modelling of mango tree growth and development, in silico Plants, Volume 4, Issue 1, 2022, diab040, https://doi.org/10.1093/insilicoplants/diab040
 
