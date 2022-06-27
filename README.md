@@ -6,6 +6,11 @@ vmango-lab is a library and an environment for the simulation and analysis of ma
 
 ![Mango Tree](doc/img/mango-tree.png)
 
+### Cite
+
+Jan Vaillant, Isabelle Grechi, Frédéric Normand, Frédéric Boudon, Towards virtual modelling environments for functional–structural plant models based on Jupyter notebooks: application to the modelling of mango tree growth and development, in silico Plants, Volume 4, Issue 1, 2022, diab040, https://doi.org/10.1093/insilicoplants/diab040
+
+
 vmango-lab (vmlab) is built with xarray-simlab (xsimlab v0.5.0, https://xarray-simlab.readthedocs.io/en/latest/), an extension of xarray. Therefore most parts of the documentation provided by xsimlab applies also to vmlab  - except some difference highlighted below:
 
 Due to specific requirements of vmlab the library reimplements some top-level functions of xsimlab. All related to the creation and execution of a model. Therefore the user must use the `vmlab.create_setup` and `vmlab.run` functions (see doc strings) provided by the library rather than using those with identical names implemented in xsimlab.
