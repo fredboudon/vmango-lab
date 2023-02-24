@@ -3,22 +3,21 @@ channels:
   - fredboudon
   - conda-forge
 dependencies:
-  - python=3.9.*
-  - alinea.caribu
-  - openalea.lpy=3.9.*
+  - python=3.9
+  - openalea.lpy=3.9
   - openalea.mtg
-  - xarray-simlab=0.5.*
-  - jupyterlab>=3.6.*
-  - jupyterlab_widgets
-  - ipywidgets
+  - xarray-simlab=0.5
+  - jupyterlab=3.6
+  - jupyterlab_widgets=3.0
+  - ipywidgets=8.0
   - ipython=7
   - toml
   - matplotlib
-  - numpy=1.20.*
+  - numpy
   - pandas
   - seaborn
   - sparse
-  - scipy=1.10.*
+  - scipy=1.10
   - pycairo
   - netCDF4
   - pip
