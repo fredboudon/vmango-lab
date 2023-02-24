@@ -94,17 +94,12 @@ igraph.plot(graph, layout=layout, bbox=(100, 100))
 
 ### For users with some Python and conda experience
 
-Clone repository and create and activate the conda environment:
+Clone repository and create and activate the conda environment.
+This will also create a development install of vmango-lab:
 
 ```bash
-conda env create -f environment.yml
+conda env create -f binder/environment.yml
 conda activate vmango-lab
-```
-
-Install with pip (dev mode):
-
-```bash
-pip install -e .
 ```
 
 ### From absolute zero to vmango-lab (windows 10)
@@ -124,7 +119,7 @@ You may also install TortoiseGit to have simpler access to git from your file ex
 
 Run all installers (if you are unsure just use the default options)
 Open vscode and open the default terminal available in vscode
-run the following commands from the terminal one after the other. The line conda install -c conda-forge nodejs is only required if Node.js is not installed on the system and you want to build the JupyterLab plugin of plantgl-jupyter (3D visualization). This step is not required for classical notebooks.
+run the following commands from the terminal one after the other.
 
 ```bash
 git clone https://github.com/fredboudon/vmango-lab.git
@@ -133,10 +128,8 @@ cd vmango-lab
 You need then to install Python extension, then in the 'View' menu, select 'Command Palette', Type 'Python: Select interpreter', select 'base'.
 
 ```bash
-conda env create -f environment.yml
+conda env create -f binder/environment.yml
 conda activate vmango-lab
-conda install -c conda-forge nodejs
-pip install -e .
 ```
 
 #### Run Jupyter
