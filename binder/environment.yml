@@ -18,5 +18,5 @@ dependencies:
   - netCDF4
   - pip
   - pip:
-    - pgljupyter>=1.1.*
+    - pgljupyter>=2.0.*
     - python-igraph>=0.9.*
