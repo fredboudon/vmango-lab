@@ -98,7 +98,7 @@ class Environment(ParameterizedProcess):
         ).set_index('DATETIME', inplace=False).astype(np.float32)
 
         # smartis may have nans
-        self.weather_hourly_df.fillna(inplace=True, method='backfill')
+        self.weather_hourly_df.bfill(inplace=True)
 
         self.weather_daily_df = pd.DataFrame({
             'TM': self.weather_hourly_df['TM'].groupby(pd.Grouper(freq="1D")).mean(),
