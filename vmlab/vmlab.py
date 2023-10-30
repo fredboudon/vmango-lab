@@ -110,7 +110,7 @@ def check_graph(graph):
                 assert nb_apical_children <= 1
 
 
-def to_graph(df):
+def to_graph(df: pd.DataFrame):
     """Load and validate an igraph graph from a pandas DataFrame
 
     Parameters
@@ -126,8 +126,10 @@ def to_graph(df):
 
     assert 'id' in df.columns.to_list() and 'parent_id' in df.columns.to_list()
 
-    edges = df[['parent_id', 'id']].dropna()
+    edges = df[['parent_id', 'id']].dropna().astype(np.int64)
     vertices = df.drop('parent_id', axis=1) if len(df.columns.to_list()) > 2 else None
+    if vertices is not None:
+        vertices['id'].astype(np.int64, copy=False)
     graph = ig.Graph.DataFrame(edges, vertices=vertices)
 
     check_graph(graph)
